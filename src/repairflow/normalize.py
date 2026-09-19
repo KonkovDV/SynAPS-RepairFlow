@@ -80,7 +80,10 @@ def _read_calendars(path: Path) -> list[dict[str, Any]]:
 def _require_horizon(directory: Path) -> dict[str, str]:
     meta = directory / "horizon.json"
     if meta.is_file():
-        return json.loads(read_text_limited(meta))
+        payload = json.loads(read_text_limited(meta))
+        if not isinstance(payload, dict):
+            raise ValueError(f"{meta} must be a JSON object with start/end")
+        return {str(key): str(value) for key, value in payload.items()}
     raise ValueError(f"{directory} CSV bundle needs horizon.json with start/end")
 
 
@@ -268,7 +271,10 @@ def _join(values: list[str]) -> str:
 def _iso(value: Any) -> str:
     if value is None:
         return ""
-    return value.isoformat()
+    iso = getattr(value, "isoformat", None)
+    if callable(iso):
+        return str(iso())
+    return str(value)
 
 
 def _coerce(value: str) -> Any:

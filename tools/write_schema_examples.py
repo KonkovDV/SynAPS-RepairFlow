@@ -20,9 +20,7 @@ def main() -> int:
     (OUT / "tiny.problem.json").write_text(problem.model_dump_json(indent=2), encoding="utf-8")
     fifo = plan(problem, solver_config="FIFO")
     greed = plan(problem, solver_config="GREED")
-    (OUT / "tiny.greed.result.json").write_text(
-        greed.result.model_dump_json(indent=2), encoding="utf-8"
-    )
+    (OUT / "tiny.greed.result.json").write_text(greed.result.model_dump_json(indent=2), encoding="utf-8")
     (OUT / "tiny.diff.json").write_text(
         json.dumps(diff_plans(problem, fifo.result, greed.result), indent=2, default=str),
         encoding="utf-8",

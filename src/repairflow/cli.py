@@ -173,17 +173,17 @@ def _demo(preset: str, out_dir: Path, *, skip_cpsat: bool) -> int:
     (out_dir / "greed.html").write_text(render_html(problem, greed.result), encoding="utf-8")
     (out_dir / "fifo.html").write_text(render_html(problem, fifo.result), encoding="utf-8")
 
-    disrupted = ["JOB-06-02"] if any(op.id == "JOB-06-02" for op in problem.operations) else [
-        problem.operations[-1].id
-    ]
+    disrupted = (
+        ["JOB-06-02"]
+        if any(op.id == "JOB-06-02" for op in problem.operations)
+        else [problem.operations[-1].id]
+    )
     replanned = replan_after_disruption(problem, base=greed, disrupted_operation_ids=disrupted)
     _write_json(out_dir / "replan.json", replanned.result.model_dump(mode="json"))
     frozen_kept = diff_plans(problem, greed.result, replanned.result)
     _write_json(out_dir / "replan-diff.json", frozen_kept)
 
-    broken_assignments = corrupt_plan(
-        [row.model_dump(mode="json") for row in greed.result.assignments]
-    )
+    broken_assignments = corrupt_plan([row.model_dump(mode="json") for row in greed.result.assignments])
     broken_result = greed.result.model_copy(
         update={
             "assignments": [PlannedAssignment.model_validate(row) for row in broken_assignments],

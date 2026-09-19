@@ -14,8 +14,9 @@ from synaps.solvers.registry import available_solver_configs
 from synaps.solvers.router import SolveRegime
 
 from repairflow.adapter import (
+    bind_concrete_crews,
     compile_frozen_assignments,
-    extract_frozen_from_result,
+    extract_frozen_from_planned,
     lookup_setup_minutes,
     reverse_ids,
     to_schedule_problem,
@@ -24,11 +25,14 @@ from repairflow.checker import check_plan, kernel_hard_violations
 from repairflow.evidence import evidence_stamp, fingerprint_payload
 from repairflow.limits import CPSAT_OPS_CAP
 from repairflow.model import (
+    Crew,
+    Operation,
     PlannedAssignment,
     RepairFlowProblem,
     RepairFlowResult,
     ResultStatus,
     Violation,
+    WorkCenter,
 )
 from repairflow.reasons import ReasonCode
 from repairflow.versions import CLAIM_LEVEL, REPAIRFLOW_VERSION, SYNAPS_COMMIT
@@ -76,8 +80,7 @@ def plan(
         configs = set(available_solver_configs())
         if solver_config not in configs:
             raise ValueError(
-                f"unknown solver_config {solver_config!r}; expected FIFO, GREED, "
-                f"or one of {sorted(configs)}"
+                f"unknown solver_config {solver_config!r}; expected FIFO, GREED, or one of {sorted(configs)}"
             )
         if solver_config.upper().startswith("CPSAT") and len(schedule_problem.operations) > CPSAT_OPS_CAP:
             raise ValueError(
@@ -122,10 +125,8 @@ def replan_after_disruption(
 ) -> PlanOutcome:
     schedule_problem, id_map = to_schedule_problem(problem)
     skip = set(disrupted_operation_ids)
-    locked = extract_frozen_from_result(
-        problem,
-        assignments=list(base.schedule.assignments),
-        id_map=id_map,
+    locked = extract_frozen_from_planned(
+        assignments=list(base.result.assignments),
         skip_operation_ids=skip,
         reason="disruption_freeze_rest",
     )
@@ -230,15 +231,15 @@ def wrap(
     kernel_status = result.status.value if result.status is not None else None
     if kernel_status_override is not ...:
         kernel_status = kernel_status_override  # type: ignore[assignment]
+    planned = bind_concrete_crews(problem, _planned_from_kernel(problem, result.assignments, id_map))
     domain_violations = check_plan(
         problem,
         schedule_problem=schedule_problem,
-        assignments=list(result.assignments),
+        assignments=planned,
         id_map=id_map,
         kernel_status=kernel_status,
     )
     engine_violations = kernel_hard_violations(schedule_problem, result)
-    planned = _planned_from_kernel(problem, result.assignments, id_map)
     coverage = classify_coverage(
         n_operations=len(schedule_problem.operations),
         n_assigned=len({row.operation_id for row in result.assignments}),
@@ -409,9 +410,7 @@ def plan_fifo(
             max(row.end_time for row in assignments) - min(row.start_time for row in assignments)
         ).total_seconds() / 60.0
     status = (
-        SolverStatus.INFEASIBLE
-        if schedule_problem.operations and not assignments
-        else SolverStatus.FEASIBLE
+        SolverStatus.INFEASIBLE if schedule_problem.operations and not assignments else SolverStatus.FEASIBLE
     )
     return ScheduleResult(
         solver_name="FIFO",
@@ -434,18 +433,14 @@ def plan_domain_greed(
     planned = domain_greed(problem)
     assignments = _as_kernel_assignments(planned, id_map)
     unscheduled = len(schedule_problem.operations) - len(assignments)
-    coverage = 1.0 if not schedule_problem.operations else len(assignments) / len(
-        schedule_problem.operations
-    )
+    coverage = 1.0 if not schedule_problem.operations else len(assignments) / len(schedule_problem.operations)
     makespan = 0.0
     if assignments:
         makespan = (
             max(row.end_time for row in assignments) - min(row.start_time for row in assignments)
         ).total_seconds() / 60.0
     status = (
-        SolverStatus.INFEASIBLE
-        if schedule_problem.operations and not assignments
-        else SolverStatus.FEASIBLE
+        SolverStatus.INFEASIBLE if schedule_problem.operations and not assignments else SolverStatus.FEASIBLE
     )
     return ScheduleResult(
         solver_name="GREED",
@@ -515,7 +510,7 @@ def _frozen_ancestor_deadlines(problem: RepairFlowProblem) -> dict[str, datetime
 
 def _best_slot(
     problem: RepairFlowProblem,
-    operation,
+    operation: Operation,
     placed: list[PlannedAssignment],
     deadline: datetime | None,
 ) -> PlannedAssignment | None:
@@ -545,9 +540,7 @@ def _best_slot(
         if center.eligible_unit_types and job.unit_type and job.unit_type not in center.eligible_unit_types:
             continue
         for crew in eligible_crews:
-            candidate = _scan_slot(
-                problem, operation, placed, center, crew, pred_end, deadline
-            )
+            candidate = _scan_slot(problem, operation, placed, center, crew, pred_end, deadline)
             if candidate is None:
                 continue
             if best is None or (candidate.start, center.code, crew.code) < (
@@ -561,10 +554,10 @@ def _best_slot(
 
 def _scan_slot(
     problem: RepairFlowProblem,
-    operation,
+    operation: Operation,
     placed: list[PlannedAssignment],
-    center,
-    crew,
+    center: WorkCenter,
+    crew: Crew,
     pred_end: datetime,
     deadline: datetime | None,
 ) -> PlannedAssignment | None:
@@ -748,7 +741,7 @@ def _advance_calendar(
     return None
 
 
-def _implied_pred(problem: RepairFlowProblem, operation) -> list[str]:
+def _implied_pred(problem: RepairFlowProblem, operation: Operation) -> list[str]:
     previous = [
         row.id
         for row in problem.operations
@@ -787,10 +780,7 @@ def _planned_from_kernel(
         operation = ops.get(op_id)
         reason = "kernel assignment"
         if operation is not None:
-            reason = (
-                f"job={operation.job_id} post={wc_id} crew={crew_id or '—'} "
-                f"setup={row.setup_minutes}m"
-            )
+            reason = f"job={operation.job_id} post={wc_id} crew={crew_id or '—'} setup={row.setup_minutes}m"
         out.append(
             PlannedAssignment(
                 operation_id=op_id,

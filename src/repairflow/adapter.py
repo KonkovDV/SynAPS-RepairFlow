@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import timedelta
+from datetime import datetime, timedelta
 from uuid import UUID, uuid5
 
 from synaps.model import (
@@ -18,7 +18,14 @@ from synaps.model import (
     WorkCenter,
 )
 
-from repairflow.model import FrozenAssignment, RepairFlowProblem
+from repairflow.model import (
+    FrozenAssignment,
+    PlannedAssignment,
+    RepairFlowProblem,
+)
+from repairflow.model import (
+    Operation as DomainOperation,
+)
 
 _NS = UUID("7e9a1c2b-4d5e-6f70-8192-a3b4c5d6e7f8")
 
@@ -50,9 +57,7 @@ def to_schedule_problem(problem: RepairFlowProblem) -> tuple[ScheduleProblem, di
         calendar_rows = []
         calendar = calendars.get(center.calendar_id or "")
         if calendar is not None:
-            calendar_rows = [
-                ShiftInterval(start=window.start, end=window.end) for window in calendar.windows
-            ]
+            calendar_rows = [ShiftInterval(start=window.start, end=window.end) for window in calendar.windows]
         work_centers.append(
             WorkCenter(
                 id=wc_id,
@@ -85,7 +90,7 @@ def to_schedule_problem(problem: RepairFlowProblem) -> tuple[ScheduleProblem, di
             )
         )
 
-    ops_by_job: dict[str, list] = {}
+    ops_by_job: dict[str, list[DomainOperation]] = {}
     for operation in problem.operations:
         ops_by_job.setdefault(operation.job_id, []).append(operation)
     for rows in ops_by_job.values():
@@ -94,12 +99,12 @@ def to_schedule_problem(problem: RepairFlowProblem) -> tuple[ScheduleProblem, di
     kernel_ops: list[Operation] = []
     for job_id, rows in ops_by_job.items():
         job = jobs_by_id[job_id]
-        for index, operation in enumerate(rows):
+        for operation in rows:
             op_id = sid("op", operation.id)
             id_map[f"op:{operation.id}"] = op_id
             predecessor = None
-            if index > 0:
-                predecessor = sid("op", rows[index - 1].id)
+            if operation.predecessor_ids:
+                predecessor = sid("op", operation.predecessor_ids[0])
             eligible = [id_map[f"wc:{wc_id}"] for wc_id in operation.eligible_work_center_ids]
             if not eligible:
                 eligible = [id_map[f"wc:{center.id}"] for center in problem.work_centers]
@@ -190,11 +195,11 @@ def to_schedule_problem(problem: RepairFlowProblem) -> tuple[ScheduleProblem, di
                     quantity_needed=1,
                 )
             )
-        for aux_id in operation.required_aux_ids:
+        for required_aux in operation.required_aux_ids:
             requirements.append(
                 OperationAuxRequirement(
                     operation_id=op_id,
-                    aux_resource_id=id_map[f"aux:{aux_id}"],
+                    aux_resource_id=id_map[f"aux:{required_aux}"],
                     quantity_needed=1,
                 )
             )
@@ -338,11 +343,7 @@ def _compile_setup(
                     to_state=to_state,
                 )
                 if minutes is None:
-                    if (
-                        from_state == to_state
-                        or from_state == "idle"
-                        or problem.policy.missing_setup == "zero"
-                    ):
+                    if from_state == to_state or problem.policy.missing_setup == "zero":
                         minutes = 0
                     else:
                         continue
@@ -365,7 +366,79 @@ def _crews_for_skills(problem: RepairFlowProblem, skills: list[str]) -> list[str
     return [crew.id for crew in problem.crews if required <= set(crew.skills)]
 
 
-def _bound_crew(problem: RepairFlowProblem, operation) -> str | None:
+def bind_concrete_crews(
+    problem: RepairFlowProblem,
+    assignments: list[PlannedAssignment],
+) -> list[PlannedAssignment]:
+    """Resolve skill-pool kernel aux into a named crew. Jury contract: operation → crew."""
+
+    ops = {op.id: op for op in problem.operations}
+    occupied: dict[str, list[tuple[datetime, datetime]]] = {crew.id: [] for crew in problem.crews}
+    bound: list[PlannedAssignment] = []
+    for assignment in sorted(assignments, key=lambda row: (row.start, row.operation_id)):
+        crew_id = assignment.crew_id
+        operation = ops.get(assignment.operation_id)
+        if crew_id is None and operation is not None and operation.required_skills:
+            crew_id = _pick_free_crew(problem, assignment, occupied, operation)
+        if crew_id:
+            occ_start = assignment.start - timedelta(minutes=int(assignment.setup_minutes or 0))
+            occupied.setdefault(crew_id, []).append((occ_start, assignment.end))
+        if crew_id == assignment.crew_id:
+            bound.append(assignment)
+            continue
+        reason = assignment.reason
+        if crew_id:
+            reason = f"{reason} bound_crew={crew_id}".strip()
+        bound.append(assignment.model_copy(update={"crew_id": crew_id, "reason": reason}))
+    by_op = {row.operation_id: row for row in bound}
+    return [by_op.get(row.operation_id, row) for row in assignments]
+
+
+def _pick_free_crew(
+    problem: RepairFlowProblem,
+    assignment: PlannedAssignment,
+    occupied: dict[str, list[tuple[datetime, datetime]]],
+    operation: DomainOperation,
+) -> str | None:
+    occ_start = assignment.start - timedelta(minutes=int(assignment.setup_minutes or 0))
+    eligible = [crew for crew in problem.crews if set(operation.required_skills) <= set(crew.skills)]
+    eligible.sort(key=lambda crew: crew.id)
+    for crew in eligible:
+        overlaps = sum(
+            1 for start, end in occupied.get(crew.id, []) if occ_start < end and start < assignment.end
+        )
+        if overlaps < crew.max_parallel:
+            return crew.id
+    return None
+
+
+def extract_frozen_from_planned(
+    *,
+    assignments: list[PlannedAssignment],
+    skip_operation_ids: set[str] | None = None,
+    reason: str = "base_plan",
+) -> list[FrozenAssignment]:
+    skip = skip_operation_ids or set()
+    out: list[FrozenAssignment] = []
+    for assignment in assignments:
+        if assignment.operation_id in skip:
+            continue
+        out.append(
+            FrozenAssignment(
+                operation_id=assignment.operation_id,
+                work_center_id=assignment.work_center_id,
+                crew_id=assignment.crew_id,
+                start=assignment.start,
+                end=assignment.end,
+                setup_minutes=assignment.setup_minutes,
+                immutable=True,
+                frozen_reason=reason,
+            )
+        )
+    return out
+
+
+def _bound_crew(problem: RepairFlowProblem, operation: DomainOperation) -> str | None:
     matching = _crews_for_skills(problem, operation.required_skills)
     if len(matching) == 1:
         return matching[0]
@@ -390,5 +463,5 @@ def _skill_pools(problem: RepairFlowProblem, id_map: dict[str, UUID]) -> dict[st
     return pools
 
 
-def occupancy_start(assignment: Assignment):
+def occupancy_start(assignment: Assignment) -> datetime:
     return assignment.start_time - timedelta(minutes=int(assignment.setup_minutes or 0))

@@ -68,7 +68,8 @@ repair data → RepairFlow model/adapter → SynAPS search → RepairFlow checke
 
 RepairFlow does not fork SynAPS. Domain GREED is the verified closer on the 52-op
 `repair-site-mvp` fixture. Kernel `RHC-GREEDY-COVER` is available and checker-clean on
-`tiny`; it is not claimed verified on the larger site.
+`tiny`; it is not claimed verified on the larger site. Published assignments name a
+concrete crew; skill-pools stay inside the kernel adapter.
 
 ## Honest scope
 

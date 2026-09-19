@@ -19,15 +19,9 @@ def test_problem_schema_accepts_mvp_fixture() -> None:
 def test_schema_examples_validate() -> None:
     root = Path(__file__).resolve().parents[1]
     examples = root / "schemas" / "examples"
-    problem_schema = json.loads(
-        (root / "schemas" / "repairflow.problem.v1.json").read_text(encoding="utf-8")
-    )
-    result_schema = json.loads(
-        (root / "schemas" / "repairflow.result.v1.json").read_text(encoding="utf-8")
-    )
-    diff_schema = json.loads(
-        (root / "schemas" / "repairflow.diff.v1.json").read_text(encoding="utf-8")
-    )
+    problem_schema = json.loads((root / "schemas" / "repairflow.problem.v1.json").read_text(encoding="utf-8"))
+    result_schema = json.loads((root / "schemas" / "repairflow.result.v1.json").read_text(encoding="utf-8"))
+    diff_schema = json.loads((root / "schemas" / "repairflow.diff.v1.json").read_text(encoding="utf-8"))
     Draft202012Validator(problem_schema).validate(
         json.loads((examples / "tiny.problem.json").read_text(encoding="utf-8"))
     )

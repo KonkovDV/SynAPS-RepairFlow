@@ -6,7 +6,7 @@ from datetime import datetime
 from html import escape
 from typing import Any
 
-from repairflow.model import RepairFlowProblem, RepairFlowResult, Violation
+from repairflow.model import PlannedAssignment, RepairFlowProblem, RepairFlowResult, Violation
 from repairflow.reasons import REASON_RU
 from repairflow.versions import REPAIRFLOW_VERSION, SYNAPS_COMMIT
 
@@ -89,8 +89,7 @@ def render_html(problem: RepairFlowProblem, result: RepairFlowResult) -> str:
         title=f"RepairFlow {problem.instance_id}",
         dirty=dirty,
         body=(
-            banner
-            + f"<p class='meta'>pin {escape(SYNAPS_COMMIT[:12])} · {escape(result.solver_config)} · "
+            banner + f"<p class='meta'>pin {escape(SYNAPS_COMMIT[:12])} · {escape(result.solver_config)} · "
             f"{len(result.assignments)}/{len(problem.operations)} ops · "
             f"синтетика, не клиентский пилот</p>"
             + _hashes(result)
@@ -128,7 +127,7 @@ def _gantt(problem: RepairFlowProblem, result: RepairFlowResult) -> str:
     ops = {op.id: op for op in problem.operations}
     t0, t1 = _horizon(problem, result)
     span = max(1.0, (t1 - t0).total_seconds())
-    by_center: dict[str, list] = {wc.code: [] for wc in problem.work_centers}
+    by_center: dict[str, list[PlannedAssignment]] = {wc.code: [] for wc in problem.work_centers}
     id_to_code = {wc.id: wc.code for wc in problem.work_centers}
     dirty_ops = {row.operation_id for row in result.violations if row.operation_id}
     for asn in result.assignments:
@@ -139,7 +138,7 @@ def _gantt(problem: RepairFlowProblem, result: RepairFlowResult) -> str:
         bars = []
         for asn in sorted(rows, key=lambda item: item.start):
             op = ops.get(asn.operation_id)
-            kind = op.id.split("-")[-1] if op is None else _kind(op)
+            kind = "restore" if op is None else _kind(op)
             left = ((asn.start - t0).total_seconds() / span) * 100
             width = max(0.4, ((asn.end - asn.start).total_seconds() / span) * 100)
             color = KIND_COLOR.get(kind, "#4a5568")
@@ -153,10 +152,7 @@ def _gantt(problem: RepairFlowProblem, result: RepairFlowResult) -> str:
             f'<div class="lane"><div class="label">{escape(code)}</div>'
             f'<div class="track">{"".join(bars)}</div></div>'
         )
-    return (
-        '<section id="gantt"><h2>Gantt по постам</h2>'
-        f'<div class="gantt">{"".join(lanes)}</div></section>'
-    )
+    return f'<section id="gantt"><h2>Gantt по постам</h2><div class="gantt">{"".join(lanes)}</div></section>'
 
 
 def _assignments(problem: RepairFlowProblem, result: RepairFlowResult) -> str:

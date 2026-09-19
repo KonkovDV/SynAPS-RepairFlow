@@ -3,14 +3,16 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Any
 from uuid import UUID
 
 from synaps.model import Assignment, ScheduleProblem, ScheduleResult
 
-from repairflow.adapter import lookup_setup_minutes, reverse_ids
+from repairflow.adapter import bind_concrete_crews, lookup_setup_minutes, reverse_ids
 from repairflow.model import (
+    Calendar,
+    Operation,
     PlannedAssignment,
     RepairFlowProblem,
     Violation,
@@ -36,7 +38,7 @@ def check_plan(
             )
         ]
 
-    mapped = _normalize_assignments(assignments, id_map)
+    mapped = bind_concrete_crews(problem, _normalize_assignments(assignments, id_map))
     issues = _id_map_issues(problem, schedule_problem, id_map)
     if issues:
         return issues
@@ -518,7 +520,13 @@ def _calendars_windows_horizon(
     return out
 
 
-def _calendar_fit(calendar, assignment: PlannedAssignment, occ_start, *, resource_id: str) -> list[Violation]:
+def _calendar_fit(
+    calendar: Calendar | None,
+    assignment: PlannedAssignment,
+    occ_start: datetime,
+    *,
+    resource_id: str,
+) -> list[Violation]:
     if calendar is None or not calendar.windows:
         return []
     for window in calendar.windows:
@@ -658,6 +666,7 @@ def _setup(problem: RepairFlowProblem, assignments: list[PlannedAssignment]) -> 
                         start=asn.start,
                         end=asn.end,
                         suggested_relaxation=SUGGESTIONS[ReasonCode.MISSING_SETUP],
+                        details={"from_state": previous_state, "to_state": op.setup_state},
                     )
                 )
             elif int(asn.setup_minutes or 0) != int(expected):
@@ -730,7 +739,7 @@ def _job_of(problem: RepairFlowProblem, operation_id: str) -> str | None:
     return None if op is None else op.job_id
 
 
-def _op(problem: RepairFlowProblem, operation_id: str):
+def _op(problem: RepairFlowProblem, operation_id: str) -> Operation | None:
     return next((row for row in problem.operations if row.id == operation_id), None)
 
 

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
-from typing import Literal
+from typing import Any, Literal
 
 from repairflow.model import (
     AuxResource,
@@ -50,7 +50,7 @@ def synthesize(preset: str = "repair-site-mvp", *, seed: int = 42) -> RepairFlow
     return problem
 
 
-def corrupt_plan(assignments: list[dict], *, seed: int = 42) -> list[dict]:
+def corrupt_plan(assignments: list[dict[str, Any]], *, seed: int = 42) -> list[dict[str, Any]]:
     """Intentionally break a feasible plan for the fail-closed demo."""
 
     if not assignments:
@@ -244,9 +244,7 @@ def _shift_calendar(calendar_id: str, start: datetime, *, days: int) -> Calendar
     windows = []
     for day in range(days):
         day0 = start + timedelta(days=day)
-        windows.append(
-            CalendarWindow(start=day0 + timedelta(hours=6), end=day0 + timedelta(hours=22))
-        )
+        windows.append(CalendarWindow(start=day0 + timedelta(hours=6), end=day0 + timedelta(hours=22)))
     return Calendar(id=calendar_id, code=calendar_id, windows=windows)
 
 
@@ -275,6 +273,7 @@ def _jobs(
                 priority=400 + index,
             )
         )
+        steps: tuple[tuple[str, str, int, bool, bool], ...]
         steps = _STEPS_SHORT if short or index % 3 == 2 else _STEPS_FULL
         if unit == "electrical":
             steps = tuple(

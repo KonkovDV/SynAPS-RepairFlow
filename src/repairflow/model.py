@@ -31,9 +31,9 @@ from repairflow.limits import (
     MAX_WORK_CENTERS,
 )
 
-SCHEMA_PROBLEM = "repairflow.problem.v1"
-SCHEMA_RESULT = "repairflow.result.v1"
-SCHEMA_DIFF = "repairflow.diff.v1"
+SCHEMA_PROBLEM: Literal["repairflow.problem.v1"] = "repairflow.problem.v1"
+SCHEMA_RESULT: Literal["repairflow.result.v1"] = "repairflow.result.v1"
+SCHEMA_DIFF: Literal["repairflow.diff.v1"] = "repairflow.diff.v1"
 
 DataProvenance = Literal[
     "synthetic",
@@ -363,6 +363,7 @@ class RepairFlowProblem(RepairFlowModel):
                 issues.append(f"frozen assignment references unknown crew {frozen.crew_id}")
 
         issues.extend(_dag_issues(self.operations, self.policy.unsupported_dag))
+        issues.extend(_linear_card_issues(self.operations))
         issues.extend(_setup_issues(self))
 
         if issues:
@@ -406,9 +407,7 @@ def _dag_issues(operations: list[Operation], policy: str) -> list[str]:
     issues: list[str] = []
     branching = [op.id for op in operations if len(op.predecessor_ids) > 1]
     if branching and policy == "reject":
-        issues.append(
-            "unsupported DAG (multiple predecessors): " + ", ".join(branching[:8])
-        )
+        issues.append("unsupported DAG (multiple predecessors): " + ", ".join(branching[:8]))
 
     indegree = {op.id: len(op.predecessor_ids) for op in operations}
     queue = deque([op_id for op_id, deg in indegree.items() if deg == 0])
@@ -425,10 +424,30 @@ def _dag_issues(operations: list[Operation], policy: str) -> list[str]:
     return issues
 
 
+def _linear_card_issues(operations: list[Operation]) -> list[str]:
+    """MVP technology cards are linear: predecessor_ids must equal previous sequence."""
+
+    by_job: dict[str, list[Operation]] = defaultdict(list)
+    for operation in operations:
+        by_job[operation.job_id].append(operation)
+    issues: list[str] = []
+    for rows in by_job.values():
+        ordered = sorted(rows, key=lambda item: (item.sequence, item.id))
+        for index, operation in enumerate(ordered):
+            expected: list[str] = [] if index == 0 else [ordered[index - 1].id]
+            actual = list(operation.predecessor_ids)
+            if actual != expected:
+                issues.append(
+                    f"operation {operation.id}: predecessor_ids {actual} must match "
+                    f"linear sequence {expected}"
+                )
+    return issues
+
+
 def _setup_issues(problem: RepairFlowProblem) -> list[str]:
     if problem.policy.missing_setup != "reject":
         return []
-    states = {op.setup_state for op in problem.operations if op.setup_state}
+    states = {op.setup_state for op in problem.operations if op.setup_state} | {"idle"}
     if not states:
         return []
     keys: set[tuple[str | None, str, str]] = set()

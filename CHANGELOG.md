@@ -7,4 +7,6 @@
   intentionally broken demo, SHA pin `6178c93b705ff58be21fa74a98651883a2da1169`.
 - One-command readiness: `repairflow demo --out out` (FIFO dirty, GREED verified,
   CP-SAT OPTIMAL on `tiny`, broken plan exit 2, frozen slots kept).
+- Linear tech-cards: `predecessor_ids` must match `sequence`. Published assignments
+  name a concrete crew. Missing `idle → first_state` is fail-closed as `MISSING_SETUP`.
 - Laboratory prototype. Not a customer pilot.
