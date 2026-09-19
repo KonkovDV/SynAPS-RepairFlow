@@ -44,3 +44,14 @@ def test_unknown_fields_are_rejected() -> None:
     except Exception:
         raised = True
     assert raised
+
+
+def test_verify_schema_tool_accepts_committed_examples() -> None:
+    import importlib.util
+
+    path = Path(__file__).resolve().parents[1] / "tools" / "verify_schema.py"
+    spec = importlib.util.spec_from_file_location("repairflow_verify_schema", path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    assert module.main() == 0

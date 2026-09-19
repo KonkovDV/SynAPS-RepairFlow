@@ -47,6 +47,8 @@ The command:
 
 Exit `0` only if the clean plan verifies and the broken plan stays fail-closed.
 
+Evidence protocol: [`docs/SOTA_EVIDENCE_PROTOCOL.md`](docs/SOTA_EVIDENCE_PROTOCOL.md). Committed JSON examples are checked against public schemas by `python tools/verify_schema.py`.
+
 ## CLI
 
 ```bash
