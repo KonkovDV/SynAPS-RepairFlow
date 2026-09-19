@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/KonkovDV/SynAPS-RepairFlow/schemas/repairflow.result.v1.json",
+  "title": "RepairFlow Result v1",
+  "type": "object",
+  "required": [
+    "status",
+    "verified_feasible",
+    "input_hash",
+    "config_hash",
+    "repairflow_version",
+    "synaps_commit",
+    "claim_level",
+    "data_provenance",
+    "violations"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "schema_version": { "const": "repairflow.result.v1" },
+    "status": {
+      "enum": [
+        "OPTIMAL",
+        "FEASIBLE",
+        "HEURISTIC_FEASIBLE",
+        "PARTIAL",
+        "INFEASIBLE",
+        "ERROR",
+        "NOT_VERIFIED",
+        "MANUAL_REVIEW_REQUIRED"
+      ]
+    },
+    "verified_feasible": { "type": "boolean" },
+    "input_hash": { "type": "string" },
+    "config_hash": { "type": "string" },
+    "result_hash": { "type": "string" },
+    "repairflow_version": { "type": "string" },
+    "synaps_commit": { "type": "string", "minLength": 40, "maxLength": 40 },
+    "claim_level": { "type": "string" },
+    "data_provenance": { "type": "string" },
+    "violations": { "type": "array" },
+    "assignments": { "type": "array" },
+    "kernel_status": { "type": ["string", "null"] },
+    "exit_code": { "type": "integer" }
+  }
+}

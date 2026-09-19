@@ -1,0 +1,725 @@
+{
+  "schema_version": "repairflow.problem.v1",
+  "instance_id": "tiny-repair",
+  "data_provenance": "synthetic",
+  "planning_horizon": {
+    "start": "2026-01-12T00:00:00Z",
+    "end": "2026-01-14T00:00:00Z"
+  },
+  "jobs": [
+    {
+      "id": "JOB-01",
+      "external_ref": "JOB-01",
+      "asset_code": "GEA-001",
+      "unit_type": "gearbox",
+      "due_date": "2026-01-12T18:00:00Z",
+      "release_date": "2026-01-12T06:00:00Z",
+      "priority": 400,
+      "domain_attributes": {}
+    },
+    {
+      "id": "JOB-02",
+      "external_ref": "JOB-02",
+      "asset_code": "COM-002",
+      "unit_type": "compressor",
+      "due_date": "2026-01-13T00:00:00Z",
+      "release_date": "2026-01-12T06:00:00Z",
+      "priority": 401,
+      "domain_attributes": {}
+    },
+    {
+      "id": "JOB-03",
+      "external_ref": "JOB-03",
+      "asset_code": "ELE-003",
+      "unit_type": "electrical",
+      "due_date": "2026-01-13T06:00:00Z",
+      "release_date": "2026-01-12T06:00:00Z",
+      "priority": 402,
+      "domain_attributes": {}
+    }
+  ],
+  "operations": [
+    {
+      "id": "JOB-01-01",
+      "job_id": "JOB-01",
+      "sequence": 1,
+      "duration_min": 30,
+      "predecessor_ids": [],
+      "eligible_work_center_ids": [
+        "POST-U1",
+        "POST-TEST"
+      ],
+      "required_skills": [
+        "diagnostics"
+      ],
+      "required_aux_ids": [],
+      "required_spare_ids": [],
+      "setup_state": "gearbox",
+      "earliest_start": null,
+      "latest_finish": null,
+      "domain_attributes": {}
+    },
+    {
+      "id": "JOB-01-02",
+      "job_id": "JOB-01",
+      "sequence": 2,
+      "duration_min": 70,
+      "predecessor_ids": [
+        "JOB-01-01"
+      ],
+      "eligible_work_center_ids": [
+        "POST-U1",
+        "POST-TEST"
+      ],
+      "required_skills": [
+        "mechanical"
+      ],
+      "required_aux_ids": [],
+      "required_spare_ids": [
+        "SP-BEARING"
+      ],
+      "setup_state": "gearbox",
+      "earliest_start": null,
+      "latest_finish": null,
+      "domain_attributes": {}
+    },
+    {
+      "id": "JOB-01-03",
+      "job_id": "JOB-01",
+      "sequence": 3,
+      "duration_min": 35,
+      "predecessor_ids": [
+        "JOB-01-02"
+      ],
+      "eligible_work_center_ids": [
+        "POST-TEST"
+      ],
+      "required_skills": [
+        "test"
+      ],
+      "required_aux_ids": [],
+      "required_spare_ids": [],
+      "setup_state": "gearbox",
+      "earliest_start": null,
+      "latest_finish": null,
+      "domain_attributes": {}
+    },
+    {
+      "id": "JOB-02-01",
+      "job_id": "JOB-02",
+      "sequence": 1,
+      "duration_min": 30,
+      "predecessor_ids": [],
+      "eligible_work_center_ids": [
+        "POST-U1",
+        "POST-TEST"
+      ],
+      "required_skills": [
+        "diagnostics"
+      ],
+      "required_aux_ids": [],
+      "required_spare_ids": [],
+      "setup_state": "compressor",
+      "earliest_start": null,
+      "latest_finish": null,
+      "domain_attributes": {}
+    },
+    {
+      "id": "JOB-02-02",
+      "job_id": "JOB-02",
+      "sequence": 2,
+      "duration_min": 70,
+      "predecessor_ids": [
+        "JOB-02-01"
+      ],
+      "eligible_work_center_ids": [
+        "POST-U1",
+        "POST-TEST"
+      ],
+      "required_skills": [
+        "mechanical"
+      ],
+      "required_aux_ids": [],
+      "required_spare_ids": [
+        "SP-SEAL"
+      ],
+      "setup_state": "compressor",
+      "earliest_start": null,
+      "latest_finish": null,
+      "domain_attributes": {}
+    },
+    {
+      "id": "JOB-02-03",
+      "job_id": "JOB-02",
+      "sequence": 3,
+      "duration_min": 35,
+      "predecessor_ids": [
+        "JOB-02-02"
+      ],
+      "eligible_work_center_ids": [
+        "POST-TEST"
+      ],
+      "required_skills": [
+        "test"
+      ],
+      "required_aux_ids": [],
+      "required_spare_ids": [],
+      "setup_state": "compressor",
+      "earliest_start": null,
+      "latest_finish": null,
+      "domain_attributes": {}
+    },
+    {
+      "id": "JOB-03-01",
+      "job_id": "JOB-03",
+      "sequence": 1,
+      "duration_min": 30,
+      "predecessor_ids": [],
+      "eligible_work_center_ids": [
+        "POST-U1",
+        "POST-TEST"
+      ],
+      "required_skills": [
+        "diagnostics"
+      ],
+      "required_aux_ids": [],
+      "required_spare_ids": [],
+      "setup_state": "electrical",
+      "earliest_start": null,
+      "latest_finish": null,
+      "domain_attributes": {}
+    },
+    {
+      "id": "JOB-03-02",
+      "job_id": "JOB-03",
+      "sequence": 2,
+      "duration_min": 70,
+      "predecessor_ids": [
+        "JOB-03-01"
+      ],
+      "eligible_work_center_ids": [
+        "POST-U1",
+        "POST-TEST"
+      ],
+      "required_skills": [
+        "electrical"
+      ],
+      "required_aux_ids": [],
+      "required_spare_ids": [
+        "SP-BEARING"
+      ],
+      "setup_state": "electrical",
+      "earliest_start": null,
+      "latest_finish": null,
+      "domain_attributes": {}
+    },
+    {
+      "id": "JOB-03-03",
+      "job_id": "JOB-03",
+      "sequence": 3,
+      "duration_min": 35,
+      "predecessor_ids": [
+        "JOB-03-02"
+      ],
+      "eligible_work_center_ids": [
+        "POST-TEST"
+      ],
+      "required_skills": [
+        "test"
+      ],
+      "required_aux_ids": [],
+      "required_spare_ids": [],
+      "setup_state": "electrical",
+      "earliest_start": null,
+      "latest_finish": null,
+      "domain_attributes": {}
+    }
+  ],
+  "work_centers": [
+    {
+      "id": "POST-U1",
+      "code": "POST-U1",
+      "capability_group": "universal",
+      "calendar_id": "CAL-DAY",
+      "max_parallel": 1,
+      "eligible_unit_types": [
+        "engine",
+        "gearbox",
+        "compressor",
+        "electrical"
+      ],
+      "domain_attributes": {}
+    },
+    {
+      "id": "POST-TEST",
+      "code": "POST-TEST",
+      "capability_group": "test",
+      "calendar_id": "CAL-DAY",
+      "max_parallel": 1,
+      "eligible_unit_types": [
+        "engine",
+        "gearbox",
+        "compressor",
+        "electrical"
+      ],
+      "domain_attributes": {}
+    }
+  ],
+  "crews": [
+    {
+      "id": "CREW-TEST",
+      "code": "CREW-TEST",
+      "skills": [
+        "test"
+      ],
+      "calendar_id": "CAL-DAY",
+      "max_parallel": 1,
+      "domain_attributes": {}
+    },
+    {
+      "id": "CREW-DIAG",
+      "code": "CREW-DIAG",
+      "skills": [
+        "diagnostics"
+      ],
+      "calendar_id": "CAL-DAY",
+      "max_parallel": 1,
+      "domain_attributes": {}
+    },
+    {
+      "id": "CREW-MECH",
+      "code": "CREW-MECH",
+      "skills": [
+        "mechanical"
+      ],
+      "calendar_id": "CAL-DAY",
+      "max_parallel": 1,
+      "domain_attributes": {}
+    },
+    {
+      "id": "CREW-ELEC",
+      "code": "CREW-ELEC",
+      "skills": [
+        "electrical"
+      ],
+      "calendar_id": "CAL-DAY",
+      "max_parallel": 1,
+      "domain_attributes": {}
+    }
+  ],
+  "aux_resources": [
+    {
+      "id": "AUX-CRANE",
+      "code": "AUX-CRANE",
+      "resource_type": "crane",
+      "capacity": 2,
+      "calendar_id": null,
+      "domain_attributes": {}
+    },
+    {
+      "id": "AUX-JIG",
+      "code": "AUX-JIG",
+      "resource_type": "jig",
+      "capacity": 1,
+      "calendar_id": null,
+      "domain_attributes": {}
+    }
+  ],
+  "setup_matrix": [
+    {
+      "from_state": "idle",
+      "to_state": "idle",
+      "duration_min": 0,
+      "work_center_id": "POST-U1",
+      "domain_attributes": {}
+    },
+    {
+      "from_state": "idle",
+      "to_state": "engine",
+      "duration_min": 0,
+      "work_center_id": "POST-U1",
+      "domain_attributes": {}
+    },
+    {
+      "from_state": "idle",
+      "to_state": "gearbox",
+      "duration_min": 0,
+      "work_center_id": "POST-U1",
+      "domain_attributes": {}
+    },
+    {
+      "from_state": "idle",
+      "to_state": "compressor",
+      "duration_min": 0,
+      "work_center_id": "POST-U1",
+      "domain_attributes": {}
+    },
+    {
+      "from_state": "idle",
+      "to_state": "electrical",
+      "duration_min": 0,
+      "work_center_id": "POST-U1",
+      "domain_attributes": {}
+    },
+    {
+      "from_state": "engine",
+      "to_state": "idle",
+      "duration_min": 25,
+      "work_center_id": "POST-U1",
+      "domain_attributes": {}
+    },
+    {
+      "from_state": "engine",
+      "to_state": "engine",
+      "duration_min": 0,
+      "work_center_id": "POST-U1",
+      "domain_attributes": {}
+    },
+    {
+      "from_state": "engine",
+      "to_state": "gearbox",
+      "duration_min": 25,
+      "work_center_id": "POST-U1",
+      "domain_attributes": {}
+    },
+    {
+      "from_state": "engine",
+      "to_state": "compressor",
+      "duration_min": 25,
+      "work_center_id": "POST-U1",
+      "domain_attributes": {}
+    },
+    {
+      "from_state": "engine",
+      "to_state": "electrical",
+      "duration_min": 25,
+      "work_center_id": "POST-U1",
+      "domain_attributes": {}
+    },
+    {
+      "from_state": "gearbox",
+      "to_state": "idle",
+      "duration_min": 25,
+      "work_center_id": "POST-U1",
+      "domain_attributes": {}
+    },
+    {
+      "from_state": "gearbox",
+      "to_state": "engine",
+      "duration_min": 25,
+      "work_center_id": "POST-U1",
+      "domain_attributes": {}
+    },
+    {
+      "from_state": "gearbox",
+      "to_state": "gearbox",
+      "duration_min": 0,
+      "work_center_id": "POST-U1",
+      "domain_attributes": {}
+    },
+    {
+      "from_state": "gearbox",
+      "to_state": "compressor",
+      "duration_min": 25,
+      "work_center_id": "POST-U1",
+      "domain_attributes": {}
+    },
+    {
+      "from_state": "gearbox",
+      "to_state": "electrical",
+      "duration_min": 25,
+      "work_center_id": "POST-U1",
+      "domain_attributes": {}
+    },
+    {
+      "from_state": "compressor",
+      "to_state": "idle",
+      "duration_min": 25,
+      "work_center_id": "POST-U1",
+      "domain_attributes": {}
+    },
+    {
+      "from_state": "compressor",
+      "to_state": "engine",
+      "duration_min": 25,
+      "work_center_id": "POST-U1",
+      "domain_attributes": {}
+    },
+    {
+      "from_state": "compressor",
+      "to_state": "gearbox",
+      "duration_min": 25,
+      "work_center_id": "POST-U1",
+      "domain_attributes": {}
+    },
+    {
+      "from_state": "compressor",
+      "to_state": "compressor",
+      "duration_min": 0,
+      "work_center_id": "POST-U1",
+      "domain_attributes": {}
+    },
+    {
+      "from_state": "compressor",
+      "to_state": "electrical",
+      "duration_min": 25,
+      "work_center_id": "POST-U1",
+      "domain_attributes": {}
+    },
+    {
+      "from_state": "electrical",
+      "to_state": "idle",
+      "duration_min": 25,
+      "work_center_id": "POST-U1",
+      "domain_attributes": {}
+    },
+    {
+      "from_state": "electrical",
+      "to_state": "engine",
+      "duration_min": 25,
+      "work_center_id": "POST-U1",
+      "domain_attributes": {}
+    },
+    {
+      "from_state": "electrical",
+      "to_state": "gearbox",
+      "duration_min": 25,
+      "work_center_id": "POST-U1",
+      "domain_attributes": {}
+    },
+    {
+      "from_state": "electrical",
+      "to_state": "compressor",
+      "duration_min": 25,
+      "work_center_id": "POST-U1",
+      "domain_attributes": {}
+    },
+    {
+      "from_state": "electrical",
+      "to_state": "electrical",
+      "duration_min": 0,
+      "work_center_id": "POST-U1",
+      "domain_attributes": {}
+    },
+    {
+      "from_state": "idle",
+      "to_state": "idle",
+      "duration_min": 0,
+      "work_center_id": "POST-TEST",
+      "domain_attributes": {}
+    },
+    {
+      "from_state": "idle",
+      "to_state": "engine",
+      "duration_min": 0,
+      "work_center_id": "POST-TEST",
+      "domain_attributes": {}
+    },
+    {
+      "from_state": "idle",
+      "to_state": "gearbox",
+      "duration_min": 0,
+      "work_center_id": "POST-TEST",
+      "domain_attributes": {}
+    },
+    {
+      "from_state": "idle",
+      "to_state": "compressor",
+      "duration_min": 0,
+      "work_center_id": "POST-TEST",
+      "domain_attributes": {}
+    },
+    {
+      "from_state": "idle",
+      "to_state": "electrical",
+      "duration_min": 0,
+      "work_center_id": "POST-TEST",
+      "domain_attributes": {}
+    },
+    {
+      "from_state": "engine",
+      "to_state": "idle",
+      "duration_min": 25,
+      "work_center_id": "POST-TEST",
+      "domain_attributes": {}
+    },
+    {
+      "from_state": "engine",
+      "to_state": "engine",
+      "duration_min": 0,
+      "work_center_id": "POST-TEST",
+      "domain_attributes": {}
+    },
+    {
+      "from_state": "engine",
+      "to_state": "gearbox",
+      "duration_min": 25,
+      "work_center_id": "POST-TEST",
+      "domain_attributes": {}
+    },
+    {
+      "from_state": "engine",
+      "to_state": "compressor",
+      "duration_min": 25,
+      "work_center_id": "POST-TEST",
+      "domain_attributes": {}
+    },
+    {
+      "from_state": "engine",
+      "to_state": "electrical",
+      "duration_min": 25,
+      "work_center_id": "POST-TEST",
+      "domain_attributes": {}
+    },
+    {
+      "from_state": "gearbox",
+      "to_state": "idle",
+      "duration_min": 25,
+      "work_center_id": "POST-TEST",
+      "domain_attributes": {}
+    },
+    {
+      "from_state": "gearbox",
+      "to_state": "engine",
+      "duration_min": 25,
+      "work_center_id": "POST-TEST",
+      "domain_attributes": {}
+    },
+    {
+      "from_state": "gearbox",
+      "to_state": "gearbox",
+      "duration_min": 0,
+      "work_center_id": "POST-TEST",
+      "domain_attributes": {}
+    },
+    {
+      "from_state": "gearbox",
+      "to_state": "compressor",
+      "duration_min": 25,
+      "work_center_id": "POST-TEST",
+      "domain_attributes": {}
+    },
+    {
+      "from_state": "gearbox",
+      "to_state": "electrical",
+      "duration_min": 25,
+      "work_center_id": "POST-TEST",
+      "domain_attributes": {}
+    },
+    {
+      "from_state": "compressor",
+      "to_state": "idle",
+      "duration_min": 25,
+      "work_center_id": "POST-TEST",
+      "domain_attributes": {}
+    },
+    {
+      "from_state": "compressor",
+      "to_state": "engine",
+      "duration_min": 25,
+      "work_center_id": "POST-TEST",
+      "domain_attributes": {}
+    },
+    {
+      "from_state": "compressor",
+      "to_state": "gearbox",
+      "duration_min": 25,
+      "work_center_id": "POST-TEST",
+      "domain_attributes": {}
+    },
+    {
+      "from_state": "compressor",
+      "to_state": "compressor",
+      "duration_min": 0,
+      "work_center_id": "POST-TEST",
+      "domain_attributes": {}
+    },
+    {
+      "from_state": "compressor",
+      "to_state": "electrical",
+      "duration_min": 25,
+      "work_center_id": "POST-TEST",
+      "domain_attributes": {}
+    },
+    {
+      "from_state": "electrical",
+      "to_state": "idle",
+      "duration_min": 25,
+      "work_center_id": "POST-TEST",
+      "domain_attributes": {}
+    },
+    {
+      "from_state": "electrical",
+      "to_state": "engine",
+      "duration_min": 25,
+      "work_center_id": "POST-TEST",
+      "domain_attributes": {}
+    },
+    {
+      "from_state": "electrical",
+      "to_state": "gearbox",
+      "duration_min": 25,
+      "work_center_id": "POST-TEST",
+      "domain_attributes": {}
+    },
+    {
+      "from_state": "electrical",
+      "to_state": "compressor",
+      "duration_min": 25,
+      "work_center_id": "POST-TEST",
+      "domain_attributes": {}
+    },
+    {
+      "from_state": "electrical",
+      "to_state": "electrical",
+      "duration_min": 0,
+      "work_center_id": "POST-TEST",
+      "domain_attributes": {}
+    }
+  ],
+  "calendars": [
+    {
+      "id": "CAL-DAY",
+      "code": "CAL-DAY",
+      "windows": [
+        {
+          "start": "2026-01-12T06:00:00Z",
+          "end": "2026-01-12T22:00:00Z"
+        },
+        {
+          "start": "2026-01-13T06:00:00Z",
+          "end": "2026-01-13T22:00:00Z"
+        }
+      ],
+      "domain_attributes": {}
+    }
+  ],
+  "frozen_assignments": [],
+  "spares": [
+    {
+      "id": "SP-BEARING",
+      "code": "SP-BEARING",
+      "quantity": 8,
+      "available_from": "2026-01-12T00:00:00Z",
+      "domain_attributes": {}
+    },
+    {
+      "id": "SP-SEAL",
+      "code": "SP-SEAL",
+      "quantity": 8,
+      "available_from": "2026-01-12T00:00:00Z",
+      "domain_attributes": {}
+    }
+  ],
+  "policy": {
+    "unknown_fields": "reject",
+    "missing_setup": "reject",
+    "unsupported_dag": "reject",
+    "allow_partial_plan": false
+  },
+  "domain_attributes": {
+    "seed": 1,
+    "preset": "tiny",
+    "not_customer_data": true
+  }
+}

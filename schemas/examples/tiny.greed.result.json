@@ -1,0 +1,132 @@
+{
+  "schema_version": "repairflow.result.v1",
+  "instance_id": "tiny-repair",
+  "status": "HEURISTIC_FEASIBLE",
+  "verified_feasible": true,
+  "input_hash": "05cc7d86fba4fd261ddbc6a190caed0cce922585c543d8cac5d658afc4fe7433",
+  "config_hash": "07b4ab0e06531c3e68e5c2dd55790277784559d5e1439d5456db3af892bc7b36",
+  "result_hash": "a14181994feef11322c478c440b9e285811f2eddf0f95c69afa068001d84f523",
+  "repairflow_version": "0.1.0",
+  "synaps_commit": "6178c93b705ff58be21fa74a98651883a2da1169",
+  "claim_level": "experiment",
+  "data_provenance": "synthetic",
+  "kernel_status": "feasible",
+  "solver_config": "GREED",
+  "exit_code": 0,
+  "assignments": [
+    {
+      "operation_id": "JOB-01-01",
+      "work_center_id": "POST-TEST",
+      "start": "2026-01-12T06:00:00Z",
+      "end": "2026-01-12T06:30:00Z",
+      "crew_id": "CREW-DIAG",
+      "aux_ids": [],
+      "setup_minutes": 0,
+      "reason": "job=JOB-01 post=POST-TEST crew=CREW-DIAG setup=0m"
+    },
+    {
+      "operation_id": "JOB-02-01",
+      "work_center_id": "POST-U1",
+      "start": "2026-01-12T06:30:00Z",
+      "end": "2026-01-12T07:00:00Z",
+      "crew_id": "CREW-DIAG",
+      "aux_ids": [],
+      "setup_minutes": 0,
+      "reason": "job=JOB-02 post=POST-U1 crew=CREW-DIAG setup=0m"
+    },
+    {
+      "operation_id": "JOB-01-02",
+      "work_center_id": "POST-TEST",
+      "start": "2026-01-12T06:30:00Z",
+      "end": "2026-01-12T07:40:00Z",
+      "crew_id": "CREW-MECH",
+      "aux_ids": [],
+      "setup_minutes": 0,
+      "reason": "job=JOB-01 post=POST-TEST crew=CREW-MECH setup=0m"
+    },
+    {
+      "operation_id": "JOB-01-03",
+      "work_center_id": "POST-TEST",
+      "start": "2026-01-12T07:40:00Z",
+      "end": "2026-01-12T08:15:00Z",
+      "crew_id": "CREW-TEST",
+      "aux_ids": [],
+      "setup_minutes": 0,
+      "reason": "job=JOB-01 post=POST-TEST crew=CREW-TEST setup=0m"
+    },
+    {
+      "operation_id": "JOB-02-02",
+      "work_center_id": "POST-U1",
+      "start": "2026-01-12T07:40:00Z",
+      "end": "2026-01-12T08:50:00Z",
+      "crew_id": "CREW-MECH",
+      "aux_ids": [],
+      "setup_minutes": 0,
+      "reason": "job=JOB-02 post=POST-U1 crew=CREW-MECH setup=0m"
+    },
+    {
+      "operation_id": "JOB-02-03",
+      "work_center_id": "POST-TEST",
+      "start": "2026-01-12T08:50:00Z",
+      "end": "2026-01-12T09:25:00Z",
+      "crew_id": "CREW-TEST",
+      "aux_ids": [],
+      "setup_minutes": 25,
+      "reason": "job=JOB-02 post=POST-TEST crew=CREW-TEST setup=25m"
+    },
+    {
+      "operation_id": "JOB-03-01",
+      "work_center_id": "POST-U1",
+      "start": "2026-01-12T09:15:00Z",
+      "end": "2026-01-12T09:45:00Z",
+      "crew_id": "CREW-DIAG",
+      "aux_ids": [],
+      "setup_minutes": 25,
+      "reason": "job=JOB-03 post=POST-U1 crew=CREW-DIAG setup=25m"
+    },
+    {
+      "operation_id": "JOB-03-02",
+      "work_center_id": "POST-U1",
+      "start": "2026-01-12T09:45:00Z",
+      "end": "2026-01-12T10:55:00Z",
+      "crew_id": "CREW-ELEC",
+      "aux_ids": [],
+      "setup_minutes": 0,
+      "reason": "job=JOB-03 post=POST-U1 crew=CREW-ELEC setup=0m"
+    },
+    {
+      "operation_id": "JOB-03-03",
+      "work_center_id": "POST-TEST",
+      "start": "2026-01-12T10:55:00Z",
+      "end": "2026-01-12T11:30:00Z",
+      "crew_id": "CREW-TEST",
+      "aux_ids": [],
+      "setup_minutes": 25,
+      "reason": "job=JOB-03 post=POST-TEST crew=CREW-TEST setup=25m"
+    }
+  ],
+  "rejected": [],
+  "violations": [],
+  "objective": {
+    "makespan_minutes": 330.0,
+    "total_setup_minutes": 0.0,
+    "total_tardiness_minutes": 0.0,
+    "coverage": 1.0,
+    "unscheduled_operations": 0
+  },
+  "metadata": {
+    "repairflow_version": "0.1.0",
+    "synaps_commit": "6178c93b705ff58be21fa74a98651883a2da1169",
+    "claim_level": "experiment",
+    "iso16290_trl": 4,
+    "data_provenance": "synthetic",
+    "input_hash": "05cc7d86fba4fd261ddbc6a190caed0cce922585c543d8cac5d658afc4fe7433",
+    "config_hash": "07b4ab0e06531c3e68e5c2dd55790277784559d5e1439d5456db3af892bc7b36",
+    "metric_tag": "synthetic_experiment",
+    "solver_config": "GREED",
+    "kernel_status": "feasible",
+    "coverage_class": "full",
+    "hard_violation_count": 0,
+    "engine_violations": []
+  }
+}

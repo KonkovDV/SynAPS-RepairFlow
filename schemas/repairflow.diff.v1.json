@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/KonkovDV/SynAPS-RepairFlow/schemas/repairflow.diff.v1.json",
+  "title": "RepairFlow Diff v1",
+  "type": "object",
+  "required": ["schema_version", "churn"],
+  "additionalProperties": true,
+  "properties": {
+    "schema_version": { "const": "repairflow.diff.v1" },
+    "churn": { "type": "object" },
+    "broken_frozen_assignments": { "type": "array" },
+    "unchanged_frozen_assignments": { "type": "array" }
+  }
+}

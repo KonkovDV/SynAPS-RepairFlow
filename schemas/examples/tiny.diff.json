@@ -1,0 +1,231 @@
+{
+  "schema_version": "repairflow.diff.v1",
+  "instance_id": "tiny-repair",
+  "baseline_solver": "FIFO",
+  "candidate_solver": "GREED",
+  "baseline_status": "NOT_VERIFIED",
+  "candidate_status": "HEURISTIC_FEASIBLE",
+  "baseline_verified": false,
+  "candidate_verified": true,
+  "added_assignments": [],
+  "removed_assignments": [],
+  "moved_assignments": [
+    {
+      "before": {
+        "operation_id": "JOB-01-01",
+        "work_center_id": "POST-U1",
+        "crew_id": "CREW-TEST",
+        "aux_ids": [],
+        "start": "2026-01-12T06:00:00+00:00",
+        "end": "2026-01-12T06:30:00+00:00",
+        "setup_minutes": 0,
+        "reason": "job=JOB-01 post=POST-U1 crew=CREW-TEST setup=0m"
+      },
+      "after": {
+        "operation_id": "JOB-01-01",
+        "work_center_id": "POST-TEST",
+        "crew_id": "CREW-DIAG",
+        "aux_ids": [],
+        "start": "2026-01-12T06:00:00+00:00",
+        "end": "2026-01-12T06:30:00+00:00",
+        "setup_minutes": 0,
+        "reason": "job=JOB-01 post=POST-TEST crew=CREW-DIAG setup=0m"
+      }
+    },
+    {
+      "before": {
+        "operation_id": "JOB-02-01",
+        "work_center_id": "POST-U1",
+        "crew_id": "CREW-TEST",
+        "aux_ids": [],
+        "start": "2026-01-12T06:00:00+00:00",
+        "end": "2026-01-12T06:30:00+00:00",
+        "setup_minutes": 0,
+        "reason": "job=JOB-02 post=POST-U1 crew=CREW-TEST setup=0m"
+      },
+      "after": {
+        "operation_id": "JOB-02-01",
+        "work_center_id": "POST-U1",
+        "crew_id": "CREW-DIAG",
+        "aux_ids": [],
+        "start": "2026-01-12T06:30:00+00:00",
+        "end": "2026-01-12T07:00:00+00:00",
+        "setup_minutes": 0,
+        "reason": "job=JOB-02 post=POST-U1 crew=CREW-DIAG setup=0m"
+      }
+    },
+    {
+      "before": {
+        "operation_id": "JOB-01-02",
+        "work_center_id": "POST-U1",
+        "crew_id": "CREW-TEST",
+        "aux_ids": [],
+        "start": "2026-01-12T06:30:00+00:00",
+        "end": "2026-01-12T07:40:00+00:00",
+        "setup_minutes": 0,
+        "reason": "job=JOB-01 post=POST-U1 crew=CREW-TEST setup=0m"
+      },
+      "after": {
+        "operation_id": "JOB-01-02",
+        "work_center_id": "POST-TEST",
+        "crew_id": "CREW-MECH",
+        "aux_ids": [],
+        "start": "2026-01-12T06:30:00+00:00",
+        "end": "2026-01-12T07:40:00+00:00",
+        "setup_minutes": 0,
+        "reason": "job=JOB-01 post=POST-TEST crew=CREW-MECH setup=0m"
+      }
+    },
+    {
+      "before": {
+        "operation_id": "JOB-01-03",
+        "work_center_id": "POST-U1",
+        "crew_id": "CREW-TEST",
+        "aux_ids": [],
+        "start": "2026-01-12T07:40:00+00:00",
+        "end": "2026-01-12T08:15:00+00:00",
+        "setup_minutes": 0,
+        "reason": "job=JOB-01 post=POST-U1 crew=CREW-TEST setup=0m"
+      },
+      "after": {
+        "operation_id": "JOB-01-03",
+        "work_center_id": "POST-TEST",
+        "crew_id": "CREW-TEST",
+        "aux_ids": [],
+        "start": "2026-01-12T07:40:00+00:00",
+        "end": "2026-01-12T08:15:00+00:00",
+        "setup_minutes": 0,
+        "reason": "job=JOB-01 post=POST-TEST crew=CREW-TEST setup=0m"
+      }
+    },
+    {
+      "before": {
+        "operation_id": "JOB-02-02",
+        "work_center_id": "POST-U1",
+        "crew_id": "CREW-TEST",
+        "aux_ids": [],
+        "start": "2026-01-12T06:30:00+00:00",
+        "end": "2026-01-12T07:40:00+00:00",
+        "setup_minutes": 0,
+        "reason": "job=JOB-02 post=POST-U1 crew=CREW-TEST setup=0m"
+      },
+      "after": {
+        "operation_id": "JOB-02-02",
+        "work_center_id": "POST-U1",
+        "crew_id": "CREW-MECH",
+        "aux_ids": [],
+        "start": "2026-01-12T07:40:00+00:00",
+        "end": "2026-01-12T08:50:00+00:00",
+        "setup_minutes": 0,
+        "reason": "job=JOB-02 post=POST-U1 crew=CREW-MECH setup=0m"
+      }
+    },
+    {
+      "before": {
+        "operation_id": "JOB-02-03",
+        "work_center_id": "POST-U1",
+        "crew_id": "CREW-TEST",
+        "aux_ids": [],
+        "start": "2026-01-12T07:40:00+00:00",
+        "end": "2026-01-12T08:15:00+00:00",
+        "setup_minutes": 0,
+        "reason": "job=JOB-02 post=POST-U1 crew=CREW-TEST setup=0m"
+      },
+      "after": {
+        "operation_id": "JOB-02-03",
+        "work_center_id": "POST-TEST",
+        "crew_id": "CREW-TEST",
+        "aux_ids": [],
+        "start": "2026-01-12T08:50:00+00:00",
+        "end": "2026-01-12T09:25:00+00:00",
+        "setup_minutes": 25,
+        "reason": "job=JOB-02 post=POST-TEST crew=CREW-TEST setup=25m"
+      }
+    },
+    {
+      "before": {
+        "operation_id": "JOB-03-01",
+        "work_center_id": "POST-U1",
+        "crew_id": "CREW-TEST",
+        "aux_ids": [],
+        "start": "2026-01-12T06:00:00+00:00",
+        "end": "2026-01-12T06:30:00+00:00",
+        "setup_minutes": 0,
+        "reason": "job=JOB-03 post=POST-U1 crew=CREW-TEST setup=0m"
+      },
+      "after": {
+        "operation_id": "JOB-03-01",
+        "work_center_id": "POST-U1",
+        "crew_id": "CREW-DIAG",
+        "aux_ids": [],
+        "start": "2026-01-12T09:15:00+00:00",
+        "end": "2026-01-12T09:45:00+00:00",
+        "setup_minutes": 25,
+        "reason": "job=JOB-03 post=POST-U1 crew=CREW-DIAG setup=25m"
+      }
+    },
+    {
+      "before": {
+        "operation_id": "JOB-03-02",
+        "work_center_id": "POST-U1",
+        "crew_id": "CREW-TEST",
+        "aux_ids": [],
+        "start": "2026-01-12T06:30:00+00:00",
+        "end": "2026-01-12T07:40:00+00:00",
+        "setup_minutes": 0,
+        "reason": "job=JOB-03 post=POST-U1 crew=CREW-TEST setup=0m"
+      },
+      "after": {
+        "operation_id": "JOB-03-02",
+        "work_center_id": "POST-U1",
+        "crew_id": "CREW-ELEC",
+        "aux_ids": [],
+        "start": "2026-01-12T09:45:00+00:00",
+        "end": "2026-01-12T10:55:00+00:00",
+        "setup_minutes": 0,
+        "reason": "job=JOB-03 post=POST-U1 crew=CREW-ELEC setup=0m"
+      }
+    },
+    {
+      "before": {
+        "operation_id": "JOB-03-03",
+        "work_center_id": "POST-U1",
+        "crew_id": "CREW-TEST",
+        "aux_ids": [],
+        "start": "2026-01-12T07:40:00+00:00",
+        "end": "2026-01-12T08:15:00+00:00",
+        "setup_minutes": 0,
+        "reason": "job=JOB-03 post=POST-U1 crew=CREW-TEST setup=0m"
+      },
+      "after": {
+        "operation_id": "JOB-03-03",
+        "work_center_id": "POST-TEST",
+        "crew_id": "CREW-TEST",
+        "aux_ids": [],
+        "start": "2026-01-12T10:55:00+00:00",
+        "end": "2026-01-12T11:30:00+00:00",
+        "setup_minutes": 25,
+        "reason": "job=JOB-03 post=POST-TEST crew=CREW-TEST setup=25m"
+      }
+    }
+  ],
+  "unchanged_frozen_assignments": [],
+  "broken_frozen_assignments": [],
+  "metrics": {
+    "baseline_violations": 29,
+    "candidate_violations": 0,
+    "baseline_makespan": 135.0,
+    "candidate_makespan": 330.0,
+    "baseline_tardiness": 0.0,
+    "candidate_tardiness": 0.0,
+    "baseline_coverage": 1.0,
+    "candidate_coverage": 1.0
+  },
+  "churn": {
+    "added": 0,
+    "removed": 0,
+    "moved": 9,
+    "unchanged_frozen": 0,
+    "broken_frozen": 0
+  }
+}

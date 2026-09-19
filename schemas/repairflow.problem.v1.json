@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/KonkovDV/SynAPS-RepairFlow/schemas/repairflow.problem.v1.json",
+  "title": "RepairFlow Problem v1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "instance_id",
+    "data_provenance",
+    "planning_horizon",
+    "jobs",
+    "operations",
+    "work_centers",
+    "crews",
+    "aux_resources",
+    "setup_matrix",
+    "calendars",
+    "policy"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": "repairflow.problem.v1" },
+    "instance_id": { "type": "string" },
+    "data_provenance": {
+      "enum": ["synthetic", "open_data", "customer_data", "experiment", "production_verified"]
+    },
+    "planning_horizon": {
+      "type": "object",
+      "required": ["start", "end"],
+      "additionalProperties": false,
+      "properties": {
+        "start": { "type": "string", "format": "date-time" },
+        "end": { "type": "string", "format": "date-time" }
+      }
+    },
+    "jobs": { "type": "array" },
+    "operations": { "type": "array" },
+    "work_centers": { "type": "array" },
+    "crews": { "type": "array" },
+    "aux_resources": { "type": "array" },
+    "setup_matrix": { "type": "array" },
+    "calendars": { "type": "array" },
+    "frozen_assignments": { "type": "array" },
+    "spares": { "type": "array" },
+    "policy": { "type": "object" },
+    "domain_attributes": { "type": "object" }
+  }
+}

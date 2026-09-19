@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+title: SynAPS RepairFlow
+message: If you cite this software, use these metadata.
+type: software
+authors:
+  - family-names: RepairFlow
+    given-names: Contributors
+version: "0.1.0"
+date-released: "2026-09-19"
+license: MIT
+abstract: >-
+  Domain contour for verifiable urban-transport unit/aggregate repair
+  scheduling on the SynAPS engine. Independent fail-closed checker.
+  Synthetic fixtures. Self-assessed ISO 16290 TRL 4. Not a depot pilot.
+keywords:
+  - maintenance
+  - scheduling
+  - repair
+  - FJSP
+  - constraint-programming

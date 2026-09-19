@@ -1,0 +1,6 @@
+{
+  "schema_version": "repairflow.disruption.v1",
+  "comment": "synthetic disruption: delayed spare SP-DELAYED and operation JOB-06-02",
+  "disrupted_operation_ids": ["JOB-06-02"],
+  "data_provenance": "synthetic"
+}
