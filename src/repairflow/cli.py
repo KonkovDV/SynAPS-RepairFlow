@@ -1,4 +1,4 @@
-"""CLI: version / synthesize / solve / check / compare / report / demo / disrupt."""
+"""CLI: version / synthesize / solve / check / compare / report / demo / disrupt / benchmark."""
 
 from __future__ import annotations
 
@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from repairflow.benchmark import run_benchmark
 from repairflow.diff import diff_plans
 from repairflow.io import read_text_limited
 from repairflow.model import PlannedAssignment, RepairFlowResult
@@ -62,10 +63,44 @@ def main(argv: list[str] | None = None) -> int:
     p_demo.add_argument("--out", type=Path, default=Path("out"))
     p_demo.add_argument("--skip-cpsat", action="store_true")
 
+    p_bench = sub.add_parser(
+        "benchmark",
+        help="FIFO vs GREED portfolio benchmark across preset/seed matrix",
+    )
+    p_bench.add_argument(
+        "--out",
+        type=Path,
+        default=Path("bench"),
+        help="Output directory for benchmark.json / .md / .html and per-instance reports",
+    )
+    p_bench.add_argument(
+        "--solvers",
+        nargs="+",
+        default=["FIFO", "GREED"],
+        metavar="SOLVER",
+        help="Solver configs to compare (default: FIFO GREED)",
+    )
+    p_bench.add_argument(
+        "--preset",
+        nargs="+",
+        default=None,
+        metavar="PRESET",
+        choices=list(PRESETS),
+        help="Restrict benchmark to specific presets",
+    )
+    p_bench.add_argument(
+        "--seeds",
+        nargs="+",
+        type=int,
+        default=None,
+        metavar="SEED",
+        help="Override seed list (default: 1 42 99 for tiny; 7 13 42 for mvp)",
+    )
+
     args = parser.parse_args(argv)
     try:
         if args.command == "version":
-            sys.stdout.write(f"repairflow {REPAIRFLOW_VERSION} · synaps {SYNAPS_COMMIT}\n")
+            sys.stdout.write(f"repairflow {REPAIRFLOW_VERSION} \u00b7 synaps {SYNAPS_COMMIT}\n")
             return 0
         if args.command == "synthesize":
             problem = synthesize(args.preset, seed=args.seed)
@@ -84,6 +119,13 @@ def main(argv: list[str] | None = None) -> int:
             return _disrupt(args.problem, args.base, args.operation_id, args.out)
         if args.command == "demo":
             return _demo(args.preset, args.out, skip_cpsat=args.skip_cpsat)
+        if args.command == "benchmark":
+            return _benchmark(
+                out_dir=args.out,
+                solvers=args.solvers,
+                presets=args.preset,
+                seeds=args.seeds,
+            )
         parser.print_help()
         return 0
     except (OSError, ValueError, TypeError, json.JSONDecodeError, KeyError) as exc:
@@ -235,6 +277,40 @@ def _demo(preset: str, out_dir: Path, *, skip_cpsat: bool) -> int:
         return 0
     sys.stderr.write("MVP readiness: FAIL\n")
     return 1
+
+
+def _benchmark(
+    *,
+    out_dir: Path,
+    solvers: list[str],
+    presets: list[str] | None,
+    seeds: list[int] | None,
+) -> int:
+    """Run portfolio benchmark and write reports to out_dir."""
+    from repairflow.benchmark import _DEFAULT_MATRIX
+
+    matrix: list[tuple[str, int]]
+    if presets is not None or seeds is not None:
+        active_presets = set(presets) if presets else {p for p, _ in _DEFAULT_MATRIX}
+        active_seeds = seeds if seeds is not None else sorted({s for _, s in _DEFAULT_MATRIX})
+        matrix = [(p, s) for p in active_presets for s in active_seeds]
+    else:
+        matrix = _DEFAULT_MATRIX
+
+    summary = run_benchmark(matrix=matrix, solvers=solvers, out_dir=out_dir)
+    gain = summary.greed_gain_minutes()
+    verified = summary.verified_ratio()
+    sys.stdout.write(
+        f"RepairFlow benchmark\n"
+        f"  instances={len(summary.rows)} "
+        f"solvers={solvers}\n"
+        f"  GREED gain vs FIFO: {gain} min (mean makespan reduction)\n"
+        f"  GREED verified ratio: {verified:.1%}\n"
+        f"  reports: {out_dir}/benchmark.{{json,md,html}}\n"
+    )
+    # Exit 0 only if every GREED run passes the checker
+    all_verified = all(r.verified for r in summary.rows if r.solver == "GREED")
+    return 0 if all_verified else 2
 
 
 def _write_json(path: Path, payload: dict[str, Any]) -> None:
