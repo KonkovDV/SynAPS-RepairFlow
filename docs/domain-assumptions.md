@@ -9,7 +9,8 @@
   skill-pools are an internal kernel encoding only.
 - Consumable spares are a blocking availability constraint, not inventory optimisation.
 - Empty calendars mean 24/7; a non-empty calendar is a hard single-window container.
-- Frozen rows with `immutable=true` must survive replan.
+- Frozen rows with `immutable=true` must survive replan. A frozen crew must hold the
+  operation skills and the frozen post must be eligible; ingest rejects a mismatch.
 - Heuristic solvers never inherit the word OPTIMAL.
 - Missing `idle → first_state` setup cells are a hard contract error. Under
   `missing_setup=reject` the instance is refused; a plan that still uses a missing

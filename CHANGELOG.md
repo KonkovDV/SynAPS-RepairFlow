@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- `repairflow benchmark`: FIFO vs GREED portfolio on the documented synthetic
+  matrix, HTML/JSON/Markdown KPI report, CI artifact. FIFO makespan is not treated
+  as a quality baseline.
+- Frozen `JOB-01-03` binds a crew that holds the operation skills. Ingest rejects
+  a frozen crew/post that cannot execute the card. Checker reports `PRECEDENCE_BROKEN`
+  when a predecessor is missing from the plan.
 - Add committed-example schema verification to CI.
 - Add SOTA/evidence protocol: benchmark ladder, claim hierarchy, disruption metrics and pilot gates.
 

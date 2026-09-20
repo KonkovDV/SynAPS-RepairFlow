@@ -1,4 +1,4 @@
-"""CLI: version / synthesize / solve / check / compare / report / demo / disrupt."""
+"""CLI: version / synthesize / solve / check / compare / report / demo / disrupt / benchmark."""
 
 from __future__ import annotations
 
@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from repairflow.benchmark import run_benchmark
 from repairflow.diff import diff_plans
 from repairflow.io import read_text_limited
 from repairflow.model import PlannedAssignment, RepairFlowResult
@@ -62,10 +63,44 @@ def main(argv: list[str] | None = None) -> int:
     p_demo.add_argument("--out", type=Path, default=Path("out"))
     p_demo.add_argument("--skip-cpsat", action="store_true")
 
+    p_bench = sub.add_parser(
+        "benchmark",
+        help="FIFO vs GREED portfolio benchmark across preset/seed matrix",
+    )
+    p_bench.add_argument(
+        "--out",
+        type=Path,
+        default=Path("bench"),
+        help="Output directory for benchmark.json / .md / .html and per-instance reports",
+    )
+    p_bench.add_argument(
+        "--solvers",
+        nargs="+",
+        default=["FIFO", "GREED"],
+        metavar="SOLVER",
+        help="Solver configs to compare (default: FIFO GREED)",
+    )
+    p_bench.add_argument(
+        "--preset",
+        nargs="+",
+        default=None,
+        metavar="PRESET",
+        choices=list(PRESETS),
+        help="Restrict to those presets (filters DEFAULT_MATRIX unless --seeds is also set)",
+    )
+    p_bench.add_argument(
+        "--seeds",
+        nargs="+",
+        type=int,
+        default=None,
+        metavar="SEED",
+        help="Filter default matrix by seed. Combined with --preset, runs that cartesian product.",
+    )
+
     args = parser.parse_args(argv)
     try:
         if args.command == "version":
-            sys.stdout.write(f"repairflow {REPAIRFLOW_VERSION} · synaps {SYNAPS_COMMIT}\n")
+            sys.stdout.write(f"repairflow {REPAIRFLOW_VERSION} \u00b7 synaps {SYNAPS_COMMIT}\n")
             return 0
         if args.command == "synthesize":
             problem = synthesize(args.preset, seed=args.seed)
@@ -84,6 +119,13 @@ def main(argv: list[str] | None = None) -> int:
             return _disrupt(args.problem, args.base, args.operation_id, args.out)
         if args.command == "demo":
             return _demo(args.preset, args.out, skip_cpsat=args.skip_cpsat)
+        if args.command == "benchmark":
+            return _benchmark(
+                out_dir=args.out,
+                solvers=args.solvers,
+                presets=args.preset,
+                seeds=args.seeds,
+            )
         parser.print_help()
         return 0
     except (OSError, ValueError, TypeError, json.JSONDecodeError, KeyError) as exc:
@@ -235,6 +277,37 @@ def _demo(preset: str, out_dir: Path, *, skip_cpsat: bool) -> int:
         return 0
     sys.stderr.write("MVP readiness: FAIL\n")
     return 1
+
+
+def _benchmark(
+    *,
+    out_dir: Path,
+    solvers: list[str],
+    presets: list[str] | None,
+    seeds: list[int] | None,
+) -> int:
+    """Run portfolio benchmark and write reports to out_dir."""
+    from repairflow.benchmark import resolve_matrix
+
+    matrix = resolve_matrix(presets, seeds)
+    if not matrix:
+        raise ValueError("benchmark matrix is empty; check --preset / --seeds against DEFAULT_MATRIX")
+
+    summary = run_benchmark(matrix=matrix, solvers=solvers, out_dir=out_dir)
+    verified = summary.verified_ratio()
+    fifo_viol = summary.fifo_mean_violations()
+    greed_mk = summary.greed_mean_makespan()
+    delta = summary.fifo_minus_greed_makespan()
+    sys.stdout.write(
+        "RepairFlow benchmark\n"
+        f"  instances={len(summary.rows)} solvers={solvers}\n"
+        f"  GREED verified ratio: {verified:.1%}\n"
+        f"  FIFO mean hard violations: {fifo_viol}\n"
+        f"  GREED mean makespan: {greed_mk} min\n"
+        f"  FIFO-GREED makespan: {delta} min (negative = GREED longer, expected)\n"
+        f"  reports: {out_dir}/benchmark.{{json,md,html}}\n"
+    )
+    return 0 if summary.greed_all_verified() else 2
 
 
 def _write_json(path: Path, payload: dict[str, Any]) -> None:
