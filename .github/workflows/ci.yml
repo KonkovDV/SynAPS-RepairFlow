@@ -18,6 +18,7 @@ jobs:
       - run: python -m ruff check src tests tools
       - run: python -m ruff format --check src tests tools
       - run: python -m mypy --strict src/repairflow
+      - run: python tools/verify_schema.py
 
   test-fast:
     runs-on: ubuntu-latest

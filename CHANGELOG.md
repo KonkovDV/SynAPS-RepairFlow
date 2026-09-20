@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Add committed-example schema verification to CI.
+- Add SOTA/evidence protocol: benchmark ladder, claim hierarchy, disruption metrics and pilot gates.
+
 ## 0.1.0 — 2026-09-19
 
 - Initial MVP: domain contract, SynAPS adapter, FIFO/GREED/CP-SAT/RHC routing,
