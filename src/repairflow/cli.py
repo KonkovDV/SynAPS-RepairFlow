@@ -94,7 +94,7 @@ def main(argv: list[str] | None = None) -> int:
         type=int,
         default=None,
         metavar="SEED",
-        help="Override seed list (default: 1 42 99 for tiny; 7 13 42 for mvp)",
+        help="Override seed list (default matrix: tiny 1/42/99, mvp 42/13)",
     )
 
     args = parser.parse_args(argv)
@@ -287,30 +287,31 @@ def _benchmark(
     seeds: list[int] | None,
 ) -> int:
     """Run portfolio benchmark and write reports to out_dir."""
-    from repairflow.benchmark import _DEFAULT_MATRIX
+    from repairflow.benchmark import DEFAULT_MATRIX
 
     matrix: list[tuple[str, int]]
     if presets is not None or seeds is not None:
-        active_presets = set(presets) if presets else {p for p, _ in _DEFAULT_MATRIX}
-        active_seeds = seeds if seeds is not None else sorted({s for _, s in _DEFAULT_MATRIX})
-        matrix = [(p, s) for p in active_presets for s in active_seeds]
+        active_presets = presets if presets else sorted({preset for preset, _ in DEFAULT_MATRIX})
+        active_seeds = seeds if seeds is not None else sorted({seed for _, seed in DEFAULT_MATRIX})
+        matrix = [(preset, seed) for preset in active_presets for seed in active_seeds]
     else:
-        matrix = _DEFAULT_MATRIX
+        matrix = list(DEFAULT_MATRIX)
 
     summary = run_benchmark(matrix=matrix, solvers=solvers, out_dir=out_dir)
-    gain = summary.greed_gain_minutes()
     verified = summary.verified_ratio()
+    fifo_viol = summary.fifo_mean_violations()
+    greed_mk = summary.greed_mean_makespan()
+    delta = summary.fifo_minus_greed_makespan()
     sys.stdout.write(
-        f"RepairFlow benchmark\n"
-        f"  instances={len(summary.rows)} "
-        f"solvers={solvers}\n"
-        f"  GREED gain vs FIFO: {gain} min (mean makespan reduction)\n"
+        "RepairFlow benchmark\n"
+        f"  instances={len(summary.rows)} solvers={solvers}\n"
         f"  GREED verified ratio: {verified:.1%}\n"
+        f"  FIFO mean hard violations: {fifo_viol}\n"
+        f"  GREED mean makespan: {greed_mk} min\n"
+        f"  FIFO-GREED makespan: {delta} min (negative = GREED longer, expected)\n"
         f"  reports: {out_dir}/benchmark.{{json,md,html}}\n"
     )
-    # Exit 0 only if every GREED run passes the checker
-    all_verified = all(r.verified for r in summary.rows if r.solver == "GREED")
-    return 0 if all_verified else 2
+    return 0 if summary.greed_all_verified() else 2
 
 
 def _write_json(path: Path, payload: dict[str, Any]) -> None:

@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- `repairflow benchmark`: FIFO vs GREED portfolio on a checker-clean synthetic
+  matrix, HTML/JSON/Markdown KPI report, CI artifact. FIFO makespan is not treated
+  as a quality baseline.
+
 ## 0.1.0 — 2026-09-19
 
 - Initial MVP: domain contract, SynAPS adapter, FIFO/GREED/CP-SAT/RHC routing,

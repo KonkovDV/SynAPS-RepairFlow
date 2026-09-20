@@ -57,7 +57,14 @@ repairflow check data/repair-site-mvp.json out/greed.json --report out/greed.che
 repairflow compare data/repair-site-mvp.json out/fifo.json out/greed.json --out out/compare.json
 repairflow report data/repair-site-mvp.json out/greed.json --html out/report.html --md out/report.md
 repairflow demo --preset broken-seed42
+repairflow benchmark --out bench
 ```
+
+`repairflow benchmark` runs FIFO vs GREED on the documented synthetic matrix
+(`tiny` seeds 1/42/99, `repair-site-mvp` seeds 42/13) and writes
+`bench/benchmark.{json,md,html}`. Exit `0` only if every GREED run is
+checker-verified. FIFO is an infeasible compact packing — a shorter FIFO
+makespan is not a quality win.
 
 ## Architecture
 

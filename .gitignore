@@ -5,6 +5,7 @@ __pycache__/
 .ruff_cache/
 *.pyc
 out/
+bench/
 vendor/
 skeleton_extract/
 *.zip
