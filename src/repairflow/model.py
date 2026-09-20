@@ -354,6 +354,8 @@ class RepairFlowProblem(RepairFlowModel):
         frozen_ops = [row.operation_id for row in self.frozen_assignments]
         if len(set(frozen_ops)) != len(frozen_ops):
             issues.append("duplicate operation_id in frozen_assignments")
+        ops_by_id = {op.id: op for op in self.operations}
+        crews_by_id = {crew.id: crew for crew in self.crews}
         for frozen in self.frozen_assignments:
             if frozen.operation_id not in op_set:
                 issues.append(f"frozen assignment references unknown operation {frozen.operation_id}")
@@ -361,6 +363,24 @@ class RepairFlowProblem(RepairFlowModel):
                 issues.append(f"frozen assignment references unknown work center {frozen.work_center_id}")
             if frozen.crew_id is not None and frozen.crew_id not in crew_set:
                 issues.append(f"frozen assignment references unknown crew {frozen.crew_id}")
+            frozen_op = ops_by_id.get(frozen.operation_id)
+            if frozen_op is None:
+                continue
+            if (
+                frozen_op.eligible_work_center_ids
+                and frozen.work_center_id not in frozen_op.eligible_work_center_ids
+            ):
+                issues.append(
+                    f"frozen assignment {frozen.operation_id} work center {frozen.work_center_id} "
+                    f"is not eligible"
+                )
+            if frozen.crew_id is not None and frozen_op.required_skills:
+                frozen_crew = crews_by_id.get(frozen.crew_id)
+                if frozen_crew is not None and not set(frozen_op.required_skills) <= set(frozen_crew.skills):
+                    issues.append(
+                        f"frozen assignment {frozen.operation_id}: crew {frozen.crew_id} "
+                        f"lacks skills {sorted(frozen_op.required_skills)}"
+                    )
 
         issues.extend(_dag_issues(self.operations, self.policy.unsupported_dag))
         issues.extend(_linear_card_issues(self.operations))

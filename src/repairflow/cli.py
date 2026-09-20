@@ -86,7 +86,7 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         metavar="PRESET",
         choices=list(PRESETS),
-        help="Restrict benchmark to specific presets",
+        help="Restrict to those presets (filters DEFAULT_MATRIX unless --seeds is also set)",
     )
     p_bench.add_argument(
         "--seeds",
@@ -94,7 +94,7 @@ def main(argv: list[str] | None = None) -> int:
         type=int,
         default=None,
         metavar="SEED",
-        help="Override seed list (default matrix: tiny 1/42/99, mvp 42/13)",
+        help="Filter default matrix by seed. Combined with --preset, runs that cartesian product.",
     )
 
     args = parser.parse_args(argv)
@@ -287,15 +287,11 @@ def _benchmark(
     seeds: list[int] | None,
 ) -> int:
     """Run portfolio benchmark and write reports to out_dir."""
-    from repairflow.benchmark import DEFAULT_MATRIX
+    from repairflow.benchmark import resolve_matrix
 
-    matrix: list[tuple[str, int]]
-    if presets is not None or seeds is not None:
-        active_presets = presets if presets else sorted({preset for preset, _ in DEFAULT_MATRIX})
-        active_seeds = seeds if seeds is not None else sorted({seed for _, seed in DEFAULT_MATRIX})
-        matrix = [(preset, seed) for preset in active_presets for seed in active_seeds]
-    else:
-        matrix = list(DEFAULT_MATRIX)
+    matrix = resolve_matrix(presets, seeds)
+    if not matrix:
+        raise ValueError("benchmark matrix is empty; check --preset / --seeds against DEFAULT_MATRIX")
 
     summary = run_benchmark(matrix=matrix, solvers=solvers, out_dir=out_dir)
     verified = summary.verified_ratio()

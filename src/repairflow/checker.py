@@ -345,6 +345,19 @@ def _precedence(problem: RepairFlowProblem, assignments: list[PlannedAssignment]
         for pred_id in preds:
             pred = by_op.get(pred_id)
             if pred is None:
+                out.append(
+                    _violation(
+                        ReasonCode.PRECEDENCE_BROKEN,
+                        f"{op.id} is scheduled but predecessor {pred_id} is not",
+                        operation_id=op.id,
+                        job_id=op.job_id,
+                        resource_id=pred_id,
+                        start=current.start,
+                        end=current.end,
+                        suggested_relaxation=SUGGESTIONS[ReasonCode.PRECEDENCE_BROKEN],
+                        details={"missing_predecessor": pred_id},
+                    )
+                )
                 continue
             if current.start < pred.end:
                 out.append(

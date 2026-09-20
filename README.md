@@ -61,7 +61,7 @@ repairflow benchmark --out bench
 ```
 
 `repairflow benchmark` runs FIFO vs GREED on the documented synthetic matrix
-(`tiny` seeds 1/42/99, `repair-site-mvp` seeds 42/13) and writes
+(`tiny` seeds 1/42/99, `repair-site-mvp` seeds 42/7/13) and writes
 `bench/benchmark.{json,md,html}`. Exit `0` only if every GREED run is
 checker-verified. FIFO is an infeasible compact packing — a shorter FIFO
 makespan is not a quality win.

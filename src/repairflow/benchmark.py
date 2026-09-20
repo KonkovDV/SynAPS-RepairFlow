@@ -21,13 +21,13 @@ from repairflow.report import render_html, render_markdown
 from repairflow.synthetic import synthesize
 from repairflow.versions import REPAIRFLOW_VERSION, SYNAPS_COMMIT
 
-# Cells where domain GREED is checker-clean on the current pin.
-# repair-site-mvp seed 7 is excluded: frozen JOB-01-03 + skill bind can yield SKILL_MISMATCH.
+# Documented synthetic portfolio. Frozen JOB-01-03 binds a crew that holds the op skills.
 DEFAULT_MATRIX: list[tuple[str, int]] = [
     ("tiny", 1),
     ("tiny", 42),
     ("tiny", 99),
     ("repair-site-mvp", 42),
+    ("repair-site-mvp", 7),
     ("repair-site-mvp", 13),
 ]
 
@@ -125,6 +125,31 @@ class BenchmarkSummary:
             },
             "rows": [row.__dict__ for row in self.rows],
         }
+
+
+def resolve_matrix(
+    presets: list[str] | None = None,
+    seeds: list[int] | None = None,
+    *,
+    default: list[tuple[str, int]] | None = None,
+) -> list[tuple[str, int]]:
+    """Build the (preset, seed) list without silently crossing unrelated default seeds.
+
+    - no flags: DEFAULT_MATRIX
+    - --preset only: rows of the default matrix for those presets
+    - --seeds only: rows of the default matrix for those seeds
+    - both flags: explicit cartesian product of the requested presets and seeds
+    """
+    base = list(default) if default is not None else list(DEFAULT_MATRIX)
+    if presets is None and seeds is None:
+        return base
+    if presets is not None and seeds is not None:
+        return [(preset, seed) for preset in presets for seed in seeds]
+    if presets is not None:
+        wanted = set(presets)
+        return [(preset, seed) for preset, seed in base if preset in wanted]
+    wanted_seeds = set(seeds or [])
+    return [(preset, seed) for preset, seed in base if seed in wanted_seeds]
 
 
 def run_benchmark(
@@ -236,7 +261,7 @@ def _render_markdown(summary: BenchmarkSummary) -> str:
             "- Synthetic data only; not SVARZ depot data.",
             "- GREED and FIFO are heuristics; OPTIMAL applies only when CP-SAT proves it.",
             "- Independent checker validates hard constraints; not a production deployment.",
-            "- Default matrix omits cells where GREED is not checker-clean (mvp seed 7).",
+            "- Frozen JOB-01-03 binds a crew that covers the operation skills (electrical → CREW-ELEC).",
         ]
     )
     return "\n".join(lines)

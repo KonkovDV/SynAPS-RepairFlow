@@ -173,17 +173,9 @@ def _mvp(seed: int) -> RepairFlowProblem:
         ),
     ]
     jobs, operations = _jobs(start, n_jobs=12, seed=seed, short=False)
+    crews = _crews()
     frozen_op = next(op for op in operations if op.id == "JOB-01-03")
-    frozen = FrozenAssignment(
-        operation_id=frozen_op.id,
-        work_center_id="POST-U1",
-        crew_id="CREW-MECH",
-        start=start + timedelta(days=2, hours=10),
-        end=start + timedelta(days=2, hours=10, minutes=frozen_op.duration_min),
-        setup_minutes=0,
-        frozen_reason="agreed_slot",
-        immutable=True,
-    )
+    frozen = _agreed_slot(frozen_op, crews, start)
     return RepairFlowProblem(
         instance_id="repair-site-mvp",
         data_provenance="synthetic",
@@ -191,7 +183,7 @@ def _mvp(seed: int) -> RepairFlowProblem:
         jobs=jobs,
         operations=operations,
         work_centers=posts,
-        crews=_crews(),
+        crews=crews,
         aux_resources=_aux(),
         setup_matrix=_setup_matrix([post.id for post in posts]),
         calendars=[calendar, hole],
@@ -214,6 +206,33 @@ def _crews() -> list[Crew]:
         Crew(id="CREW-MECH", code="CREW-MECH", skills=["mechanical"], calendar_id="CAL-DAY"),
         Crew(id="CREW-ELEC", code="CREW-ELEC", skills=["electrical"], calendar_id="CAL-DAY"),
     ]
+
+
+def _named_crew_for(operation: Operation, crews: list[Crew]) -> str:
+    required = set(operation.required_skills)
+    eligible = [crew for crew in crews if not required or required <= set(crew.skills)]
+    eligible.sort(key=lambda crew: crew.id)
+    if not eligible:
+        raise ValueError(f"no crew covers skills {sorted(required)} for {operation.id}")
+    return eligible[0].id
+
+
+def _agreed_slot(operation: Operation, crews: list[Crew], start: datetime) -> FrozenAssignment:
+    """Freeze JOB-01-03 on POST-U1 with a crew that actually holds the operation skills."""
+
+    eligible_posts = operation.eligible_work_center_ids
+    work_center_id = "POST-U1" if not eligible_posts or "POST-U1" in eligible_posts else eligible_posts[0]
+    slot_start = start + timedelta(days=2, hours=10)
+    return FrozenAssignment(
+        operation_id=operation.id,
+        work_center_id=work_center_id,
+        crew_id=_named_crew_for(operation, crews),
+        start=slot_start,
+        end=slot_start + timedelta(minutes=operation.duration_min),
+        setup_minutes=0,
+        frozen_reason="agreed_slot",
+        immutable=True,
+    )
 
 
 def _aux() -> list[AuxResource]:

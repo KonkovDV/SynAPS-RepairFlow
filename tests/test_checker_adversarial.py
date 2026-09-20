@@ -57,3 +57,24 @@ def test_broken_precedence_is_caught() -> None:
         solver_config="recheck",
     )
     assert any(row.code == ReasonCode.PRECEDENCE_BROKEN for row in outcome.result.violations)
+
+
+def test_missing_predecessor_assignment_is_precedence_broken() -> None:
+    problem = synthesize("tiny", seed=1)
+    greed = plan(problem, solver_config="GREED")
+    child = next(op for op in problem.operations if op.predecessor_ids)
+    pred_id = child.predecessor_ids[0]
+    rows = [row for row in greed.result.assignments if row.operation_id != pred_id]
+    outcome = recheck(
+        problem,
+        assignments=rows,
+        kernel_status="feasible",
+        solver_config="recheck",
+    )
+    assert outcome.result.exit_code == 2
+    missing = [
+        row
+        for row in outcome.result.violations
+        if row.code == ReasonCode.PRECEDENCE_BROKEN and row.details.get("missing_predecessor") == pred_id
+    ]
+    assert missing

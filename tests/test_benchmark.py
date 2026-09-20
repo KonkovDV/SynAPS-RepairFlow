@@ -1,18 +1,31 @@
 from pathlib import Path
 
-from repairflow.benchmark import DEFAULT_MATRIX, run_benchmark
+from repairflow.benchmark import DEFAULT_MATRIX, resolve_matrix, run_benchmark
 from repairflow.cli import main
 
 
-def test_default_matrix_is_checker_clean_cells() -> None:
+def test_default_matrix_includes_electrical_mvp_seed() -> None:
     assert DEFAULT_MATRIX == [
         ("tiny", 1),
         ("tiny", 42),
         ("tiny", 99),
         ("repair-site-mvp", 42),
+        ("repair-site-mvp", 7),
         ("repair-site-mvp", 13),
     ]
-    assert ("repair-site-mvp", 7) not in DEFAULT_MATRIX
+
+
+def test_resolve_matrix_filters_pairs_instead_of_crossing_seeds() -> None:
+    assert resolve_matrix(["repair-site-mvp"]) == [
+        ("repair-site-mvp", 42),
+        ("repair-site-mvp", 7),
+        ("repair-site-mvp", 13),
+    ]
+    assert ("repair-site-mvp", 99) not in resolve_matrix(["repair-site-mvp"])
+    assert resolve_matrix(seeds=[42]) == [("tiny", 42), ("repair-site-mvp", 42)]
+    assert resolve_matrix(["tiny"], [42]) == [("tiny", 42)]
+    assert resolve_matrix(["repair-site-mvp"], [99]) == [("repair-site-mvp", 99)]
+    assert resolve_matrix(["broken-seed42"]) == []
 
 
 def test_benchmark_tiny_fifo_dirty_greed_verified(tmp_path: Path) -> None:
@@ -43,3 +56,7 @@ def test_cli_benchmark_tiny(tmp_path: Path, capsys) -> None:
     assert "GREED verified ratio: 100.0%" in out
     assert "FIFO mean hard violations" in out
     assert (tmp_path / "benchmark.json").is_file()
+
+
+def test_cli_benchmark_unknown_preset_pair_is_usage_error(tmp_path: Path) -> None:
+    assert main(["benchmark", "--out", str(tmp_path), "--preset", "broken-seed42"]) == 1
