@@ -12,4 +12,4 @@ Contest / accelerator packet. Not a customer contract.
 
 **Buyer profile (if a contact exists).** Owner of the repair production plan, shop supervisor, ТОиР specialist, or digitalisation lead for a repair contour. Not “any Department of Transport employee”.
 
-See `docs/jury-demo.md` and `docs/pilot-protocol.md`.
+See `docs/jury-demo.md`, `docs/pilot-protocol.md` and `docs/SOTA_EVIDENCE_PROTOCOL.md`.
