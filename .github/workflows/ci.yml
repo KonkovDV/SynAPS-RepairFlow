@@ -87,4 +87,12 @@ jobs:
           python-version: "3.12"
       - run: python -m pip install -U pip
       - run: python -m pip install -e ".[dev]"
-      - run: python -m pytest -q -m slow
+      - run: |
+          python -m pytest -q -m slow || {
+            status=$?
+            if [ "$status" -eq 5 ]; then
+              echo "No tests matched -m slow; treating empty slow suite as pass."
+              exit 0
+            fi
+            exit "$status"
+          }

@@ -10,6 +10,7 @@
   when a predecessor is missing from the plan.
 - Add committed-example schema verification to CI.
 - Add SOTA/evidence protocol: benchmark ladder, claim hierarchy, disruption metrics and pilot gates.
+- `test-slow` on `main` treats an empty `-m slow` selection (pytest exit 5) as pass.
 
 ## 0.1.0 — 2026-09-19
 
