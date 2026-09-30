@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from repairflow import kernel_compat
+from repairflow import kernel_compat  # noqa: I001
 from repairflow.model import RepairFlowProblem
 from repairflow.synthetic import synthesize
 
