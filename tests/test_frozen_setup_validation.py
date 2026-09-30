@@ -21,15 +21,17 @@ def test_duplicate_setup_cell_is_rejected_deterministically() -> None:
 def test_overlapping_immutable_fragment_is_rejected() -> None:
     problem = synthesize("repair-site-mvp", seed=42)
     first = problem.frozen_assignments[0]
-    second_operation = next(
-        operation
-        for operation in problem.operations
-        if operation.id != first.operation_id
-        and first.work_center_id in operation.eligible_work_center_ids
-    )
-    second = first.model_copy(
-        update={"operation_id": second_operation.id, "crew_id": None},
-    )
+    second_operation = None
+    for operation in problem.operations:
+        if operation.id == first.operation_id:
+            continue
+        if first.work_center_id not in operation.eligible_work_center_ids:
+            continue
+        second_operation = operation
+        break
+    assert second_operation is not None
+    second = first.model_copy(update={"operation_id": second_operation.id})
+    second = second.model_copy(update={"crew_id": None})
     payload = problem.model_dump(mode="python")
     payload["frozen_assignments"].append(second.model_dump(mode="python"))
     with pytest.raises(ValueError, match="frozen overlap"):
@@ -41,7 +43,8 @@ def test_immutable_fragment_outside_calendar_is_rejected() -> None:
     first = problem.frozen_assignments[0]
     duration = first.end - first.start
     start = problem.planning_horizon.start - timedelta(minutes=30)
-    moved = first.model_copy(update={"start": start, "end": start + duration})
+    moved = first.model_copy(update={"start": start})
+    moved = moved.model_copy(update={"end": start + duration})
     payload = problem.model_dump(mode="python")
     payload["frozen_assignments"][0] = moved.model_dump(mode="python")
     with pytest.raises(ValueError, match="outside calendar"):
