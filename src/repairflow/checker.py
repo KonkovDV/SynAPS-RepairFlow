@@ -9,6 +9,7 @@ from uuid import UUID
 
 from synaps.model import Assignment, ScheduleProblem, ScheduleResult
 
+from repairflow.capacity import Occupancy, excess_arrivals
 from repairflow.checker_primitives import bind_concrete_crews, lookup_setup_minutes, reverse_ids
 from repairflow.ledger import exchange_pool_violations
 from repairflow.model import (
@@ -427,34 +428,29 @@ def _capacity_overlaps(
     out: list[Violation] = []
     for resource_id, rows in grouped.items():
         cap = capacity.get(resource_id, 1)
-        intervals = []
+        intervals: list[Occupancy] = []
         for asn in rows:
             start = asn.start
             if include_setup:
                 start = asn.start - timedelta(minutes=int(asn.setup_minutes or 0))
-            intervals.append((start, asn.end, asn))
-        intervals.sort(key=lambda item: item[0])
-        for i, (start_a, end_a, asn_a) in enumerate(intervals):
-            overlap_count = 1
-            for start_b, end_b, asn_b in intervals[i + 1 :]:
-                if start_b >= end_a:
-                    break
-                if start_a < end_b and start_b < end_a:
-                    overlap_count += 1
-                    if overlap_count > cap:
-                        out.append(
-                            _violation(
-                                code,
-                                f"resource {resource_id} exceeds capacity {cap}",
-                                operation_id=asn_a.operation_id,
-                                resource_id=resource_id,
-                                start=max(start_a, start_b),
-                                end=min(end_a, end_b),
-                                details={"other_operation_id": asn_b.operation_id},
-                                suggested_relaxation=SUGGESTIONS.get(code),
-                            )
-                        )
-                        break
+            intervals.append(Occupancy(start, asn.end, asn.operation_id))
+        for excess in excess_arrivals(intervals, cap):
+            out.append(
+                _violation(
+                    code,
+                    f"resource {resource_id} exceeds capacity {cap}",
+                    operation_id=excess.operation_id,
+                    resource_id=resource_id,
+                    start=excess.start,
+                    end=excess.end,
+                    details={
+                        "other_operation_id": excess.other_operation_id,
+                        "active": excess.active,
+                        "capacity": cap,
+                    },
+                    suggested_relaxation=SUGGESTIONS.get(code),
+                )
+            )
     return out
 
 

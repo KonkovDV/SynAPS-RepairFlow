@@ -13,6 +13,9 @@
   are recomputed for every solver. `repairflow check --verify-hashes` rejects a
   plan whose stored hashes do not match. OR-Tools is pinned to 9.15.6755.
   `EDD` is a feasible baseline. CP-SAT is warm-started from domain GREED.
+- Post, crew, and tool capacity is a sweep-line lane count. Staggered visits
+  that share a resource without exceeding `max_parallel` stay feasible.
+  Endpoint contact does not consume two lanes. Frozen ingest uses the same oracle.
 - Pilot-boundary documents state TRL 4, shadow-only use, and the gates that
   are still external (legal entity, data owner, signed extract). The operator
   decision log is a contract, not a writer.
