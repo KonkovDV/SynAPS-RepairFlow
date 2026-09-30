@@ -1,9 +1,8 @@
 """Reference semantics for setup on fungible parallel work-centre lanes.
 
 A parallel work centre has independent lane state. Setup on one lane must not
-silently change the state of another lane. This module is deliberately pure:
-it is a small reference oracle that planner and checker integrations can share
-without importing solver search code.
+silently change the state of another lane. The checker and the domain list
+scheduler both call this oracle. It does not import solver search code.
 """
 
 from __future__ import annotations
@@ -35,10 +34,32 @@ def lane_local_setup_placements(
 
     Intervals are ordered deterministically by occupancy start, end and ID.
     An existing lane is reusable when its previous occupancy ends at or before
-    the next occupancy start. The lowest reusable lane index wins. A missing
-    setup cell remains ``None`` and is evidence for a fail-closed caller.
+    the next occupancy start. Among reusable lanes, the one that became free
+    earliest wins, and the lower index breaks a tie. A missing setup cell
+    remains ``None``. Overflow raises instead of serialising the extra visit.
     """
 
+    placements, overflows = _colour_lanes(problem, assignments)
+    if overflows:
+        centre_id, capacity = overflows[0]
+        raise ValueError(f"assignments exceed capacity {capacity} on work center {centre_id}")
+    return placements
+
+
+def lane_setup_evidence(
+    problem: RepairFlowProblem,
+    assignments: list[PlannedAssignment],
+) -> list[LanePlacement]:
+    """Lane setup for visits that fit. Overflow visits stay a capacity finding."""
+
+    placements, _overflows = _colour_lanes(problem, assignments)
+    return placements
+
+
+def _colour_lanes(
+    problem: RepairFlowProblem,
+    assignments: list[PlannedAssignment],
+) -> tuple[list[LanePlacement], list[tuple[str, int]]]:
     operations = {row.id: row for row in problem.operations}
     centres = {row.id: row for row in problem.work_centers}
     grouped: dict[str, list[PlannedAssignment]] = {}
@@ -46,6 +67,7 @@ def lane_local_setup_placements(
         grouped.setdefault(assignment.work_center_id, []).append(assignment)
 
     result: list[LanePlacement] = []
+    overflows: list[tuple[str, int]] = []
     for centre_id, rows in grouped.items():
         centre = centres.get(centre_id)
         capacity = centre.max_parallel if centre is not None else 1
@@ -60,11 +82,7 @@ def lane_local_setup_placements(
         )
         for row in ordered:
             occupancy_start = row.start - timedelta(minutes=row.setup_minutes)
-            reusable = [
-                (index, lane)
-                for index, lane in enumerate(lanes)
-                if lane[0] <= occupancy_start
-            ]
+            reusable = [(index, lane) for index, lane in enumerate(lanes) if lane[0] <= occupancy_start]
             if reusable:
                 lane_index, (_end, previous_id, previous_state) = min(
                     reusable,
@@ -76,9 +94,8 @@ def lane_local_setup_placements(
                 previous_state = "idle"
                 lanes.append((row.end, None, ""))
             else:
-                raise ValueError(
-                    f"assignments exceed capacity {capacity} on work center {centre_id}"
-                )
+                overflows.append((centre_id, capacity))
+                continue
             operation = operations.get(row.operation_id)
             state = operation.setup_state if operation is not None else ""
             expected = lookup_setup_minutes(
@@ -100,4 +117,5 @@ def lane_local_setup_placements(
                     expected_setup_minutes=expected,
                 )
             )
-    return sorted(result, key=lambda row: (row.occupancy_start, row.operation_id))
+    ordered_result = sorted(result, key=lambda row: (row.occupancy_start, row.operation_id))
+    return ordered_result, overflows

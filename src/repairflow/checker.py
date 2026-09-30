@@ -10,7 +10,8 @@ from uuid import UUID
 from synaps.model import Assignment, ScheduleProblem, ScheduleResult
 
 from repairflow.capacity import Occupancy, excess_arrivals
-from repairflow.checker_primitives import bind_concrete_crews, lookup_setup_minutes, reverse_ids
+from repairflow.checker_primitives import bind_concrete_crews, reverse_ids
+from repairflow.lane_setup import lane_setup_evidence
 from repairflow.ledger import exchange_pool_violations
 from repairflow.model import (
     Calendar,
@@ -682,53 +683,59 @@ def _due_release_spares(
 
 def _setup(problem: RepairFlowProblem, assignments: list[PlannedAssignment]) -> list[Violation]:
     ops = {op.id: op for op in problem.operations}
+    by_id = {row.operation_id: row for row in assignments}
     by_center: dict[str, list[PlannedAssignment]] = defaultdict(list)
     for asn in assignments:
         by_center[asn.work_center_id].append(asn)
     out: list[Violation] = []
     for center_id, rows in by_center.items():
-        ordered = sorted(rows, key=lambda item: (item.start, item.operation_id))
-        previous_state = "idle"
-        for asn in ordered:
-            op = ops.get(asn.operation_id)
-            if op is None:
+        placements = lane_setup_evidence(problem, rows)
+        for item in placements:
+            op = ops.get(item.operation_id)
+            placed = by_id.get(item.operation_id)
+            if op is None or placed is None:
                 continue
-            expected = lookup_setup_minutes(
-                problem,
-                work_center_id=center_id,
-                from_state=previous_state,
-                to_state=op.setup_state,
-            )
+            expected = item.expected_setup_minutes
+            details = {
+                "from_state": item.previous_state,
+                "to_state": op.setup_state,
+                "lane_index": item.lane_index,
+                "previous_operation_id": item.previous_operation_id,
+            }
             if expected is None:
                 out.append(
                     _violation(
                         ReasonCode.MISSING_SETUP,
-                        f"no setup cell {previous_state}->{op.setup_state} on {center_id}",
-                        operation_id=op.id,
-                        job_id=op.job_id,
-                        resource_id=center_id,
-                        start=asn.start,
-                        end=asn.end,
-                        suggested_relaxation=SUGGESTIONS[ReasonCode.MISSING_SETUP],
-                        details={"from_state": previous_state, "to_state": op.setup_state},
-                    )
-                )
-            elif int(asn.setup_minutes or 0) != int(expected):
-                out.append(
-                    _violation(
-                        ReasonCode.SETUP_MISMATCH,
                         (
-                            f"setup {asn.setup_minutes} min, matrix has {expected} "
-                            f"for {previous_state}->{op.setup_state}"
+                            f"no setup cell {item.previous_state}->{op.setup_state} "
+                            f"on {center_id} lane {item.lane_index}"
                         ),
                         operation_id=op.id,
                         job_id=op.job_id,
                         resource_id=center_id,
-                        start=asn.start,
-                        end=asn.end,
+                        start=placed.start,
+                        end=placed.end,
+                        suggested_relaxation=SUGGESTIONS[ReasonCode.MISSING_SETUP],
+                        details=details,
                     )
                 )
-            previous_state = op.setup_state
+            elif int(placed.setup_minutes or 0) != int(expected):
+                out.append(
+                    _violation(
+                        ReasonCode.SETUP_MISMATCH,
+                        (
+                            f"setup {placed.setup_minutes} min, matrix has {expected} "
+                            f"for {item.previous_state}->{op.setup_state} "
+                            f"on lane {item.lane_index}"
+                        ),
+                        operation_id=op.id,
+                        job_id=op.job_id,
+                        resource_id=center_id,
+                        start=placed.start,
+                        end=placed.end,
+                        details=details,
+                    )
+                )
     return out
 
 
