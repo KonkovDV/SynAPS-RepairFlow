@@ -8,13 +8,21 @@
 | Version | **0.1.0** (synthetic runnable; not a depot pilot) |
 | Default branch | `main` |
 | SynAPS pin | [`6178c93`](https://github.com/KonkovDV/SynAPS/commit/6178c93b705ff58be21fa74a98651883a2da1169) |
-| Maturity | ISO 16290 TRL 4 — laboratory fixture |
+| Maturity | ISO 16290 TRL 4, laboratory fixture |
 | Status words | `heuristic_feasible` / `verified` / `OPTIMAL` only if CP-SAT proved OPTIMAL **and** the independent checker is empty |
-| Process exit | `0` verified (checker empty **and** full coverage), `2` plan written but dirty, `1` usage/error |
+| Process exit | `0` verified (checker empty and full coverage), `2` plan written but dirty, `1` usage/error |
 
-**Allowed claim.** RepairFlow builds an alternative repair-shop schedule from a formal instance (posts, crews, skills, tooling, precedence, setups, calendars, frozen slots, blocking spares) and independently proves that hard constraints hold or names the reason they fail. It works offline / in shadow mode.
+**Allowed claim.** RepairFlow builds an alternative repair-shop schedule from a formal instance (posts, crews, skills, tooling, precedence, setups, calendars, frozen slots, blocking spares) and independently verifies that hard constraints hold or names the reason they fail. It works offline and in shadow mode.
 
 **Not claimed.** Live SVARZ or Mosgortrans data, industrial KPI, replacement of EAM/ERP/CMMS, control of vehicle pull-out, or “AI decided”.
+
+## Pilot and security boundary
+
+The only defensible near-term framing is **offline, shadow-only decision support for one repair contour**. Public evidence, FTIM/MIC gates, data mapping, and the submission checklist are in [`docs/osint-and-pilot-gates.md`](docs/osint-and-pilot-gates.md). The threat model and offline deployment boundary are in [`docs/threat-model.md`](docs/threat-model.md). This repository does not claim a confirmed SVARZ sponsor, customer pain, TRL 6, or production deployment.
+
+## Readiness status
+
+The red-team remediation log is in [`docs/red-team-remediation.md`](docs/red-team-remediation.md). It records the fixed fail-closed paths and the remaining blockers: direct checker/adapter separation, DAG compilation or an explicit linear-card boundary, soft deadlines, rotable spares, locked dependencies/SBOM, provenance signing, operator decision logging, and a named pilot/data owner.
 
 ## Install
 
@@ -35,14 +43,14 @@ repairflow demo --out out
 
 The command:
 
-1. synthesizes a repair site (not customer data);
+1. synthesizes a repair site, not customer data;
 2. builds a FIFO baseline;
 3. builds a GREED candidate;
 4. checks it independently;
 5. stores input/config/result hashes and the kernel SHA;
-6. writes Markdown + HTML/Gantt;
+6. writes Markdown plus HTML/Gantt;
 7. replans a disruption without moving frozen operations;
-8. checks an intentionally broken plan (exit 2);
+8. checks an intentionally broken plan with exit 2;
 9. solves a tiny CP-SAT case.
 
 Exit `0` only if the clean plan verifies and the broken plan stays fail-closed.
@@ -62,11 +70,7 @@ repairflow demo --preset broken-seed42
 repairflow benchmark --out bench
 ```
 
-`repairflow benchmark` runs FIFO vs GREED on the documented synthetic matrix
-(`tiny` seeds 1/42/99, `repair-site-mvp` seeds 42/7/13) and writes
-`bench/benchmark.{json,md,html}`. Exit `0` only if every GREED run is
-checker-verified. FIFO is an infeasible compact packing — a shorter FIFO
-makespan is not a quality win.
+`repairflow benchmark` runs FIFO vs GREED on the documented synthetic matrix (`tiny` seeds 1/42/99, `repair-site-mvp` seeds 42/7/13) and writes `bench/benchmark.{json,md,html}`. Exit `0` only if every GREED run is checker-verified. FIFO is an infeasible compact packing, so a shorter FIFO makespan is not a quality win.
 
 ## Architecture
 
@@ -75,10 +79,7 @@ repair data → RepairFlow model/adapter → SynAPS search → RepairFlow checke
            → Gantt · diff · conflict reasons · operator decision
 ```
 
-RepairFlow does not fork SynAPS. Domain GREED is the verified closer on the 52-op
-`repair-site-mvp` fixture. Kernel `RHC-GREEDY-COVER` is available and checker-clean on
-`tiny`; it is not claimed verified on the larger site. Published assignments name a
-concrete crew; skill-pools stay inside the kernel adapter.
+RepairFlow does not fork SynAPS. Domain GREED is the verified closer on the 52-op `repair-site-mvp` fixture. Kernel `RHC-GREEDY-COVER` is available and checker-clean on `tiny`; it is not claimed verified on the larger site. Published assignments name a concrete crew; skill-pools stay inside the kernel adapter.
 
 ## Honest scope
 
