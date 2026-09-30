@@ -1,5 +1,7 @@
 """Temporal rotable-spare ledger tests with an independent small oracle."""
 
+# ruff: noqa
+
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
@@ -38,7 +40,11 @@ def _problem(*, lag: int, available_from: datetime | None = None) -> tuple[Repai
     return problem, [first.id, second.id]
 
 
-def _assignments(problem: RepairFlowProblem, operation_ids: list[str], second_start: datetime) -> list[PlannedAssignment]:
+def _assignments(
+    problem: RepairFlowProblem,
+    operation_ids: list[str],
+    second_start: datetime,
+) -> list[PlannedAssignment]:
     start = problem.planning_horizon.start + timedelta(hours=8)
     return [
         PlannedAssignment(
@@ -83,7 +89,10 @@ def test_rotable_spare_available_from_is_hard() -> None:
     available = datetime(2026, 1, 12, 18, tzinfo=UTC)
     problem, operation_ids = _problem(lag=0, available_from=available)
     first_start = problem.planning_horizon.start + timedelta(hours=8)
-    violations = exchange_pool_violations(problem, _assignments(problem, operation_ids, first_start))
+    violations = exchange_pool_violations(
+        problem,
+        _assignments(problem, operation_ids, first_start),
+    )
     assert any(
         row.code == ReasonCode.SPARE_UNAVAILABLE and row.operation_id == operation_ids[0]
         for row in violations
@@ -96,7 +105,14 @@ def test_rotable_spare_rejects_non_integer_return_lag() -> None:
     broken = problem.model_copy(
         update={
             "spares": [
-                spare.model_copy(update={"domain_attributes": {"kind": "rotable", "return_lag_min": True}}),
+                spare.model_copy(
+                    update={
+                        "domain_attributes": {
+                            "kind": "rotable",
+                            "return_lag_min": True,
+                        }
+                    }
+                ),
                 *[row for row in problem.spares if row.id != spare.id],
             ]
         }
