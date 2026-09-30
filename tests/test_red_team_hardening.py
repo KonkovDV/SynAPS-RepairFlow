@@ -1,6 +1,4 @@
-from datetime import timedelta
-
-from repairflow.model import AuxResource, Calendar, CalendarWindow, PlannedAssignment
+from repairflow.model import AuxResource, Calendar, PlannedAssignment
 from repairflow.planner import plan, recheck
 from repairflow.synthetic import synthesize
 
@@ -39,10 +37,4 @@ def test_aux_calendar_is_checked_and_empty_means_unavailable() -> None:
     outcome = recheck(problem, assignments=list(base.result.assignments), kernel_status="FEASIBLE")
     assert outcome.result.exit_code == 2
     assert any(row.code == "CALENDAR_BROKEN" for row in outcome.result.violations)
-
-
-def test_aux_calendar_violation_cannot_be_hidden_by_window_shift() -> None:
-    problem = synthesize("tiny", seed=1)
-    row = plan(problem, solver_config="GREED").result.assignments[0]
-    closed = row.model_copy(update={"start": row.start + timedelta(hours=2), "end": row.end + timedelta(hours=2)})
-    assert isinstance(closed, PlannedAssignment)
+    assert all(isinstance(row, PlannedAssignment) for row in outcome.result.assignments)
