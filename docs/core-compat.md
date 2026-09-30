@@ -20,8 +20,20 @@ Checked on this pin:
 | `SolveRegime` | `NOMINAL`, `RUSH_ORDER`, `BREAKDOWN`, `MATERIAL_SHORTAGE`, `INTERACTIVE`, `WHAT_IF` |
 
 RepairFlow calls `FeasibilityChecker.check` with `exhaustive=True` and
-`strict_setup_matrix=True`. Auxiliary resources still have no calendar. Crew
-shift windows are enforced by the domain checker, not by the kernel pool.
+`strict_setup_matrix=True`.
+
+## Calendar capability boundary
+
+The domain model supports calendars on work centres, crews and auxiliary resources.
+The pinned SynAPS `AuxiliaryResource` contract has no calendar field. Consequently,
+auxiliary-resource and crew calendars cannot be compiled into the kernel without
+silently dropping constraints. They are represented by the stable compatibility
+reason `KERNEL_CALENDAR_UNSUPPORTED` and must be rejected by the kernel-planning
+boundary until the pinned core exposes an equivalent capability.
+
+The domain list scheduler and independent domain checker remain responsible for
+crew and auxiliary calendar enforcement in modes that do not rely on the kernel
+calendar model. No upstream API extension is assumed here.
 
 `cf10ca3e` was not swapped in. Moving the pin without recapturing the lab
 fixtures would break the three-way SHA lock (`pyproject.toml`,
