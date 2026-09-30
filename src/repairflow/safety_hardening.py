@@ -7,6 +7,8 @@ from datetime import datetime, timedelta
 from typing import Any
 from uuid import UUID
 
+from synaps.model import SolverStatus
+
 from repairflow.model import Calendar, Operation, PlannedAssignment, RepairFlowProblem
 from repairflow.reasons import SUGGESTIONS, ReasonCode
 
@@ -157,6 +159,22 @@ def _with_aux_calendars(
     return violations
 
 
+def _status_from_text(value: str | None) -> SolverStatus:
+    """Accept both enum values and names emitted by result JSON."""
+    if not value:
+        return SolverStatus.ERROR
+    candidates = (value, value.upper(), value.lower())
+    for candidate in candidates:
+        try:
+            return SolverStatus(candidate)
+        except ValueError:
+            try:
+                return SolverStatus[candidate]
+            except KeyError:
+                continue
+    return SolverStatus.ERROR
+
+
 def install() -> None:
     global _INSTALLED, _ORIGINAL_CALENDAR_CHECK
     if _INSTALLED:
@@ -174,6 +192,7 @@ def install() -> None:
     planner.reverse_ids = reverse_ids
     planner.lookup_setup_minutes = lookup_setup_minutes
     planner.bind_concrete_crews = bind_concrete_crews
+    planner._status_from_text = _status_from_text
     original_classify = planner.classify_result
 
     def classify_fail_closed(*args: Any, **kwargs: Any) -> Any:
