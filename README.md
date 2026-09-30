@@ -2,7 +2,7 @@
 
 > **Auditable repair scheduling for urban-transport maintenance — offline, reproducible, and fail-closed.**
 
-[![CI](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/workflows/ci.yml/badge.svg)](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/workflows/ci.yml) [![Python](https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/) [![License](https://img.shields.io/badge/license-MIT- green)](LICENSE)
+[![CI](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/workflows/ci.yml/badge.svg)](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/workflows/ci.yml) [![Python](https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/) [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 ## Executive summary for the jury
 
@@ -33,13 +33,15 @@ It does not prove industrial savings, customer accuracy, production readiness, o
 
 | Item | Current repository fact |
 |---|---|
-| Current `main` | [`a3621fd`](https://github.com/KonkovDV/SynAPS-RepairFlow/commit/a3621fd538019f4dcc0c681d5634c022260382e9) |
+| `main` this text was checked against | [`729db1d`](https://github.com/KonkovDV/SynAPS-RepairFlow/commit/729db1d144cd3dc87e040356ce3e886d5a73df22) |
+| CI for that `main` commit | [Actions run 36766397613](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/runs/36766397613) (success, including `test-slow`) |
+| Sweep-line commit, already on that `main` | [`a3621fd`](https://github.com/KonkovDV/SynAPS-RepairFlow/commit/a3621fd538019f4dcc0c681d5634c022260382e9) |
+| CI for the sweep-line push to `main` | [Actions run 36765925526](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/runs/36765925526) |
 | SynAPS dependency | [`6178c93`](https://github.com/KonkovDV/SynAPS/commit/6178c93b705ff58be21fa74a98651883a2da1169) |
 | Python | 3.12+ |
 | Solver dependency | `ortools==9.15.6755` |
 | Data | committed synthetic fixtures; no customer data in the repository |
 | Maturity | laboratory fixture / TRL 4 framing; not a pilot result |
-| Latest sweep-line CI run | [Actions run 36765689986](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/runs/36765689986) |
 
 The commit, dependency pin, dataset provenance, solver status, claim level and checker output must be read together. A number without this context is not an evidence claim.
 
@@ -65,7 +67,7 @@ Requires Python 3.12+:
 
 ```bash
 python -m venv .venv
-source .venv/bin/activate                 # Windows: .venv\\Scripts\\activate
+source .venv/bin/activate                 # Windows: .venv\Scripts\activate
 python -m pip install -e ".[dev]"
 
 repairflow version
@@ -140,10 +142,11 @@ Every result should carry four labels:
 
 1. **Data provenance:** `synthetic`, `open_data`, `customer_data`, `experiment`, or `production_verified`.
 2. **Solver status:** `OPTIMAL`, `FEASIBLE`, `HEURISTIC_FEASIBLE`, `PARTIAL`, `INFEASIBLE`, `NOT_VERIFIED`, or equivalent error state.
-3. **Claim level:** `experiment`, `benchmark`, `pilot_candidate`, or `production_verified`.
-4. **Independent verification:** full coverage, empty hard-violation set, concrete kernel status, and matching input/config/result hashes.
+3. **Claim level:** the schema allows `experiment`, `benchmark`, `pilot_candidate`, or `production_verified`. The constant shipped in this repository is `experiment`. `production_verified` is not a result this tree has produced.
+4. **Claim status:** `heuristic_feasible`, `verified`, or `optimal`, plus the failure words `rejected`, `error`, and `usage_error`. `verified` means full coverage and an empty hard notary. `optimal` means CP-SAT `OPTIMAL`, that same empty notary, and a single compiled pass. A heuristic does not inherit `optimal`.
+5. **Independent verification:** full coverage, empty hard-violation set, concrete kernel status, and matching input/config/result hashes.
 
-`OPTIMAL` is reserved for a bounded exact run with a proven bound and an empty independent checker. GREED, RHC and other heuristics do not inherit the word “optimal”. A local test run is development evidence, not a CI attestation.
+A local test run is development evidence, not a CI attestation.
 
 ### False-positive safety invariant
 
