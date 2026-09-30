@@ -1,7 +1,5 @@
 """Temporal rotable-spare ledger tests with an independent small oracle."""
 
-# ruff: noqa
-
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
