@@ -134,7 +134,10 @@ def _strict_calendar_fit(
     ]
 
 
-def _with_aux_calendars(problem: RepairFlowProblem, assignments: list[PlannedAssignment]) -> list[Any]:
+def _with_aux_calendars(
+    problem: RepairFlowProblem,
+    assignments: list[PlannedAssignment],
+) -> list[Any]:
     violations = _ORIGINAL_CALENDAR_CHECK(problem, assignments)
     calendars = {row.id: row for row in problem.calendars}
     aux = {row.id: row for row in problem.aux_resources}
