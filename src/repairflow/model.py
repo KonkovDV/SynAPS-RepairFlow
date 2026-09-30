@@ -17,6 +17,7 @@ from pydantic import (
     model_validator,
 )
 
+from repairflow.capacity import Occupancy, excess_arrivals
 from repairflow.limits import (
     MAX_AUX,
     MAX_CALENDAR_WINDOWS,
@@ -497,26 +498,45 @@ def _frozen_batch_issues(problem: RepairFlowProblem) -> list[str]:
             if earlier is not None and row.start < earlier.end:
                 issues.append(f"frozen {row.operation_id} starts before frozen predecessor {pred_id} ends")
         _frozen_calendar(problem, row, centers, crews, calendars, issues)
-    for index, left in enumerate(rows):
-        for right in rows[index + 1 :]:
-            if left.start >= right.end or right.start >= left.end:
-                continue
-            if left.work_center_id == right.work_center_id:
-                cap = centers.get(left.work_center_id)
-                lanes = cap.max_parallel if cap is not None else 1
-                if lanes <= 1:
-                    issues.append(
-                        f"frozen overlap on post {left.work_center_id}: "
-                        f"{left.operation_id}, {right.operation_id}"
-                    )
-            if left.crew_id and left.crew_id == right.crew_id:
-                crew = crews.get(left.crew_id)
-                crew_cap = crew.max_parallel if crew is not None else 1
-                if crew_cap <= 1:
-                    issues.append(
-                        f"frozen overlap on crew {left.crew_id}: {left.operation_id}, {right.operation_id}"
-                    )
+    issues.extend(_frozen_lane_issues(rows, centers, crews))
     return issues
+
+
+def _frozen_lane_issues(
+    rows: list[FrozenAssignment],
+    centers: dict[str, WorkCenter],
+    crews: dict[str, Crew],
+) -> list[str]:
+    """Same sweep as the checker: setup is inside the lane, and K lanes are fungible."""
+
+    by_post: dict[str, list[FrozenAssignment]] = defaultdict(list)
+    by_crew: dict[str, list[FrozenAssignment]] = defaultdict(list)
+    for row in rows:
+        by_post[row.work_center_id].append(row)
+        if row.crew_id:
+            by_crew[row.crew_id].append(row)
+    issues: list[str] = []
+    for post_id, group in by_post.items():
+        center = centers.get(post_id)
+        lanes = center.max_parallel if center is not None else 1
+        issues.extend(_lane_clause(group, lanes, f"post {post_id}"))
+    for crew_id, group in by_crew.items():
+        crew = crews.get(crew_id)
+        lanes = crew.max_parallel if crew is not None else 1
+        issues.extend(_lane_clause(group, lanes, f"crew {crew_id}"))
+    return issues
+
+
+def _lane_clause(rows: list[FrozenAssignment], lanes: int, label: str) -> list[str]:
+    intervals = [
+        Occupancy(row.start - timedelta(minutes=row.setup_minutes), row.end, row.operation_id) for row in rows
+    ]
+    witnesses = excess_arrivals(intervals, lanes)
+    if not witnesses:
+        return []
+    names = {item.operation_id for item in witnesses}
+    names.update(item.other_operation_id for item in witnesses if item.other_operation_id is not None)
+    return [f"frozen overlap on {label}: {', '.join(sorted(names))}"]
 
 
 def _frozen_calendar(

@@ -13,6 +13,11 @@
   An exchange pool is a separate stock ledger: a unit returns when every sink of
   its card has finished, and dated demand withdraws stock. `hard=false` keeps a
   stockout as a KPI.
+- A post, crew, or tool with capacity K has K fungible lanes. Occupancy is the
+  half-open interval from setup start through processing end. The checker and
+  the immutable-freeze ingest use the same sweep: demand is the maximum number
+  of lanes open at one instant, and an endpoint touch does not take two lanes.
+  Lanes are not named. Staggered visits that never exceed K are feasible.
 - A resource with no `calendar_id` is open for the whole horizon. A calendar with
   zero windows means the resource is unavailable. A non-empty calendar is a hard
   single-window container, including tooling (`AuxResource.calendar_id`).
