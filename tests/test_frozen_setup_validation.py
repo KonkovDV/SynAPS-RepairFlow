@@ -28,7 +28,7 @@ def test_overlapping_immutable_fragment_is_rejected() -> None:
         and first.work_center_id in operation.eligible_work_center_ids
     )
     second = first.model_copy(
-        update={"operation_id": second_operation.id, "crew_id": None}
+        update={"operation_id": second_operation.id, "crew_id": None},
     )
     payload = problem.model_dump(mode="python")
     payload["frozen_assignments"].append(second.model_dump(mode="python"))
