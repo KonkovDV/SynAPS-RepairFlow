@@ -135,6 +135,13 @@ def replan_after_disruption(
     unknown = [op_id for op_id in disrupted_operation_ids if op_id not in known]
     if unknown:
         raise ValueError("UNKNOWN_OPERATION: " + ", ".join(unknown))
+    if solver_config.upper() in {"GREED", "EDD"}:
+        return _replan_lane_local(
+            problem,
+            base=base,
+            disrupted_operation_ids=list(disrupted_operation_ids),
+            solver_config=solver_config.upper(),
+        )
     schedule_problem, id_map = to_schedule_problem(problem)
     skip = set(disrupted_operation_ids)
     locked = extract_frozen_from_planned(
@@ -181,6 +188,108 @@ def replan_after_disruption(
             "repair_engine": "INCREMENTAL_REPAIR",
         },
     )
+
+
+def _replan_lane_local(
+    problem: RepairFlowProblem,
+    *,
+    base: PlanOutcome,
+    disrupted_operation_ids: list[str],
+    solver_config: str,
+) -> PlanOutcome:
+    """Reschedule a broken visit without borrowing another lane's setup state.
+
+    The broken slot is consumed: the visit may restart only at or after its old
+    end. The tail of that lane and the direct precedence successors are free,
+    because their previous state may have changed. Every other issued visit
+    stays frozen, including the other lanes of the same work centre.
+    """
+
+    disrupted = set(disrupted_operation_ids)
+    release = _lane_disruption_release(problem, base.result.assignments, disrupted)
+    locked = extract_frozen_from_planned(
+        assignments=list(base.result.assignments),
+        skip_operation_ids=release,
+        reason="disruption_freeze_rest",
+    )
+    existing = {
+        row.operation_id: row
+        for row in problem.frozen_assignments
+        if row.immutable and row.operation_id not in release
+    }
+    for row in locked:
+        existing.setdefault(row.operation_id, row)
+    patched = problem.model_copy(
+        update={
+            "operations": _restart_after_broken_slot(problem, base.result.assignments, disrupted),
+            "frozen_assignments": list(existing.values()),
+        }
+    )
+    schedule_problem, id_map = to_schedule_problem(patched)
+    result = plan_domain_greed(patched, schedule_problem, id_map, order=solver_config)
+    tagged = result.model_copy(
+        update={
+            "solver_name": f"repair:{solver_config}",
+            "metadata": {**(result.metadata or {}), "repair_engine": "LANE_LOCAL_REPAIR"},
+        }
+    )
+    return wrap(
+        patched,
+        schedule_problem,
+        id_map,
+        tagged,
+        solver_config=f"repair:{solver_config}",
+        kwargs_for_hash={
+            "disrupted_operation_ids": list(disrupted_operation_ids),
+            "repair_engine": "LANE_LOCAL_REPAIR",
+        },
+    )
+
+
+def _lane_disruption_release(
+    problem: RepairFlowProblem,
+    assignments: list[PlannedAssignment],
+    disrupted: set[str],
+) -> set[str]:
+    release = set(disrupted)
+    try:
+        placements = lane_local_setup_placements(problem, assignments)
+    except ValueError:
+        placements = []
+    by_lane: dict[tuple[str, int], list[LanePlacement]] = {}
+    for item in placements:
+        by_lane.setdefault((item.work_center_id, item.lane_index), []).append(item)
+    for sequence in by_lane.values():
+        ordered = sorted(sequence, key=lambda item: item.occupancy_start)
+        opened = False
+        for item in ordered:
+            if item.operation_id in disrupted:
+                opened = True
+            if opened:
+                release.add(item.operation_id)
+    for operation in problem.operations:
+        if any(pred_id in disrupted for pred_id in operation.predecessor_ids):
+            release.add(operation.id)
+    return release
+
+
+def _restart_after_broken_slot(
+    problem: RepairFlowProblem,
+    assignments: list[PlannedAssignment],
+    disrupted: set[str],
+) -> list[Operation]:
+    by_id = {row.operation_id: row for row in assignments}
+    restarted: list[Operation] = []
+    for operation in problem.operations:
+        row = by_id.get(operation.id)
+        if operation.id not in disrupted or row is None:
+            restarted.append(operation)
+            continue
+        earliest = row.end
+        if operation.earliest_start is not None and operation.earliest_start > earliest:
+            earliest = operation.earliest_start
+        restarted.append(operation.model_copy(update={"earliest_start": earliest}))
+    return restarted
 
 
 def replan_after_inspection(

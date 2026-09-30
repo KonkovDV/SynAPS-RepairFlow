@@ -19,6 +19,8 @@
 - Setup on a parallel work centre is lane-local. The checker and the domain
   list scheduler share that colouring: a lane is reused only after its
   occupancy ends, and overflow stays an explicit capacity failure.
+- GREED/EDD disruption repair uses that same colouring. The broken slot is
+  consumed, the tail of that lane is rescheduled, and the other lanes stay put.
 - Pilot-boundary documents state TRL 4, shadow-only use, and the gates that
   are still external (legal entity, data owner, signed extract). The operator
   decision log is a contract, not a writer.
