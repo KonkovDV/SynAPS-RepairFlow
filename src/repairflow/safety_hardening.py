@@ -1,9 +1,4 @@
-"""Runtime hardening for independent, fail-closed verification.
-
-This module is deliberately small and dependency-free beyond the domain models. It
-is installed from ``repairflow.__init__`` so every public import receives the same
-safety gates, including direct checker use in tests and downstream integrations.
-"""
+"""Runtime hardening for independent, fail-closed verification."""
 
 from __future__ import annotations
 
@@ -16,6 +11,7 @@ from repairflow.model import Calendar, Operation, PlannedAssignment, RepairFlowP
 from repairflow.reasons import ReasonCode, SUGGESTIONS
 
 _INSTALLED = False
+_ORIGINAL_CALENDAR_CHECK: Any = None
 
 
 def reverse_ids(id_map: dict[str, UUID]) -> dict[UUID, tuple[str, str]]:
@@ -65,9 +61,8 @@ def bind_concrete_crews(
         if crew_id is None and operation is not None and operation.required_skills:
             crew_id = _pick_crew(problem, operation, assignment, occupied)
         if crew_id is not None:
-            occupied[crew_id].append(
-                (assignment.start - timedelta(minutes=assignment.setup_minutes), assignment.end)
-            )
+            start = assignment.start - timedelta(minutes=assignment.setup_minutes)
+            occupied[crew_id].append((start, assignment.end))
         reason = assignment.reason
         if crew_id and crew_id != assignment.crew_id:
             reason = f"{reason} bound_crew={crew_id}".strip()
@@ -86,7 +81,10 @@ def _pick_crew(
     eligible = [crew for crew in problem.crews if required <= set(crew.skills)]
     for crew in sorted(eligible, key=lambda row: row.id):
         start = assignment.start - timedelta(minutes=assignment.setup_minutes)
-        overlaps = sum(start < end and other_start < assignment.end for other_start, end in occupied[crew.id])
+        overlaps = sum(
+            start < end and other_start < assignment.end
+            for other_start, end in occupied[crew.id]
+        )
         if overlaps < crew.max_parallel:
             return crew.id
     return None
@@ -137,8 +135,6 @@ def _strict_calendar_fit(
 
 
 def _with_aux_calendars(problem: RepairFlowProblem, assignments: list[PlannedAssignment]) -> list[Any]:
-    import repairflow.checker as checker
-
     violations = _ORIGINAL_CALENDAR_CHECK(problem, assignments)
     calendars = {row.id: row for row in problem.calendars}
     aux = {row.id: row for row in problem.aux_resources}
@@ -183,6 +179,3 @@ def install() -> None:
 
     planner.classify_result = classify_fail_closed
     _INSTALLED = True
-
-
-_ORIGINAL_CALENDAR_CHECK: Any = None
