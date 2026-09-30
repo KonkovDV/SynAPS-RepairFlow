@@ -90,10 +90,11 @@ def _rotable_spare_violations(
     out: list[Violation] = []
     for spare in problem.spares:
         attrs = spare.domain_attributes
-        mode = str(attrs.get("mode", attrs.get("kind", "consumable"))).lower()
+        mode_value: object = attrs.get("mode", attrs.get("kind", "consumable"))
+        mode = str(mode_value).lower()
         if mode != "rotable":
             continue
-        raw_lag = attrs.get("return_lag_min", 0)
+        raw_lag: object = attrs.get("return_lag_min", 0)
         if isinstance(raw_lag, bool) or not isinstance(raw_lag, int) or raw_lag < 0:
             out.append(
                 Violation(
