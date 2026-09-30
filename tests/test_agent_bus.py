@@ -6,11 +6,10 @@ import json
 from datetime import datetime
 
 import pytest
-
 from tools.agent_bus import (
-    BusError,
     REQUIRED_CI_JOBS,
     SCHEMA,
+    BusError,
     inspect_thread,
     parse_messages,
     run_failure_reason,
@@ -118,9 +117,7 @@ def test_thread_first_claim_heartbeat_and_expiry() -> None:
     later["until"] = "2026-10-02T06:00:00+03:00"
     comments = payload["comments"]
     assert isinstance(comments, list)
-    comments.append(
-        {"createdAt": "2026-10-01T07:00:00+03:00", "body": message(later)}
-    )
+    comments.append({"createdAt": "2026-10-01T07:00:00+03:00", "body": message(later)})
     holder, reason = inspect_thread(
         payload,
         issue=4,

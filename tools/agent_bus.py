@@ -183,9 +183,7 @@ def run_failure_reason(payload: Mapping[str, Any]) -> str | None:
     if isinstance(total, int) and not isinstance(total, bool) and total != len(jobs):
         return "jobs list is incomplete"
     by_name = {
-        job["name"]: job
-        for job in jobs
-        if isinstance(job, Mapping) and isinstance(job.get("name"), str)
+        job["name"]: job for job in jobs if isinstance(job, Mapping) and isinstance(job.get("name"), str)
     }
     for name in REQUIRED_CI_JOBS:
         job = by_name.get(name)
