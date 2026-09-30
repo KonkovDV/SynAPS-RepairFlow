@@ -6,8 +6,6 @@ so old documents remain valid. A spare is rotable when its attributes contain
 cleaning or service time before the unit becomes serviceable again.
 """
 
-# ruff: noqa
-
 from __future__ import annotations
 
 from collections import defaultdict
