@@ -8,7 +8,7 @@ from typing import Any
 from uuid import UUID
 
 from repairflow.model import Calendar, Operation, PlannedAssignment, RepairFlowProblem
-from repairflow.reasons import ReasonCode, SUGGESTIONS
+from repairflow.reasons import SUGGESTIONS, ReasonCode
 
 _INSTALLED = False
 _ORIGINAL_CALENDAR_CHECK: Any = None
