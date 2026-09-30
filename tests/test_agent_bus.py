@@ -101,7 +101,7 @@ def test_run_requires_all_real_jobs_and_steps() -> None:
 def test_thread_first_claim_heartbeat_and_expiry() -> None:
     heartbeat = claim()
     heartbeat.update({"op": "heartbeat"})
-    payload = {
+    payload: dict[str, object] = {
         "comments": [
             {"createdAt": "2026-09-30T19:00:00+03:00", "body": message(claim())},
             {"createdAt": "2026-09-30T20:00:00+03:00", "body": message(heartbeat)},
@@ -116,7 +116,9 @@ def test_thread_first_claim_heartbeat_and_expiry() -> None:
     assert holder == "session"
     later = dict(claim("other"))
     later["until"] = "2026-10-02T06:00:00+03:00"
-    payload["comments"].append(
+    comments = payload["comments"]
+    assert isinstance(comments, list)
+    comments.append(
         {"createdAt": "2026-10-01T07:00:00+03:00", "body": message(later)}
     )
     holder, reason = inspect_thread(
@@ -139,7 +141,7 @@ def test_done_requires_real_run_and_matching_sha() -> None:
         "ci_run_id": "https://github.com/KonkovDV/SynAPS-RepairFlow/actions/runs/123",
         "test_quality_gate": ["production function", "specific assertion"],
     }
-    payload = {
+    payload: dict[str, object] = {
         "comments": [
             {"createdAt": "2026-09-30T19:00:00+03:00", "body": message(claim())},
             {"createdAt": "2026-09-30T20:00:00+03:00", "body": message(done)},
