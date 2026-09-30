@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from typing import Any
+from typing import Any, Literal
 from uuid import UUID
 
 from synaps.model import Assignment, ObjectiveValues, ScheduleProblem, ScheduleResult, SolverStatus
@@ -13,19 +13,23 @@ from synaps.solvers.coverage_outcome import CoverageClass, classify_coverage
 from synaps.solvers.registry import available_solver_configs
 from synaps.solvers.router import SolveRegime
 
+import repairflow.adapter as core_adapter
 from repairflow.adapter import (
     bind_concrete_crews,
     compile_frozen_assignments,
     extract_frozen_from_planned,
-    lookup_setup_minutes,
     reverse_ids,
     to_schedule_problem,
 )
 from repairflow.checker import check_plan, kernel_hard_violations
-from repairflow.evidence import evidence_stamp, fingerprint_payload
+from repairflow.dag_compiler import CompiledDag, compile_dag, propagate_windows
+from repairflow.events import InspectionEvent, apply_inspection
+from repairflow.evidence import evidence_stamp, fingerprint_payload, runtime_manifest, to_canonical
 from repairflow.limits import CPSAT_OPS_CAP
+from repairflow.metrics import compute_metrics
 from repairflow.model import (
     Crew,
+    FrozenAssignment,
     Operation,
     PlannedAssignment,
     RepairFlowProblem,
@@ -34,10 +38,20 @@ from repairflow.model import (
     Violation,
     WorkCenter,
 )
-from repairflow.reasons import ReasonCode
+from repairflow.nervousness import compare as compare_nervousness
+from repairflow.reasons import REASON_RU, SUGGESTIONS, ReasonCode
 from repairflow.versions import CLAIM_LEVEL, REPAIRFLOW_VERSION, SYNAPS_COMMIT
 
-HEURISTIC_PREFIXES = ("FIFO", "GREED", "BEAM", "ALNS", "RHC", "repair:")
+ClaimStatus = Literal[
+    "usage_error",
+    "error",
+    "rejected",
+    "heuristic_feasible",
+    "verified",
+    "optimal",
+]
+
+HEURISTIC_PREFIXES = ("FIFO", "EDD", "GREED", "BEAM", "ALNS", "RHC", "repair:")
 DEFAULT_SOLVER = "GREED"
 
 
@@ -62,49 +76,41 @@ def plan(
     solve_kwargs: dict[str, Any] | None = None,
     apply_frozen: bool = True,
 ) -> PlanOutcome:
-    schedule_problem, id_map = to_schedule_problem(problem)
+    compiled = compile_dag(problem)
+    schedule_problem, id_map = to_schedule_problem(problem, compiled)
     kwargs = dict(solve_kwargs or {})
-    if apply_frozen:
-        frozen = compile_frozen_assignments(problem, id_map)
-        if frozen:
-            kwargs["frozen_assignments"] = frozen
     if "random_seed" not in kwargs:
         kwargs["random_seed"] = int(problem.domain_attributes.get("seed", 42))
 
     usage_error = False
+    fixpoint = _fixpoint_meta(compiled, iterations=0, converged=True)
     if solver_config.upper() == "FIFO":
+        if apply_frozen:
+            frozen = compile_frozen_assignments(problem, id_map)
+            if frozen:
+                kwargs["frozen_assignments"] = frozen
         result = plan_fifo(problem, schedule_problem, id_map, apply_frozen=apply_frozen)
-    elif solver_config.upper() == "GREED":
-        result = plan_domain_greed(problem, schedule_problem, id_map)
+    elif solver_config.upper() in {"GREED", "EDD"}:
+        result = plan_domain_greed(problem, schedule_problem, id_map, order=solver_config.upper())
     else:
         configs = set(available_solver_configs())
         if solver_config not in configs:
             raise ValueError(
-                f"unknown solver_config {solver_config!r}; expected FIFO, GREED, or one of {sorted(configs)}"
+                f"unknown solver_config {solver_config!r}; expected FIFO, EDD, GREED, "
+                f"or one of {sorted(configs)}"
             )
-        if solver_config.upper().startswith("CPSAT") and len(schedule_problem.operations) > CPSAT_OPS_CAP:
-            raise ValueError(
-                f"CP-SAT refused on {len(schedule_problem.operations)} ops (cap {CPSAT_OPS_CAP})"
-            )
-        try:
-            result = solve_schedule(
-                schedule_problem,
-                solver_config=solver_config,
-                solve_kwargs=kwargs,
-                verify_feasibility=True,
-            )
-        except PortfolioValidationError as exc:
-            usage_error = True
-            result = ScheduleResult(
-                status=SolverStatus.ERROR,
-                solver_name=solver_config,
-                assignments=[],
-                objective=ObjectiveValues(
-                    coverage=0.0,
-                    unscheduled_operations=len(schedule_problem.operations),
-                ),
-                metadata={"error": "solve_rejected", "detail": str(exc)},
-            )
+        if solver_config.upper().startswith("CPSAT") and len(problem.operations) > CPSAT_OPS_CAP:
+            raise ValueError(f"CP-SAT refused on {len(problem.operations)} ops (cap {CPSAT_OPS_CAP})")
+        if solver_config.upper().startswith("CPSAT") and "warm_start_assignments" not in kwargs:
+            kwargs["warm_start_assignments"] = _as_kernel_assignments(domain_greed(problem), id_map)
+            kwargs["auto_greedy_warm_start"] = False
+        result, schedule_problem, id_map, compiled, converged, iterations = _kernel_fixpoint(
+            problem,
+            compiled,
+            solver_config=solver_config,
+            solve_kwargs=kwargs,
+        )
+        fixpoint = _fixpoint_meta(compiled, iterations=iterations, converged=converged)
     return wrap(
         problem,
         schedule_problem,
@@ -113,6 +119,7 @@ def plan(
         solver_config=solver_config,
         usage_error=usage_error,
         kwargs_for_hash={"apply_frozen": apply_frozen, **kwargs},
+        fixpoint=fixpoint,
     )
 
 
@@ -123,6 +130,10 @@ def replan_after_disruption(
     disrupted_operation_ids: list[str],
     solver_config: str = "GREED",
 ) -> PlanOutcome:
+    known = {op.id for op in problem.operations}
+    unknown = [op_id for op_id in disrupted_operation_ids if op_id not in known]
+    if unknown:
+        raise ValueError("UNKNOWN_OPERATION: " + ", ".join(unknown))
     schedule_problem, id_map = to_schedule_problem(problem)
     skip = set(disrupted_operation_ids)
     locked = extract_frozen_from_planned(
@@ -169,6 +180,86 @@ def replan_after_disruption(
             "repair_engine": "INCREMENTAL_REPAIR",
         },
     )
+
+
+def replan_after_inspection(
+    problem: RepairFlowProblem,
+    *,
+    base: RepairFlowResult,
+    event: InspectionEvent,
+    solver_config: str = "GREED",
+) -> PlanOutcome:
+    """Insert the revealed branch. Already issued slots stay; the branch must fit."""
+
+    revised = apply_inspection(problem, event)
+    frozen = _freeze_issued(problem, base.assignments)
+    revised = RepairFlowProblem.model_validate(
+        revised.model_copy(update={"frozen_assignments": frozen}).model_dump(mode="python")
+    )
+    outcome = plan(revised, solver_config=solver_config)
+    diff = compare_nervousness(
+        base,
+        outcome.result,
+        frozen_operation_ids={row.operation_id for row in frozen},
+    )
+    notes: list[Violation] = []
+    if diff.ratio > revised.policy.nervousness_warn_ratio:
+        notes.append(
+            Violation(
+                code=ReasonCode.NERVOUSNESS_HIGH,
+                message=REASON_RU[ReasonCode.NERVOUSNESS_HIGH],
+                severity="kpi",
+                suggested_relaxation=SUGGESTIONS[ReasonCode.NERVOUSNESS_HIGH],
+                details={"ratio": diff.ratio, "moved": len(diff.moved)},
+            )
+        )
+    return _attach_replan_notes(outcome, notes, diff.as_dict())
+
+
+def _freeze_issued(
+    problem: RepairFlowProblem,
+    assignments: list[PlannedAssignment],
+) -> list[FrozenAssignment]:
+    """Keep every operation that already has a slot. Only the new branch is free.
+
+    Setup on a post depends on the previous state. Moving an issued neighbour
+    changes that setup, so issued slots stay put and the branch has to fit.
+    """
+
+    known = {op.id for op in problem.operations}
+    locked: dict[str, FrozenAssignment] = {
+        row.operation_id: row for row in problem.frozen_assignments if row.immutable
+    }
+    for row in assignments:
+        if row.operation_id not in known or row.operation_id in locked:
+            continue
+        locked[row.operation_id] = FrozenAssignment(
+            operation_id=row.operation_id,
+            work_center_id=row.work_center_id,
+            crew_id=row.crew_id,
+            start=row.start,
+            end=row.end,
+            setup_minutes=row.setup_minutes,
+            immutable=True,
+            frozen_reason="inspection_freeze_issued",
+        )
+    return [locked[op_id] for op_id in sorted(locked)]
+
+
+def _attach_replan_notes(
+    outcome: PlanOutcome,
+    notes: list[Violation],
+    nervousness: dict[str, object],
+) -> PlanOutcome:
+    violations = list(outcome.result.violations)
+    violations.extend(notes)
+    violations.sort(key=lambda row: (row.code, row.operation_id or "", row.resource_id or "", row.message))
+    metadata = dict(outcome.result.metadata)
+    metadata["nervousness"] = nervousness
+    updated = outcome.result.model_copy(update={"violations": violations, "metadata": metadata})
+    updated.result_hash = fingerprint_payload(updated.model_dump(mode="json", exclude={"result_hash"}))
+    outcome.result = updated
+    return outcome
 
 
 def recheck(
@@ -227,6 +318,7 @@ def wrap(
     usage_error: bool = False,
     kwargs_for_hash: dict[str, Any] | None = None,
     kernel_status_override: str | None | object = ...,
+    fixpoint: dict[str, Any] | None = None,
 ) -> PlanOutcome:
     kernel_status = result.status.value if result.status is not None else None
     if kernel_status_override is not ...:
@@ -239,28 +331,51 @@ def wrap(
         id_map=id_map,
         kernel_status=kernel_status,
     )
+    fixpoint_info = fixpoint or _fixpoint_meta(compile_dag(problem), iterations=0, converged=True)
+    if not fixpoint_info.get("converged", True):
+        domain_violations.append(
+            Violation(
+                code=ReasonCode.DAG_FIXPOINT_NOT_CONVERGED,
+                message=REASON_RU[ReasonCode.DAG_FIXPOINT_NOT_CONVERGED],
+                severity="hard",
+                suggested_relaxation=SUGGESTIONS[ReasonCode.DAG_FIXPOINT_NOT_CONVERGED],
+                details=dict(fixpoint_info),
+            )
+        )
+        domain_violations.sort(
+            key=lambda row: (row.code, row.operation_id or "", row.resource_id or "", row.message)
+        )
     engine_violations = kernel_hard_violations(schedule_problem, result)
     coverage = classify_coverage(
         n_operations=len(schedule_problem.operations),
         n_assigned=len({row.operation_id for row in result.assignments}),
     )
-    status, verified, exit_code = classify_result(
+    status, verified, exit_code, claim_status = classify_result(
         solver_config=solver_config,
         kernel_status=result.status,
         coverage=coverage,
         violations=domain_violations,
         engine_violations=engine_violations,
         usage_error=usage_error,
-        allow_partial=problem.policy.allow_partial_plan,
+        fixpoint_iterations=int(fixpoint_info.get("iterations", 0)),
+        fixpoint_converged=bool(fixpoint_info.get("converged", True)),
     )
     input_hash = fingerprint_payload(problem.model_dump(mode="json"))
-    config_hash = fingerprint_payload(
-        {
-            "solver_config": solver_config,
-            "synaps_commit": SYNAPS_COMMIT,
-            "kwargs": kwargs_for_hash or {},
-        }
-    )
+    config_payload = {
+        "solver_config": solver_config,
+        "synaps_commit": SYNAPS_COMMIT,
+        "kwargs": to_canonical(kwargs_for_hash or {}),
+        "runtime": runtime_manifest(),
+    }
+    config_hash = fingerprint_payload(config_payload)
+    unified = compute_metrics(problem, planned)
+    solver_objective = {
+        "makespan_minutes": result.objective.makespan_minutes,
+        "total_setup_minutes": result.objective.total_setup_minutes,
+        "total_tardiness_minutes": result.objective.total_tardiness_minutes,
+        "coverage": result.objective.coverage,
+        "unscheduled_operations": result.objective.unscheduled_operations,
+    }
     stamp = evidence_stamp(
         input_hash=input_hash,
         config_hash=config_hash,
@@ -269,8 +384,15 @@ def wrap(
             "solver_config": solver_config,
             "kernel_status": kernel_status,
             "coverage_class": coverage.value,
-            "hard_violation_count": len(domain_violations) + len(engine_violations),
+            "hard_violation_count": len([row for row in domain_violations if row.severity != "kpi"])
+            + len(engine_violations),
             "engine_violations": engine_violations,
+            "claim_status": claim_status,
+            "fixpoint": fixpoint_info,
+            "optimality_scope": fixpoint_info.get("optimality_scope"),
+            "config_payload": config_payload,
+            "solver_objective": solver_objective,
+            "solver": _solver_record(solver_config, kwargs_for_hash or {}, result.metadata),
         },
     )
     payload = RepairFlowResult(
@@ -285,16 +407,12 @@ def wrap(
         data_provenance=problem.data_provenance,
         kernel_status=kernel_status,
         solver_config=solver_config,
+        claim_status=claim_status,
+        solver_class=_solver_class(solver_config),
         exit_code=exit_code,
         assignments=planned,
         violations=domain_violations,
-        objective={
-            "makespan_minutes": result.objective.makespan_minutes,
-            "total_setup_minutes": result.objective.total_setup_minutes,
-            "total_tardiness_minutes": result.objective.total_tardiness_minutes,
-            "coverage": result.objective.coverage,
-            "unscheduled_operations": result.objective.unscheduled_operations,
-        },
+        objective=unified,
         metadata=stamp,
     )
     payload.result_hash = fingerprint_payload(payload.model_dump(mode="json", exclude={"result_hash"}))
@@ -316,29 +434,126 @@ def classify_result(
     violations: list[Violation],
     engine_violations: list[dict[str, Any]],
     usage_error: bool,
-    allow_partial: bool,
-) -> tuple[ResultStatus, bool, int]:
+    fixpoint_iterations: int = 1,
+    fixpoint_converged: bool = True,
+) -> tuple[ResultStatus, bool, int, ClaimStatus]:
+    """Return status, verified, exit code, and claim_status.
+
+    `verified` means the notary is empty. `optimal` is only a clean CP-SAT
+    OPTIMAL on a single compiled pass. `heuristic_feasible` is reserved for a
+    heuristic candidate that has not been through this check.
+    """
+
     if any(row.code == ReasonCode.KERNEL_STATUS_MISSING for row in violations):
-        return ResultStatus.NOT_VERIFIED, False, 2
-    if usage_error or kernel_status is SolverStatus.ERROR:
-        return ResultStatus.ERROR, False, 1
-    dirty = bool(violations or engine_violations)
+        return ResultStatus.NOT_VERIFIED, False, 2, "rejected"
+    if usage_error:
+        return ResultStatus.ERROR, False, 1, "usage_error"
+    if kernel_status is SolverStatus.ERROR:
+        return ResultStatus.ERROR, False, 2, "error"
+    hard = [row for row in violations if row.severity != "kpi"]
+    dirty = bool(hard or engine_violations) or not fixpoint_converged
     incomplete = coverage is not CoverageClass.FULL
-    if incomplete and not allow_partial:
+    if incomplete:
         dirty = True
     heuristic = any(solver_config.startswith(prefix) for prefix in HEURISTIC_PREFIXES)
     if kernel_status is SolverStatus.INFEASIBLE and not dirty:
-        return ResultStatus.INFEASIBLE, False, 2
+        return ResultStatus.INFEASIBLE, False, 2, "rejected"
     if dirty:
         status = ResultStatus.PARTIAL if incomplete else ResultStatus.NOT_VERIFIED
-        return status, False, 2
-    if kernel_status is SolverStatus.OPTIMAL and solver_config.upper().startswith("CPSAT"):
-        return ResultStatus.OPTIMAL, True, 0
-    if heuristic:
-        return ResultStatus.HEURISTIC_FEASIBLE, True, 0
-    if kernel_status in {SolverStatus.FEASIBLE, SolverStatus.OPTIMAL}:
-        return ResultStatus.FEASIBLE, True, 0
-    return ResultStatus.NOT_VERIFIED, False, 2
+        return status, False, 2, "rejected"
+    exact_optimal = (
+        kernel_status is SolverStatus.OPTIMAL
+        and solver_config.upper().startswith("CPSAT")
+        and fixpoint_converged
+        and fixpoint_iterations <= 1
+    )
+    if exact_optimal:
+        return ResultStatus.OPTIMAL, True, 0, "optimal"
+    if heuristic or kernel_status in {SolverStatus.FEASIBLE, SolverStatus.OPTIMAL}:
+        status = ResultStatus.HEURISTIC_FEASIBLE if heuristic else ResultStatus.FEASIBLE
+        return status, True, 0, "verified"
+    return ResultStatus.NOT_VERIFIED, False, 2, "rejected"
+
+
+def _solver_class(solver_config: str) -> Literal["heuristic", "exact", "baseline", "recheck"]:
+    upper = solver_config.upper()
+    if upper.startswith("CPSAT"):
+        return "exact"
+    if upper.startswith("FIFO") or upper.startswith("EDD"):
+        return "baseline"
+    if solver_config in {"recheck", "broken"} or upper.startswith("RECHECK"):
+        return "recheck"
+    return "heuristic"
+
+
+def _fixpoint_meta(compiled: CompiledDag, *, iterations: int, converged: bool) -> dict[str, Any]:
+    scope = "original_chain" if not compiled.cross_edges else "compiled_windows"
+    return {
+        "strategy": compiled.strategy,
+        "iterations": iterations,
+        "converged": converged,
+        "cross_edges": len(compiled.cross_edges),
+        "optimality_scope": scope,
+    }
+
+
+def _kernel_fixpoint(
+    problem: RepairFlowProblem,
+    compiled: CompiledDag,
+    *,
+    solver_config: str,
+    solve_kwargs: dict[str, Any],
+) -> tuple[ScheduleResult, ScheduleProblem, dict[str, UUID], CompiledDag, bool, int]:
+    """Solve, then lift cross-edge windows until they stop moving."""
+
+    current = compiled
+    last_result: ScheduleResult | None = None
+    last_problem: ScheduleProblem | None = None
+    last_map: dict[str, UUID] | None = None
+    for index in range(problem.policy.max_fixpoint_iter):
+        core, id_map = to_schedule_problem(problem, current)
+        try:
+            result = solve_schedule(
+                core,
+                solver_config=solver_config,
+                solve_kwargs=solve_kwargs,
+                verify_feasibility=True,
+            )
+        except PortfolioValidationError as exc:
+            result = ScheduleResult(
+                status=SolverStatus.ERROR,
+                solver_name=solver_config,
+                assignments=[],
+                objective=ObjectiveValues(
+                    coverage=0.0,
+                    unscheduled_operations=len(core.operations),
+                ),
+                metadata={"error": "solve_rejected", "detail": str(exc)},
+            )
+            return result, core, id_map, current, False, index + 1
+        starts, ends = _domain_times(result, id_map)
+        current, changed = propagate_windows(current, starts=starts, ends=ends)
+        last_result, last_problem, last_map = result, core, id_map
+        if not changed:
+            return result, core, id_map, current, True, index + 1
+    assert last_result is not None and last_problem is not None and last_map is not None
+    return last_result, last_problem, last_map, current, False, problem.policy.max_fixpoint_iter
+
+
+def _domain_times(
+    result: ScheduleResult,
+    id_map: dict[str, UUID],
+) -> tuple[dict[str, datetime], dict[str, datetime]]:
+    reversed_map = reverse_ids(id_map)
+    starts: dict[str, datetime] = {}
+    ends: dict[str, datetime] = {}
+    for row in result.assignments:
+        kind, ident = reversed_map.get(row.operation_id, ("", ""))
+        if kind != "op":
+            continue
+        starts[ident] = row.start_time
+        ends[ident] = row.end_time
+    return starts, ends
 
 
 def plan_fifo(
@@ -429,8 +644,10 @@ def plan_domain_greed(
     problem: RepairFlowProblem,
     schedule_problem: ScheduleProblem,
     id_map: dict[str, UUID],
+    *,
+    order: str = "GREED",
 ) -> ScheduleResult:
-    planned = domain_greed(problem)
+    planned = domain_greed(problem, order=order)
     assignments = _as_kernel_assignments(planned, id_map)
     unscheduled = len(schedule_problem.operations) - len(assignments)
     coverage = 1.0 if not schedule_problem.operations else len(assignments) / len(schedule_problem.operations)
@@ -443,7 +660,7 @@ def plan_domain_greed(
         SolverStatus.INFEASIBLE if schedule_problem.operations and not assignments else SolverStatus.FEASIBLE
     )
     return ScheduleResult(
-        solver_name="GREED",
+        solver_name=order,
         status=status,
         assignments=assignments,
         objective=ObjectiveValues(
@@ -455,12 +672,11 @@ def plan_domain_greed(
     )
 
 
-def domain_greed(problem: RepairFlowProblem) -> list[PlannedAssignment]:
+def domain_greed(problem: RepairFlowProblem, *, order: str = "GREED") -> list[PlannedAssignment]:
     """Constraint-aware list scheduler used for reasons and as a fallback constructive path."""
 
     frozen = {row.operation_id: row for row in problem.frozen_assignments if row.immutable}
-    remaining = [op for op in problem.operations if op.id not in frozen]
-    remaining.sort(key=lambda op: (_job_due(problem, op.job_id), op.sequence, op.id))
+    pending = {op.id: op for op in problem.operations if op.id not in frozen}
     placed: dict[str, PlannedAssignment] = {}
     for row in problem.frozen_assignments:
         if not row.immutable:
@@ -475,11 +691,20 @@ def domain_greed(problem: RepairFlowProblem) -> list[PlannedAssignment]:
             reason="frozen",
         )
     deadlines = _frozen_ancestor_deadlines(problem)
-    for operation in remaining:
-        choice = _best_slot(problem, operation, list(placed.values()), deadlines.get(operation.id))
-        if choice is None:
-            continue
-        placed[operation.id] = choice
+    while pending:
+        ready = [op for op in pending.values() if all(pred_id in placed for pred_id in op.predecessor_ids)]
+        ready.sort(key=lambda op: _list_key(problem, op, order))
+        placed_one = False
+        for operation in ready:
+            choice = _best_slot(problem, operation, list(placed.values()), deadlines.get(operation.id))
+            if choice is None:
+                continue
+            placed[operation.id] = choice
+            del pending[operation.id]
+            placed_one = True
+            break
+        if not placed_one:
+            break
     return [placed[op.id] for op in problem.operations if op.id in placed]
 
 
@@ -487,7 +712,7 @@ def _frozen_ancestor_deadlines(problem: RepairFlowProblem) -> dict[str, datetime
     by_id = {op.id: op for op in problem.operations}
     child_of: dict[str, list[str]] = {op.id: [] for op in problem.operations}
     for op in problem.operations:
-        for pred in op.predecessor_ids or _implied_pred(problem, op):
+        for pred in op.predecessor_ids:
             child_of.setdefault(pred, []).append(op.id)
     deadlines: dict[str, datetime] = {}
     for frozen in problem.frozen_assignments:
@@ -501,7 +726,7 @@ def _frozen_ancestor_deadlines(problem: RepairFlowProblem) -> dict[str, datetime
                 continue
             seen.add(current)
             op = by_id[current]
-            for pred in op.predecessor_ids or _implied_pred(problem, op):
+            for pred in op.predecessor_ids:
                 previous = deadlines.get(pred)
                 deadlines[pred] = frozen.start if previous is None else min(previous, frozen.start)
                 stack.append(pred)
@@ -516,7 +741,7 @@ def _best_slot(
 ) -> PlannedAssignment | None:
     job = next(job for job in problem.jobs if job.id == operation.job_id)
     pred_end = job.release_date or problem.planning_horizon.start
-    for pred_id in operation.predecessor_ids or _implied_pred(problem, operation):
+    for pred_id in operation.predecessor_ids:
         current = next((row for row in placed if row.operation_id == pred_id), None)
         if current is None:
             return None
@@ -527,7 +752,7 @@ def _best_slot(
         if spare.id in operation.required_spare_ids and spare.available_from is not None:
             pred_end = max(pred_end, spare.available_from)
 
-    eligible_centers = operation.eligible_work_center_ids or [wc.id for wc in problem.work_centers]
+    eligible_centers = list(operation.eligible_work_center_ids)
     eligible_crews = [
         crew
         for crew in problem.crews
@@ -569,14 +794,14 @@ def _scan_slot(
         prev_op = ops.get(last_center.operation_id)
         prev_state = prev_op.setup_state if prev_op is not None else "idle"
         prev_end = last_center.end
-    setup = lookup_setup_minutes(
+    setup = core_adapter.lookup_setup_minutes(
         problem,
         work_center_id=center.id,
         from_state=prev_state,
         to_state=operation.setup_state,
     )
     if setup is None:
-        if problem.policy.missing_setup == "zero" or prev_state == operation.setup_state:
+        if problem.policy.missing_setup == "zero":
             setup = 0
         else:
             return None
@@ -741,16 +966,32 @@ def _advance_calendar(
     return None
 
 
-def _implied_pred(problem: RepairFlowProblem, operation: Operation) -> list[str]:
-    previous = [
-        row.id
-        for row in problem.operations
-        if row.job_id == operation.job_id and row.sequence < operation.sequence
-    ]
-    if not previous:
-        return []
-    current = [row for row in problem.operations if row.id in previous]
-    return [max(current, key=lambda row: row.sequence).id]
+def _list_key(problem: RepairFlowProblem, operation: Operation, order: str) -> tuple[object, ...]:
+    due = _job_due(problem, operation.job_id)
+    if order == "EDD":
+        job = next(row for row in problem.jobs if row.id == operation.job_id)
+        return (due, -job.priority, operation.sequence, operation.id)
+    return (due, operation.sequence, operation.id)
+
+
+def _solver_record(
+    solver_config: str,
+    kwargs: dict[str, Any],
+    kernel_metadata: dict[str, Any] | None,
+) -> dict[str, Any]:
+    kernel: dict[str, Any] = {}
+    for key, value in (kernel_metadata or {}).items():
+        if value is None or isinstance(value, str | int | float | bool):
+            kernel[str(key)] = value
+    seed = kwargs.get("random_seed")
+    limit = kwargs.get("time_limit_s")
+    return {
+        "solver_config": solver_config,
+        "seed": seed if isinstance(seed, int) else None,
+        "time_limit_s": limit if isinstance(limit, int | float) else None,
+        "warm_start": "domain_greed" if kwargs.get("warm_start_assignments") else None,
+        "kernel": kernel,
+    }
 
 
 def _job_due(problem: RepairFlowProblem, job_id: str) -> datetime:

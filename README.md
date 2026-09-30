@@ -9,12 +9,14 @@
 | Default branch | `main` |
 | SynAPS pin | [`6178c93`](https://github.com/KonkovDV/SynAPS/commit/6178c93b705ff58be21fa74a98651883a2da1169) |
 | Maturity | ISO 16290 TRL 4 — laboratory fixture |
-| Status words | `heuristic_feasible` / `verified` / `OPTIMAL` only if CP-SAT proved OPTIMAL **and** the independent checker is empty |
-| Process exit | `0` verified (checker empty **and** full coverage), `2` plan written but dirty, `1` usage/error |
+| Status words | `claim_status=verified` — нотариус пуст (в том числе у GREED/RHC). `optimal` — только CP-SAT `OPTIMAL`, пустой нотариус и один проход компилятора. `heuristic_feasible` — кандидат эвристики до `recheck`. Поле `status=HEURISTIC_FEASIBLE` обозначает полосу солвера, не слово «оптимально». |
+| Process exit | `0` только при полном покрытии и пустом жёстком нотариусе. `allow_partial_plan` не даёт exit 0: неполное покрытие — статус `PARTIAL`, exit 2. `1` — ошибка входа. |
 
 **Allowed claim.** RepairFlow builds an alternative repair-shop schedule from a formal instance (posts, crews, skills, tooling, precedence, setups, calendars, frozen slots, blocking spares) and independently proves that hard constraints hold or names the reason they fail. It works offline / in shadow mode.
 
 **Not claimed.** Live SVARZ or Mosgortrans data, industrial KPI, replacement of EAM/ERP/CMMS, control of vehicle pull-out, or “AI decided”.
+
+The near-term framing is offline, shadow-only decision support for one repair contour. The document map is [`docs/README.md`](docs/README.md). Public OSINT and the submission gates are in [`docs/osint-and-pilot-gates.md`](docs/osint-and-pilot-gates.md). This repository does not claim a SVARZ sponsor, TRL 6, or a production deployment.
 
 ## Install
 
@@ -54,10 +56,12 @@ Evidence protocol: [`docs/SOTA_EVIDENCE_PROTOCOL.md`](docs/SOTA_EVIDENCE_PROTOCO
 ```bash
 repairflow synthesize --preset repair-site-mvp --out data/repair-site-mvp.json
 repairflow solve data/repair-site-mvp.json --preset FIFO --out out/fifo.json
+repairflow solve data/repair-site-mvp.json --preset EDD --out out/edd.json
 repairflow solve data/repair-site-mvp.json --preset GREED --out out/greed.json
-repairflow check data/repair-site-mvp.json out/greed.json --report out/greed.check.json
+repairflow check data/repair-site-mvp.json out/greed.json --verify-hashes --report out/greed.check.json
 repairflow compare data/repair-site-mvp.json out/fifo.json out/greed.json --out out/compare.json
 repairflow report data/repair-site-mvp.json out/greed.json --html out/report.html --md out/report.md
+repairflow inspect data/repair-site-mvp.json out/greed.json event.json --out out/inspected.json
 repairflow demo --preset broken-seed42
 repairflow benchmark --out bench
 ```
@@ -75,10 +79,15 @@ repair data → RepairFlow model/adapter → SynAPS search → RepairFlow checke
            → Gantt · diff · conflict reasons · operator decision
 ```
 
-RepairFlow does not fork SynAPS. Domain GREED is the verified closer on the 52-op
-`repair-site-mvp` fixture. Kernel `RHC-GREEDY-COVER` is available and checker-clean on
-`tiny`; it is not claimed verified on the larger site. Published assignments name a
-concrete crew; skill-pools stay inside the kernel adapter.
+RepairFlow does not fork SynAPS. A repair card may be a convergent DAG. The kernel
+only accepts a chain inside an order, so `dag_compiler` splits the card into chain
+segments and the domain checker still judges the original edges. Domain GREED is the
+verified closer on the `repair-site-mvp` fixture (`claim_status=verified`, not optimal).
+Kernel `RHC-GREEDY-COVER` is checker-clean on `tiny`; it is not claimed verified on the
+larger site. Published assignments name a concrete crew. The kernel auxiliary pool has
+no shift calendar; the domain checker enforces crew calendars. A soft `due_date` miss
+is a KPI (`DUE_MISSED`), not a hard rejection. Empty `eligible_work_center_ids` is a
+validation error.
 
 ## Honest scope
 

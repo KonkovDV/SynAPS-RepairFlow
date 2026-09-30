@@ -4,12 +4,13 @@ from __future__ import annotations
 
 from collections import defaultdict
 from datetime import datetime, timedelta
-from typing import Any
+from typing import Any, Literal
 from uuid import UUID
 
 from synaps.model import Assignment, ScheduleProblem, ScheduleResult
 
-from repairflow.adapter import bind_concrete_crews, lookup_setup_minutes, reverse_ids
+from repairflow.checker_primitives import bind_concrete_crews, lookup_setup_minutes, reverse_ids
+from repairflow.ledger import exchange_pool_violations
 from repairflow.model import (
     Calendar,
     Operation,
@@ -61,6 +62,7 @@ def check_plan(
     violations.extend(_due_release_spares(problem, mapped))
     violations.extend(_setup(problem, mapped))
     violations.extend(_frozen(problem, mapped))
+    violations.extend(exchange_pool_violations(problem, mapped))
     return _sorted(violations)
 
 
@@ -223,8 +225,6 @@ def _ref_and_duration(
 def _coverage(problem: RepairFlowProblem, assignments: list[PlannedAssignment]) -> list[Violation]:
     assigned = {asn.operation_id for asn in assignments}
     out: list[Violation] = []
-    if problem.policy.allow_partial_plan:
-        return out
     for operation in problem.operations:
         if operation.id not in assigned:
             out.append(
@@ -252,7 +252,7 @@ def _skills_and_eligibility(
         op = ops.get(asn.operation_id)
         if op is None:
             continue
-        if op.eligible_work_center_ids and asn.work_center_id not in op.eligible_work_center_ids:
+        if not op.eligible_work_center_ids or asn.work_center_id not in op.eligible_work_center_ids:
             out.append(
                 _violation(
                     ReasonCode.ELIGIBLE_CENTER_MISMATCH,
@@ -337,11 +337,6 @@ def _precedence(problem: RepairFlowProblem, assignments: list[PlannedAssignment]
         if current is None:
             continue
         preds = list(op.predecessor_ids)
-        if not preds:
-            same_job = [row for row in problem.operations if row.job_id == op.job_id]
-            previous = [row for row in same_job if row.sequence < op.sequence]
-            if previous:
-                preds = [max(previous, key=lambda row: row.sequence).id]
         for pred_id in preds:
             pred = by_op.get(pred_id)
             if pred is None:
@@ -470,6 +465,7 @@ def _calendars_windows_horizon(
     calendars = {row.id: row for row in problem.calendars}
     centers = {wc.id: wc for wc in problem.work_centers}
     crews = {crew.id: crew for crew in problem.crews}
+    auxes = {aux.id: aux for aux in problem.aux_resources}
     ops = {op.id: op for op in problem.operations}
     out: list[Violation] = []
     horizon = problem.planning_horizon
@@ -521,15 +517,30 @@ def _calendars_windows_horizon(
             )
         if asn.crew_id:
             crew = crews.get(asn.crew_id)
-            if crew is not None:
+            if crew is not None and crew.calendar_id is not None:
                 out.extend(
                     _calendar_fit(
-                        calendars.get(crew.calendar_id or ""),
+                        calendars.get(crew.calendar_id),
                         asn,
                         occ_start,
                         resource_id=crew.id,
                     )
                 )
+        needed = set(asn.aux_ids)
+        if op is not None:
+            needed.update(op.required_aux_ids)
+        for aux_id in sorted(needed):
+            aux = auxes.get(aux_id)
+            if aux is None or aux.calendar_id is None:
+                continue
+            out.extend(
+                _calendar_fit(
+                    calendars.get(aux.calendar_id),
+                    asn,
+                    occ_start,
+                    resource_id=aux.id,
+                )
+            )
     return out
 
 
@@ -540,8 +551,19 @@ def _calendar_fit(
     *,
     resource_id: str,
 ) -> list[Violation]:
-    if calendar is None or not calendar.windows:
+    if calendar is None:
         return []
+    if not calendar.windows:
+        return [
+            _violation(
+                ReasonCode.CALENDAR_BROKEN,
+                f"calendar {calendar.id} has no open windows",
+                operation_id=assignment.operation_id,
+                resource_id=resource_id,
+                start=assignment.start,
+                end=assignment.end,
+            )
+        ]
     for window in calendar.windows:
         if occ_start >= window.start and assignment.end <= window.end:
             return []
@@ -644,6 +666,19 @@ def _due_release_spares(
                     start=last.start,
                     end=last.end,
                     suggested_relaxation=SUGGESTIONS[ReasonCode.DUE_MISSED],
+                    severity="kpi",
+                )
+            )
+        if job.deadline is not None and last is not None and last.end > job.deadline:
+            out.append(
+                _violation(
+                    ReasonCode.DEADLINE_MISSED,
+                    f"job {job.id} finishes after deadline",
+                    job_id=job.id,
+                    operation_id=last.operation_id,
+                    start=last.start,
+                    end=last.end,
+                    suggested_relaxation=SUGGESTIONS[ReasonCode.DEADLINE_MISSED],
                 )
             )
     return out
@@ -767,6 +802,7 @@ def _violation(
     code: ReasonCode | str,
     message: str,
     *,
+    severity: str = "hard",
     job_id: str | None = None,
     operation_id: str | None = None,
     resource_id: str | None = None,
@@ -776,9 +812,11 @@ def _violation(
     details: dict[str, Any] | None = None,
 ) -> Violation:
     text = code.value if isinstance(code, ReasonCode) else str(code)
+    level: Literal["hard", "kpi"] = "kpi" if severity == "kpi" else "hard"
     return Violation(
         code=text,
         message=message or REASON_RU.get(text, text),
+        severity=level,
         job_id=job_id,
         operation_id=operation_id,
         resource_id=resource_id,
@@ -792,7 +830,12 @@ def _violation(
 def kernel_hard_violations(schedule_problem: ScheduleProblem, result: ScheduleResult) -> list[dict[str, Any]]:
     from synaps.solvers.feasibility_checker import FeasibilityChecker, proven_hard_violations
 
-    raw = FeasibilityChecker().check(schedule_problem, list(result.assignments))
+    raw = FeasibilityChecker().check(
+        schedule_problem,
+        list(result.assignments),
+        exhaustive=True,
+        strict_setup_matrix=True,
+    )
     hard = proven_hard_violations(raw)
     out: list[dict[str, Any]] = []
     for item in hard:

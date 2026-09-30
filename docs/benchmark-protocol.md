@@ -13,4 +13,8 @@ Full claim ladder and academic anchors: [`SOTA_EVIDENCE_PROTOCOL.md`](SOTA_EVIDE
 - Frozen `JOB-01-03` binds a crew that covers the operation skills (electrical restore → `CREW-ELEC`), so electrical seeds are not excluded from the portfolio.
 - Exit `0` only if every GREED row is checker-verified; otherwise exit `2`.
 - FIFO is an infeasible compact packing. A shorter FIFO makespan is not a quality win; report FIFO hard violations and GREED makespan as primary KPIs.
+- Makespan, tardiness, setup and coverage in `objective` are recomputed from the horizon start for every solver. The solver's own numbers stay in `metadata.solver_objective`.
+- `EDD` is a capacity-aware list scheduler (due date, then priority). It is a feasible baseline. Select it with `--solvers FIFO GREED EDD`.
+- CP-SAT receives the domain GREED assignment as `warm_start_assignments` unless the caller already passed one.
+- The published CI matrix stays the six pairs above. A 30-seed study is an explicit `--preset` plus `--seeds` product, not the default.
 - CI uploads `bench/` even when the job fails so dirty cells remain inspectable.

@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+- Exit 0 requires full coverage. `allow_partial_plan` no longer hides missing
+  operations; those plans are `PARTIAL` / exit 2.
+- Tooling calendars and empty calendars are hard. `due_date` stays soft;
+  `Job.deadline` is hard. Duplicate setup cells and unknown replan ids are rejected.
+  Immutable frozen rows are checked against each other at ingest.
+- The checker no longer imports the adapter. Setup lookup used by the notary
+  lives in `checker_primitives.py`.
+- Schedule metrics (makespan from the horizon start, tardiness, setup, coverage)
+  are recomputed for every solver. `repairflow check --verify-hashes` rejects a
+  plan whose stored hashes do not match. OR-Tools is pinned to 9.15.6755.
+  `EDD` is a feasible baseline. CP-SAT is warm-started from domain GREED.
+- Pilot-boundary documents state TRL 4, shadow-only use, and the gates that
+  are still external (legal entity, data owner, signed extract). The operator
+  decision log is a contract, not a writer.
+
 - `repairflow benchmark`: FIFO vs GREED portfolio on the documented synthetic
   matrix, HTML/JSON/Markdown KPI report, CI artifact. FIFO makespan is not treated
   as a quality baseline.

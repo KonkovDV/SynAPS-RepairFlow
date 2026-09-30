@@ -10,10 +10,12 @@ from typing import Any
 
 from repairflow.benchmark import run_benchmark
 from repairflow.diff import diff_plans
+from repairflow.events import InspectionEvent
+from repairflow.evidence import verify_plan_hashes
 from repairflow.io import read_text_limited
 from repairflow.model import PlannedAssignment, RepairFlowResult
 from repairflow.normalize import load_problem
-from repairflow.planner import plan, recheck, replan_after_disruption
+from repairflow.planner import plan, recheck, replan_after_disruption, replan_after_inspection
 from repairflow.report import render_html, render_markdown
 from repairflow.synthetic import PRESETS, corrupt_plan, synthesize
 from repairflow.versions import REPAIRFLOW_VERSION, SYNAPS_COMMIT
@@ -39,6 +41,11 @@ def main(argv: list[str] | None = None) -> int:
     p_check.add_argument("problem", type=Path)
     p_check.add_argument("plan", type=Path)
     p_check.add_argument("--report", type=Path, default=None)
+    p_check.add_argument(
+        "--verify-hashes",
+        action="store_true",
+        help="Refuse the plan when input, result, or config hashes do not match",
+    )
 
     p_cmp = sub.add_parser("compare", help="Diff two plans")
     p_cmp.add_argument("problem", type=Path)
@@ -57,6 +64,12 @@ def main(argv: list[str] | None = None) -> int:
     p_dis.add_argument("base", type=Path)
     p_dis.add_argument("--operation-id", action="append", required=True)
     p_dis.add_argument("--out", type=Path, required=True)
+
+    p_ins = sub.add_parser("inspect", help="Reveal a defect branch and replan other units frozen")
+    p_ins.add_argument("problem", type=Path)
+    p_ins.add_argument("plan", type=Path)
+    p_ins.add_argument("event", type=Path)
+    p_ins.add_argument("--out", type=Path, required=True)
 
     p_demo = sub.add_parser("demo", help="One-command MVP readiness run")
     p_demo.add_argument("--preset", default="repair-site-mvp")
@@ -110,13 +123,15 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "solve":
             return _solve(args.input, args.out, args.solver)
         if args.command == "check":
-            return _check(args.problem, args.plan, args.report)
+            return _check(args.problem, args.plan, args.report, verify_hashes=args.verify_hashes)
         if args.command == "compare":
             return _compare(args.problem, args.baseline, args.candidate, args.out)
         if args.command == "report":
             return _report(args.problem, args.plan, args.html, args.md)
         if args.command == "disrupt":
             return _disrupt(args.problem, args.base, args.operation_id, args.out)
+        if args.command == "inspect":
+            return _inspect(args.problem, args.plan, args.event, args.out)
         if args.command == "demo":
             return _demo(args.preset, args.out, skip_cpsat=args.skip_cpsat)
         if args.command == "benchmark":
@@ -140,10 +155,22 @@ def _solve(input_path: Path, output: Path, solver: str) -> int:
     return int(outcome.result.exit_code)
 
 
-def _check(problem_path: Path, plan_path: Path, report_path: Path | None) -> int:
+def _check(
+    problem_path: Path,
+    plan_path: Path,
+    report_path: Path | None,
+    *,
+    verify_hashes: bool = False,
+) -> int:
     problem = load_problem(problem_path)
     payload = json.loads(read_text_limited(plan_path))
     result = RepairFlowResult.model_validate(payload)
+    if verify_hashes:
+        mismatches = verify_plan_hashes(problem, result)
+        if mismatches:
+            for row in mismatches:
+                sys.stderr.write(f"repairflow: {row}\n")
+            return 1
     outcome = recheck(
         problem,
         assignments=list(result.assignments),
@@ -152,8 +179,8 @@ def _check(problem_path: Path, plan_path: Path, report_path: Path | None) -> int
     )
     if report_path is not None:
         _write_json(report_path, outcome.result.model_dump(mode="json"))
-    for row in outcome.result.violations:
-        sys.stdout.write(f"{row.code}\t{row.message}\n")
+    for violation in outcome.result.violations:
+        sys.stdout.write(f"{violation.code}\t{violation.message}\n")
     return int(outcome.result.exit_code)
 
 
@@ -179,6 +206,16 @@ def _report(problem_path: Path, plan_path: Path, html_path: Path | None, md_path
         html_path.parent.mkdir(parents=True, exist_ok=True)
         html_path.write_text(render_html(problem, result), encoding="utf-8")
     return 0 if result.verified_feasible else 2
+
+
+def _inspect(problem_path: Path, plan_path: Path, event_path: Path, output: Path) -> int:
+    problem = load_problem(problem_path)
+    base = RepairFlowResult.model_validate_json(read_text_limited(plan_path))
+    event = InspectionEvent.model_validate_json(read_text_limited(event_path))
+    outcome = replan_after_inspection(problem, base=base, event=event)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    _write_json(output, outcome.result.model_dump(mode="json"))
+    return int(outcome.result.exit_code)
 
 
 def _disrupt(problem_path: Path, base_path: Path, operation_ids: list[str], output: Path) -> int:
@@ -312,7 +349,7 @@ def _benchmark(
 
 def _write_json(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, indent=2, ensure_ascii=False, default=str), encoding="utf-8")
+    path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
 
 
 if __name__ == "__main__":

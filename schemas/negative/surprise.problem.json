@@ -1,0 +1,14 @@
+{
+  "schema_version": "repairflow.problem.v1",
+  "instance_id": "negative",
+  "data_provenance": "synthetic",
+  "planning_horizon": {
+    "start": "2026-01-12T00:00:00Z",
+    "end": "2026-01-14T00:00:00Z"
+  },
+  "jobs": [],
+  "operations": [],
+  "work_centers": [],
+  "crews": [],
+  "surprise": true
+}

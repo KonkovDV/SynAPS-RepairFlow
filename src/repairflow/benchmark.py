@@ -60,6 +60,9 @@ class BenchmarkRow:
     input_hash: str
     config_hash: str
     result_hash: str
+    tardiness_min: float | None = None
+    setup_min: float | None = None
+    unscheduled: int | None = None
 
 
 @dataclass
@@ -197,6 +200,9 @@ def run_benchmark(
                     violations=len(result.violations),
                     coverage=_as_float(obj.get("coverage")),
                     makespan_min=_as_float(obj.get("makespan_minutes")),
+                    tardiness_min=_as_float(obj.get("total_tardiness_minutes")),
+                    setup_min=_as_float(obj.get("total_setup_minutes")),
+                    unscheduled=int(obj.get("unscheduled_operations") or 0),
                     input_hash=result.input_hash,
                     config_hash=result.config_hash,
                     result_hash=result.result_hash,

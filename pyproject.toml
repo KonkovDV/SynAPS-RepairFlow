@@ -29,6 +29,7 @@ classifiers = [
 dependencies = [
   "synaps @ git+https://github.com/KonkovDV/SynAPS.git@6178c93b705ff58be21fa74a98651883a2da1169",
   "pydantic>=2.9",
+  "ortools==9.15.6755",
 ]
 
 [project.optional-dependencies]

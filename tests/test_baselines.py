@@ -12,6 +12,7 @@ def test_fifo_is_dirty_and_greed_is_verified() -> None:
     assert greed.result.exit_code == 0
     assert greed.result.verified_feasible
     assert greed.result.status.value == "HEURISTIC_FEASIBLE"
+    assert greed.result.claim_status == "verified"
     codes = {row.code for row in fifo.result.violations}
     assert ReasonCode.SKILL_MISMATCH in codes or ReasonCode.CENTER_OVERLAP in codes
 

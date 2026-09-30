@@ -42,6 +42,7 @@
     "calendars": { "type": "array" },
     "frozen_assignments": { "type": "array" },
     "spares": { "type": "array" },
+    "exchange_pools": { "type": "array" },
     "policy": { "type": "object" },
     "domain_attributes": { "type": "object" }
   }

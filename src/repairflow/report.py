@@ -24,7 +24,7 @@ def render_markdown(problem: RepairFlowProblem, result: RepairFlowResult) -> str
     lines = [
         f"# RepairFlow {problem.instance_id}",
         "",
-        f"- статус: **{result.status.value}** ({banner})",
+        f"- статус: **{result.status.value}** · claim `{result.claim_status or '—'}` ({banner})",
         f"- solver: `{result.solver_config}` · kernel `{result.kernel_status}`",
         f"- RepairFlow {REPAIRFLOW_VERSION} · SynAPS `{SYNAPS_COMMIT}`",
         f"- provenance: `{result.data_provenance}` · claim `{result.claim_level}`",
@@ -34,12 +34,22 @@ def render_markdown(problem: RepairFlowProblem, result: RepairFlowResult) -> str
         f"- coverage: {result.objective.get('coverage')} · "
         f"makespan {result.objective.get('makespan_minutes')} мин",
         f"- нарушения: {len(result.violations)}",
-        "",
-        "## Назначения",
-        "",
-        "| операция | заказ | пост | бригада | старт | конец | setup | причина |",
-        "|---|---|---|---|---|---|---|---|",
     ]
+    nervous = result.metadata.get("nervousness")
+    if isinstance(nervous, dict):
+        lines.append(
+            f"- нервозность: ratio {nervous.get('ratio')} · "
+            f"frozen_violations {nervous.get('frozen_violations')}"
+        )
+    lines.extend(
+        [
+            "",
+            "## Назначения",
+            "",
+            "| операция | заказ | пост | бригада | старт | конец | setup | причина |",
+            "|---|---|---|---|---|---|---|---|",
+        ]
+    )
     jobs = {op.id: op.job_id for op in problem.operations}
     for row in result.assignments:
         lines.append(
@@ -71,7 +81,8 @@ def render_markdown(problem: RepairFlowProblem, result: RepairFlowResult) -> str
             "",
             "- синтетический контур, не данные СВАРЗ и не пилот Дептранса;",
             "- не управляет выпуском транспорта и не записывает план в EAM/ERP;",
-            "- GREED/RHC/FIFO не называются оптимальными.",
+            "- GREED/RHC/FIFO не называются оптимальными; `optimal` только у CP-SAT OPTIMAL за один проход.",
+            "- `verified` значит: нотариус пуст. Мягкий срок (`DUE_MISSED`) сам по себе план не отклоняет.",
             "",
         ]
     )
@@ -83,7 +94,10 @@ def render_html(problem: RepairFlowProblem, result: RepairFlowResult) -> str:
     banner = (
         f'<div class="banner fail">exit {result.exit_code} — план записан, выпускать нельзя</div>'
         if dirty
-        else f'<div class="banner ok">exit {result.exit_code} {escape(result.status.value)}</div>'
+        else (
+            f'<div class="banner ok">exit {result.exit_code} '
+            f"{escape(result.claim_status or result.status.value)}</div>"
+        )
     )
     return _page(
         title=f"RepairFlow {problem.instance_id}",

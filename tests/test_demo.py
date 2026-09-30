@@ -1,3 +1,5 @@
+import json
+
 from repairflow.cli import main
 
 
@@ -12,3 +14,6 @@ def test_one_command_mvp_readiness(tmp_path, capsys) -> None:
     html = (tmp_path / "greed.html").read_text(encoding="utf-8")
     assert "Gantt по постам" in html
     assert "input_hash" in html
+    greed = json.loads((tmp_path / "greed.json").read_text(encoding="utf-8"))
+    assert html.count('class="bar') == len(greed["assignments"])
+    assert html.count('class="bar') > 0

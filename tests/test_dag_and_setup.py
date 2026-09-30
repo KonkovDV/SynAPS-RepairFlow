@@ -9,44 +9,52 @@ def test_linear_tech_card_is_accepted() -> None:
     assert all(len(op.predecessor_ids) <= 1 for op in problem.operations)
 
 
-def test_branching_dag_is_rejected() -> None:
-    problem = synthesize("tiny", seed=1)
-    ops = list(problem.operations)
-    child = ops[-1]
-    extra = ops[0].id
-    preds = list(child.predecessor_ids)
-    preds = [extra, ops[1].id] if len(preds) < 1 else [preds[0], extra]
-    broken = child.model_copy(update={"predecessor_ids": preds})
-    payload = problem.model_dump(mode="python")
-    payload["operations"] = [broken if row.id == child.id else row for row in ops]
-    with pytest.raises(ValueError, match="unsupported DAG"):
-        RepairFlowProblem.model_validate(payload)
-
-
-def test_predecessor_ids_must_match_linear_sequence() -> None:
+def test_branching_dag_is_accepted() -> None:
     problem = synthesize("tiny", seed=1)
     ops = list(problem.operations)
     child = next(op for op in ops if op.predecessor_ids)
-    other = next(op.id for op in ops if op.id not in {child.id, *child.predecessor_ids})
+    extra = next(op.id for op in ops if op.job_id != child.job_id)
+    branched = child.model_copy(update={"predecessor_ids": [child.predecessor_ids[0], extra]})
+    payload = problem.model_dump(mode="python")
+    payload["operations"] = [branched if row.id == child.id else row for row in ops]
+    loaded = RepairFlowProblem.model_validate(payload)
+    assert any(len(op.predecessor_ids) > 1 for op in loaded.operations)
+
+
+def test_acyclic_skip_edge_is_accepted() -> None:
+    problem = synthesize("tiny", seed=1)
+    ops = list(problem.operations)
+    child = next(op for op in ops if op.predecessor_ids)
+    other = next(op.id for op in ops if op.job_id != child.job_id)
     wrong = child.model_copy(update={"predecessor_ids": [other]})
     payload = problem.model_dump(mode="python")
     payload["operations"] = [wrong if row.id == child.id else row for row in ops]
-    with pytest.raises(ValueError, match="linear sequence"):
-        RepairFlowProblem.model_validate(payload)
+    loaded = RepairFlowProblem.model_validate(payload)
+    assert loaded.operations
 
 
-def test_first_operation_cannot_declare_a_predecessor() -> None:
+def test_precedence_cycle_is_rejected() -> None:
     problem = synthesize("tiny", seed=1)
     ops = list(problem.operations)
     first = min(
         (op for op in ops if op.job_id == ops[0].job_id),
         key=lambda item: item.sequence,
     )
-    extra = next(op.id for op in ops if op.id != first.id)
-    broken = first.model_copy(update={"predecessor_ids": [extra]})
+    later = next(op for op in ops if op.job_id == first.job_id and first.id in op.predecessor_ids)
+    broken = first.model_copy(update={"predecessor_ids": [later.id]})
     payload = problem.model_dump(mode="python")
     payload["operations"] = [broken if row.id == first.id else row for row in ops]
-    with pytest.raises(ValueError, match="linear sequence"):
+    with pytest.raises(ValueError, match="cycle"):
+        RepairFlowProblem.model_validate(payload)
+
+
+def test_empty_eligible_posts_are_rejected() -> None:
+    problem = synthesize("tiny", seed=1)
+    ops = list(problem.operations)
+    blank = ops[0].model_copy(update={"eligible_work_center_ids": []})
+    payload = problem.model_dump(mode="python")
+    payload["operations"] = [blank if row.id == blank.id else row for row in ops]
+    with pytest.raises(ValueError, match="empty eligible_work_center_ids"):
         RepairFlowProblem.model_validate(payload)
 
 

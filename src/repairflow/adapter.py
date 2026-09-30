@@ -18,6 +18,25 @@ from synaps.model import (
     WorkCenter,
 )
 
+from repairflow.checker_primitives import (
+    bind_concrete_crews as bind_concrete_crews,
+)
+from repairflow.checker_primitives import (
+    lookup_setup_minutes,
+)
+from repairflow.checker_primitives import (
+    reverse_ids as reverse_ids,
+)
+
+__all__ = [
+    "bind_concrete_crews",
+    "compile_frozen_assignments",
+    "extract_frozen_from_planned",
+    "lookup_setup_minutes",
+    "reverse_ids",
+    "to_schedule_problem",
+]
+from repairflow.dag_compiler import CompiledDag, compile_dag
 from repairflow.model import (
     FrozenAssignment,
     PlannedAssignment,
@@ -34,7 +53,20 @@ def sid(*parts: str) -> UUID:
     return uuid5(_NS, "repairflow:" + ":".join(parts))
 
 
-def to_schedule_problem(problem: RepairFlowProblem) -> tuple[ScheduleProblem, dict[str, UUID]]:
+def _preserve_sequence(op_ids: tuple[str, ...], ops_by_id: dict[str, DomainOperation]) -> bool:
+    """Keep original seq_in_order when the segment is already that chain."""
+
+    rows = [ops_by_id[op_id] for op_id in op_ids]
+    if len({row.sequence for row in rows}) != len(rows):
+        return False
+    ordered = sorted(rows, key=lambda row: (row.sequence, row.id))
+    return [row.id for row in ordered] == list(op_ids)
+
+
+def to_schedule_problem(
+    problem: RepairFlowProblem,
+    compiled: CompiledDag | None = None,
+) -> tuple[ScheduleProblem, dict[str, UUID]]:
     id_map: dict[str, UUID] = {}
     states_by_code: dict[str, State] = {}
 
@@ -45,6 +77,7 @@ def to_schedule_problem(problem: RepairFlowProblem) -> tuple[ScheduleProblem, di
             id_map[f"state:{code or 'idle'}"] = state.id
         return states_by_code[code]
 
+    compiled_dag = compiled if compiled is not None else compile_dag(problem)
     state_of("idle")
     for operation in problem.operations:
         state_of(operation.setup_state)
@@ -71,9 +104,23 @@ def to_schedule_problem(problem: RepairFlowProblem) -> tuple[ScheduleProblem, di
 
     orders: list[Order] = []
     jobs_by_id = {job.id: job for job in problem.jobs}
-    for job in problem.jobs:
-        order_id = sid("job", job.id)
-        id_map[f"job:{job.id}"] = order_id
+    ops_by_id = {op.id: op for op in problem.operations}
+    job_index = {job.id: index for index, job in enumerate(problem.jobs)}
+    ordered_segments = sorted(
+        compiled_dag.segments,
+        key=lambda segment: (job_index.get(segment.job_id, 10**9), segment.op_ids[0]),
+    )
+    segments_by_job: dict[str, list[str]] = {}
+    for segment in ordered_segments:
+        segments_by_job.setdefault(segment.job_id, []).append(segment.id)
+    kernel_order_of: dict[str, UUID] = {}
+    for segment in ordered_segments:
+        job = jobs_by_id[segment.job_id]
+        sole = segments_by_job[segment.job_id] == [segment.id]
+        order_key = job.id if sole else f"{job.id}:{segment.id}"
+        order_id = sid("job", order_key)
+        id_map[f"job:{order_key}"] = order_id
+        kernel_order_of[segment.id] = order_id
         due = job.due_date or problem.planning_horizon.end
         orders.append(
             Order(
@@ -84,30 +131,28 @@ def to_schedule_problem(problem: RepairFlowProblem) -> tuple[ScheduleProblem, di
                 priority=job.priority,
                 domain_attributes={
                     "repairflow_id": job.id,
+                    "segment_id": segment.id,
                     "asset_code": job.asset_code,
                     "unit_type": job.unit_type,
                 },
             )
         )
 
-    ops_by_job: dict[str, list[DomainOperation]] = {}
-    for operation in problem.operations:
-        ops_by_job.setdefault(operation.job_id, []).append(operation)
-    for rows in ops_by_job.values():
-        rows.sort(key=lambda item: (item.sequence, item.id))
-
     kernel_ops: list[Operation] = []
-    for job_id, rows in ops_by_job.items():
-        job = jobs_by_id[job_id]
-        for operation in rows:
+    for segment in ordered_segments:
+        job = jobs_by_id[segment.job_id]
+        previous: UUID | None = None
+        preserve_sequence = _preserve_sequence(segment.op_ids, ops_by_id)
+        for index, op_domain_id in enumerate(segment.op_ids, start=1):
+            operation = ops_by_id[op_domain_id]
             op_id = sid("op", operation.id)
             id_map[f"op:{operation.id}"] = op_id
-            predecessor = None
-            if operation.predecessor_ids:
-                predecessor = sid("op", operation.predecessor_ids[0])
+            if not operation.eligible_work_center_ids:
+                raise ValueError(
+                    f"operation {operation.id} has empty eligible_work_center_ids "
+                    "(empty does not mean every post)"
+                )
             eligible = [id_map[f"wc:{wc_id}"] for wc_id in operation.eligible_work_center_ids]
-            if not eligible:
-                eligible = [id_map[f"wc:{center.id}"] for center in problem.work_centers]
             earliest = operation.earliest_start or job.release_date
             for spare in problem.spares:
                 if spare.id in operation.required_spare_ids and spare.available_from is not None:
@@ -115,24 +160,29 @@ def to_schedule_problem(problem: RepairFlowProblem) -> tuple[ScheduleProblem, di
                         earliest = spare.available_from
                     else:
                         earliest = max(earliest, spare.available_from)
+            window = compiled_dag.window_lb.get(operation.id)
+            if window is not None:
+                earliest = window if earliest is None else max(earliest, window)
             kernel_ops.append(
                 Operation(
                     id=op_id,
-                    order_id=id_map[f"job:{job_id}"],
-                    seq_in_order=operation.sequence,
+                    order_id=kernel_order_of[segment.id],
+                    seq_in_order=operation.sequence if preserve_sequence else index,
                     state_id=state_of(operation.setup_state).id,
                     base_duration_min=operation.duration_min,
                     eligible_wc_ids=eligible,
-                    predecessor_op_id=predecessor,
+                    predecessor_op_id=previous,
                     earliest_start=earliest,
                     latest_finish=operation.latest_finish,
                     domain_attributes={
                         "repairflow_id": operation.id,
-                        "job_id": job_id,
+                        "job_id": segment.job_id,
+                        "segment_id": segment.id,
                         "required_skills": list(operation.required_skills),
                     },
                 )
             )
+            previous = op_id
 
     aux_resources: list[AuxiliaryResource] = []
     for crew in problem.crews:
@@ -284,47 +334,6 @@ def extract_frozen_from_result(
     return out
 
 
-def reverse_ids(id_map: dict[str, UUID]) -> dict[UUID, tuple[str, str]]:
-    out: dict[UUID, tuple[str, str]] = {}
-    for key, value in id_map.items():
-        kind, ident = key.split(":", 1)
-        out[value] = (kind, ident)
-    return out
-
-
-def lookup_setup_minutes(
-    problem: RepairFlowProblem,
-    *,
-    work_center_id: str,
-    from_state: str,
-    to_state: str,
-) -> int | None:
-    if from_state == to_state:
-        specific = _setup_cell(problem, work_center_id, from_state, to_state)
-        return 0 if specific is None else specific
-    return _setup_cell(problem, work_center_id, from_state, to_state)
-
-
-def _setup_cell(
-    problem: RepairFlowProblem,
-    work_center_id: str,
-    from_state: str,
-    to_state: str,
-) -> int | None:
-    specific = None
-    generic = None
-    for entry in problem.setup_matrix:
-        if entry.from_state != from_state or entry.to_state != to_state:
-            continue
-        if entry.work_center_id == work_center_id:
-            specific = entry.duration_min
-        elif entry.work_center_id is None:
-            generic = entry.duration_min
-    if specific is not None:
-        return specific
-    return generic
-
-
 def _compile_setup(
     problem: RepairFlowProblem,
     id_map: dict[str, UUID],
@@ -343,7 +352,7 @@ def _compile_setup(
                     to_state=to_state,
                 )
                 if minutes is None:
-                    if from_state == to_state or problem.policy.missing_setup == "zero":
+                    if problem.policy.missing_setup == "zero":
                         minutes = 0
                     else:
                         continue
@@ -364,52 +373,6 @@ def _crews_for_skills(problem: RepairFlowProblem, skills: list[str]) -> list[str
     if not required:
         return [crew.id for crew in problem.crews]
     return [crew.id for crew in problem.crews if required <= set(crew.skills)]
-
-
-def bind_concrete_crews(
-    problem: RepairFlowProblem,
-    assignments: list[PlannedAssignment],
-) -> list[PlannedAssignment]:
-    """Resolve skill-pool kernel aux into a named crew. Jury contract: operation → crew."""
-
-    ops = {op.id: op for op in problem.operations}
-    occupied: dict[str, list[tuple[datetime, datetime]]] = {crew.id: [] for crew in problem.crews}
-    bound: list[PlannedAssignment] = []
-    for assignment in sorted(assignments, key=lambda row: (row.start, row.operation_id)):
-        crew_id = assignment.crew_id
-        operation = ops.get(assignment.operation_id)
-        if crew_id is None and operation is not None and operation.required_skills:
-            crew_id = _pick_free_crew(problem, assignment, occupied, operation)
-        if crew_id:
-            occ_start = assignment.start - timedelta(minutes=int(assignment.setup_minutes or 0))
-            occupied.setdefault(crew_id, []).append((occ_start, assignment.end))
-        if crew_id == assignment.crew_id:
-            bound.append(assignment)
-            continue
-        reason = assignment.reason
-        if crew_id:
-            reason = f"{reason} bound_crew={crew_id}".strip()
-        bound.append(assignment.model_copy(update={"crew_id": crew_id, "reason": reason}))
-    by_op = {row.operation_id: row for row in bound}
-    return [by_op.get(row.operation_id, row) for row in assignments]
-
-
-def _pick_free_crew(
-    problem: RepairFlowProblem,
-    assignment: PlannedAssignment,
-    occupied: dict[str, list[tuple[datetime, datetime]]],
-    operation: DomainOperation,
-) -> str | None:
-    occ_start = assignment.start - timedelta(minutes=int(assignment.setup_minutes or 0))
-    eligible = [crew for crew in problem.crews if set(operation.required_skills) <= set(crew.skills)]
-    eligible.sort(key=lambda crew: crew.id)
-    for crew in eligible:
-        overlaps = sum(
-            1 for start, end in occupied.get(crew.id, []) if occ_start < end and start < assignment.end
-        )
-        if overlaps < crew.max_parallel:
-            return crew.id
-    return None
 
 
 def extract_frozen_from_planned(

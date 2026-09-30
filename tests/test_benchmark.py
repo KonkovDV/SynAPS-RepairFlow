@@ -48,6 +48,8 @@ def test_benchmark_tiny_fifo_dirty_greed_verified(tmp_path: Path) -> None:
     assert (tmp_path / "benchmark.md").is_file()
     assert (tmp_path / "benchmark.html").is_file()
     assert (tmp_path / "tiny-seed42-greed.html").is_file()
+    assert greed.tardiness_min is not None
+    assert greed.setup_min is not None
 
 
 def test_cli_benchmark_tiny(tmp_path: Path, capsys) -> None:
@@ -56,6 +58,8 @@ def test_cli_benchmark_tiny(tmp_path: Path, capsys) -> None:
     assert "GREED verified ratio: 100.0%" in out
     assert "FIFO mean hard violations" in out
     assert (tmp_path / "benchmark.json").is_file()
+    assert (tmp_path / "benchmark.md").is_file()
+    assert (tmp_path / "benchmark.html").is_file()
 
 
 def test_cli_benchmark_unknown_preset_pair_is_usage_error(tmp_path: Path) -> None:

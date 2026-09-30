@@ -13,6 +13,7 @@ REASON_CODES = (
     "PRECEDENCE_BROKEN",
     "WINDOW_BROKEN",
     "DUE_MISSED",
+    "DEADLINE_MISSED",
     "FROZEN_MOVED",
     "SPARE_UNAVAILABLE",
     "UNKNOWN_OPERATION",
@@ -30,6 +31,9 @@ REASON_CODES = (
     "INVALID_PROBLEM",
     "INVALID_ID_MAP",
     "KERNEL_STATUS_UNKNOWN",
+    "DAG_FIXPOINT_NOT_CONVERGED",
+    "EXCHANGE_POOL_STOCKOUT",
+    "NERVOUSNESS_HIGH",
 )
 
 
@@ -42,6 +46,7 @@ class ReasonCode(StrEnum):
     PRECEDENCE_BROKEN = "PRECEDENCE_BROKEN"
     WINDOW_BROKEN = "WINDOW_BROKEN"
     DUE_MISSED = "DUE_MISSED"
+    DEADLINE_MISSED = "DEADLINE_MISSED"
     FROZEN_MOVED = "FROZEN_MOVED"
     SPARE_UNAVAILABLE = "SPARE_UNAVAILABLE"
     UNKNOWN_OPERATION = "UNKNOWN_OPERATION"
@@ -59,6 +64,9 @@ class ReasonCode(StrEnum):
     INVALID_PROBLEM = "INVALID_PROBLEM"
     INVALID_ID_MAP = "INVALID_ID_MAP"
     KERNEL_STATUS_UNKNOWN = "KERNEL_STATUS_UNKNOWN"
+    DAG_FIXPOINT_NOT_CONVERGED = "DAG_FIXPOINT_NOT_CONVERGED"
+    EXCHANGE_POOL_STOCKOUT = "EXCHANGE_POOL_STOCKOUT"
+    NERVOUSNESS_HIGH = "NERVOUSNESS_HIGH"
 
 
 REASON_RU: dict[str, str] = {
@@ -70,6 +78,7 @@ REASON_RU: dict[str, str] = {
     ReasonCode.PRECEDENCE_BROKEN: "нарушена технологическая последовательность",
     ReasonCode.WINDOW_BROKEN: "работа вне допустимого окна",
     ReasonCode.DUE_MISSED: "заказ не уложился в срок готовности",
+    ReasonCode.DEADLINE_MISSED: "заказ вышел за жёсткий deadline",
     ReasonCode.FROZEN_MOVED: "сдвинуто замороженное назначение",
     ReasonCode.SPARE_UNAVAILABLE: "ЗИП недоступен к старту операции",
     ReasonCode.UNKNOWN_OPERATION: "назначение ссылается на неизвестную операцию",
@@ -87,6 +96,9 @@ REASON_RU: dict[str, str] = {
     ReasonCode.INVALID_PROBLEM: "вход не проходит доменную валидацию",
     ReasonCode.INVALID_ID_MAP: "карта идентификаторов неполная или неоднозначная",
     ReasonCode.KERNEL_STATUS_UNKNOWN: "неизвестный статус ядра",
+    ReasonCode.DAG_FIXPOINT_NOT_CONVERGED: ("окна межсегментных связей не сошлись за лимит итераций"),
+    ReasonCode.EXCHANGE_POOL_STOCKOUT: "обменный фонд ушёл в минус",
+    ReasonCode.NERVOUSNESS_HIGH: "перепланирование сдвинуло слишком большую долю работ",
 }
 
 
@@ -99,8 +111,14 @@ SUGGESTIONS: dict[str, str] = {
     ReasonCode.PRECEDENCE_BROKEN: "начать операцию не раньше окончания предшественника",
     ReasonCode.WINDOW_BROKEN: "уложить работу в одно согласованное окно",
     ReasonCode.DUE_MISSED: "сдвинуть предшественников, добавить ресурс или согласовать новый срок",
+    ReasonCode.DEADLINE_MISSED: "уложить последнюю операцию до deadline или сдвинуть deadline",
     ReasonCode.FROZEN_MOVED: "оставить замороженный слот без изменений",
     ReasonCode.SPARE_UNAVAILABLE: "отложить старт до available_from или заменить артикул",
     ReasonCode.PARTIAL_COVERAGE: "увеличить горизонт, ресурсы или разрешить частичный план явно",
     ReasonCode.DAG_UNSUPPORTED: "разбить ветвление на линейные техкарты или расширить ядро",
+    ReasonCode.DAG_FIXPOINT_NOT_CONVERGED: (
+        "повторить со стратегией serialize или увеличить max_fixpoint_iter"
+    ),
+    ReasonCode.EXCHANGE_POOL_STOCKOUT: "сдвинуть выдачу, пополнить фонд или снять hard",
+    ReasonCode.NERVOUSNESS_HIGH: "сузить окрестность перепланирования или поднять порог",
 }

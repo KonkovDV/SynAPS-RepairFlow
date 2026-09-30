@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections import defaultdict, deque
-from datetime import datetime
+from datetime import datetime, timedelta
 from enum import StrEnum
 from typing import Annotated, Any, Literal, Self
 
@@ -25,6 +25,7 @@ from repairflow.limits import (
     MAX_FROZEN,
     MAX_JOBS,
     MAX_OPERATIONS,
+    MAX_POOLS,
     MAX_PRED_PER_OP,
     MAX_SETUP,
     MAX_SPARES,
@@ -90,10 +91,19 @@ class ResultStatus(StrEnum):
 
 
 class Policy(RepairFlowModel):
+    """Scheduling policy.
+
+    `unsupported_dag` is kept so existing v1 documents still parse. Branching
+    cards are compiled (ADR-0002); the flag no longer rejects a DAG.
+    """
+
     unknown_fields: Literal["reject"] = "reject"
     missing_setup: Literal["reject", "zero"] = "reject"
     unsupported_dag: Literal["reject"] = "reject"
     allow_partial_plan: bool = False
+    dag_strategy: Literal["split_release_fixpoint", "serialize"] = "split_release_fixpoint"
+    max_fixpoint_iter: int = Field(default=8, ge=1, le=32)
+    nervousness_warn_ratio: float = Field(default=0.10, ge=0.0, le=1.0)
 
 
 class PlanningHorizon(RepairFlowModel):
@@ -137,6 +147,7 @@ class Job(RepairFlowModel):
     asset_code: str = ""
     unit_type: str = ""
     due_date: UTCInstant | None = None
+    deadline: UTCInstant | None = None
     release_date: UTCInstant | None = None
     priority: int = Field(default=500, ge=1, le=999)
     domain_attributes: dict[str, Any] = Field(default_factory=dict)
@@ -228,6 +239,20 @@ class Spare(RepairFlowModel):
     domain_attributes: dict[str, Any] = Field(default_factory=dict)
 
 
+class PoolDemand(RepairFlowModel):
+    at: UTCInstant
+    qty: int = Field(ge=1)
+
+
+class ExchangePool(RepairFlowModel):
+    """Serviceable-unit ledger. This is stock over time, not a simultaneous pool."""
+
+    unit_type: str
+    initial_serviceable: int = Field(ge=0)
+    demand: list[PoolDemand] = Field(default_factory=list)
+    hard: bool = False
+
+
 class PlannedAssignment(RepairFlowModel):
     operation_id: str
     work_center_id: str
@@ -242,6 +267,7 @@ class PlannedAssignment(RepairFlowModel):
 class Violation(RepairFlowModel):
     code: str
     message: str
+    severity: Literal["hard", "kpi"] = "hard"
     job_id: str | None = None
     operation_id: str | None = None
     resource_id: str | None = None
@@ -265,6 +291,7 @@ class RepairFlowProblem(RepairFlowModel):
     calendars: list[Calendar] = Field(default_factory=list)
     frozen_assignments: list[FrozenAssignment] = Field(default_factory=list)
     spares: list[Spare] = Field(default_factory=list)
+    exchange_pools: list[ExchangePool] = Field(default_factory=list)
     policy: Policy = Field(default_factory=Policy)
     domain_attributes: dict[str, Any] = Field(default_factory=dict)
 
@@ -281,6 +308,7 @@ class RepairFlowProblem(RepairFlowModel):
             ("calendars", self.calendars, MAX_CALENDARS),
             ("frozen_assignments", self.frozen_assignments, MAX_FROZEN),
             ("spares", self.spares, MAX_SPARES),
+            ("exchange_pools", self.exchange_pools, MAX_POOLS),
         ):
             if len(rows) > limit:
                 issues.append(f"{name} count {len(rows)} exceeds lab limit {limit}")
@@ -321,6 +349,11 @@ class RepairFlowProblem(RepairFlowModel):
             for pred in operation.predecessor_ids:
                 if pred not in op_set:
                     issues.append(f"operation {operation.id} references unknown predecessor {pred}")
+            if not operation.eligible_work_center_ids:
+                issues.append(
+                    f"operation {operation.id} has empty eligible_work_center_ids "
+                    "(empty does not mean every post)"
+                )
             for wc_id in operation.eligible_work_center_ids:
                 if wc_id not in wc_set:
                     issues.append(f"operation {operation.id} references unknown work center {wc_id}")
@@ -382,8 +415,22 @@ class RepairFlowProblem(RepairFlowModel):
                         f"lacks skills {sorted(frozen_op.required_skills)}"
                     )
 
-        issues.extend(_dag_issues(self.operations, self.policy.unsupported_dag))
-        issues.extend(_linear_card_issues(self.operations))
+        pool_types = [pool.unit_type for pool in self.exchange_pools]
+        if len(set(pool_types)) != len(pool_types):
+            issues.append("duplicate unit_type in exchange_pools")
+        horizon = self.planning_horizon
+        for pool in self.exchange_pools:
+            if not pool.unit_type:
+                issues.append("exchange pool is missing unit_type")
+            for demand in pool.demand:
+                if demand.at < horizon.start or demand.at > horizon.end:
+                    issues.append(
+                        f"exchange pool {pool.unit_type} demand at {demand.at.isoformat()} "
+                        "is outside the planning horizon"
+                    )
+
+        issues.extend(_frozen_batch_issues(self))
+        issues.extend(_dag_issues(self.operations))
         issues.extend(_setup_issues(self))
 
         if issues:
@@ -409,6 +456,18 @@ class RepairFlowResult(RepairFlowModel):
     data_provenance: DataProvenance | str = "synthetic"
     kernel_status: str | None = None
     solver_config: str = ""
+    claim_status: (
+        Literal[
+            "usage_error",
+            "error",
+            "rejected",
+            "heuristic_feasible",
+            "verified",
+            "optimal",
+        ]
+        | None
+    ) = None
+    solver_class: Literal["heuristic", "exact", "baseline", "recheck"] | None = None
     exit_code: int = 2
     assignments: list[PlannedAssignment] = Field(default_factory=list)
     rejected: list[dict[str, Any]] = Field(default_factory=list)
@@ -417,62 +476,119 @@ class RepairFlowResult(RepairFlowModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
-def _dag_issues(operations: list[Operation], policy: str) -> list[str]:
+def _frozen_batch_issues(problem: RepairFlowProblem) -> list[str]:
+    """Immutable freezes must already be a feasible fragment. mutable rows are notes."""
+
+    rows = [row for row in problem.frozen_assignments if row.immutable]
+    if not rows:
+        return []
+    ops = {op.id: op for op in problem.operations}
+    by_op = {row.operation_id: row for row in rows}
+    centers = {wc.id: wc for wc in problem.work_centers}
+    crews = {crew.id: crew for crew in problem.crews}
+    calendars = {row.id: row for row in problem.calendars}
+    issues: list[str] = []
+    for row in rows:
+        operation = ops.get(row.operation_id)
+        if operation is None:
+            continue
+        for pred_id in operation.predecessor_ids:
+            earlier = by_op.get(pred_id)
+            if earlier is not None and row.start < earlier.end:
+                issues.append(f"frozen {row.operation_id} starts before frozen predecessor {pred_id} ends")
+        _frozen_calendar(problem, row, centers, crews, calendars, issues)
+    for index, left in enumerate(rows):
+        for right in rows[index + 1 :]:
+            if left.start >= right.end or right.start >= left.end:
+                continue
+            if left.work_center_id == right.work_center_id:
+                cap = centers.get(left.work_center_id)
+                lanes = cap.max_parallel if cap is not None else 1
+                if lanes <= 1:
+                    issues.append(
+                        f"frozen overlap on post {left.work_center_id}: "
+                        f"{left.operation_id}, {right.operation_id}"
+                    )
+            if left.crew_id and left.crew_id == right.crew_id:
+                crew = crews.get(left.crew_id)
+                crew_cap = crew.max_parallel if crew is not None else 1
+                if crew_cap <= 1:
+                    issues.append(
+                        f"frozen overlap on crew {left.crew_id}: {left.operation_id}, {right.operation_id}"
+                    )
+    return issues
+
+
+def _frozen_calendar(
+    problem: RepairFlowProblem,
+    row: FrozenAssignment,
+    centers: dict[str, WorkCenter],
+    crews: dict[str, Crew],
+    calendars: dict[str, Calendar],
+    issues: list[str],
+) -> None:
+    occ = row.start - timedelta(minutes=row.setup_minutes)
+    targets: list[Calendar] = []
+    center = centers.get(row.work_center_id)
+    if center is not None and center.calendar_id is not None:
+        calendar = calendars.get(center.calendar_id)
+        if calendar is not None:
+            targets.append(calendar)
+    if row.crew_id is not None:
+        crew = crews.get(row.crew_id)
+        if crew is not None and crew.calendar_id is not None:
+            calendar = calendars.get(crew.calendar_id)
+            if calendar is not None:
+                targets.append(calendar)
+    for calendar in targets:
+        fits = any(occ >= window.start and row.end <= window.end for window in calendar.windows)
+        if not calendar.windows or not fits:
+            issues.append(f"frozen {row.operation_id} is outside calendar {calendar.id}")
+    _ = problem
+
+
+def _dag_issues(operations: list[Operation]) -> list[str]:
+    """Acyclic technology cards are accepted. The kernel still sees chains only."""
+
     by_id = {op.id: op for op in operations}
     outgoing: dict[str, list[str]] = defaultdict(list)
     for op in operations:
         for pred in op.predecessor_ids:
             outgoing[pred].append(op.id)
 
-    issues: list[str] = []
-    branching = [op.id for op in operations if len(op.predecessor_ids) > 1]
-    if branching and policy == "reject":
-        issues.append("unsupported DAG (multiple predecessors): " + ", ".join(branching[:8]))
-
     indegree = {op.id: len(op.predecessor_ids) for op in operations}
-    queue = deque([op_id for op_id, deg in indegree.items() if deg == 0])
+    queue = deque(sorted(op_id for op_id, deg in indegree.items() if deg == 0))
     seen = 0
     while queue:
         node = queue.popleft()
         seen += 1
-        for nxt in outgoing.get(node, []):
+        for nxt in sorted(outgoing.get(node, [])):
             indegree[nxt] -= 1
             if indegree[nxt] == 0:
                 queue.append(nxt)
+        queue = deque(sorted(queue))
     if seen != len(by_id):
-        issues.append("operation precedence graph contains a cycle")
-    return issues
-
-
-def _linear_card_issues(operations: list[Operation]) -> list[str]:
-    """MVP technology cards are linear: predecessor_ids must equal previous sequence."""
-
-    by_job: dict[str, list[Operation]] = defaultdict(list)
-    for operation in operations:
-        by_job[operation.job_id].append(operation)
-    issues: list[str] = []
-    for rows in by_job.values():
-        ordered = sorted(rows, key=lambda item: (item.sequence, item.id))
-        for index, operation in enumerate(ordered):
-            expected: list[str] = [] if index == 0 else [ordered[index - 1].id]
-            actual = list(operation.predecessor_ids)
-            if actual != expected:
-                issues.append(
-                    f"operation {operation.id}: predecessor_ids {actual} must match "
-                    f"linear sequence {expected}"
-                )
-    return issues
+        return ["operation precedence graph contains a cycle"]
+    return []
 
 
 def _setup_issues(problem: RepairFlowProblem) -> list[str]:
+    keys: set[tuple[str | None, str, str]] = set()
+    duplicates: list[str] = []
+    for entry in problem.setup_matrix:
+        key = (entry.work_center_id, entry.from_state, entry.to_state)
+        if key in keys:
+            duplicates.append(f"{entry.work_center_id}:{entry.from_state}->{entry.to_state}")
+            if len(duplicates) >= 8:
+                break
+        keys.add(key)
+    if duplicates:
+        return [f"duplicate setup_matrix cells: {', '.join(duplicates)}"]
     if problem.policy.missing_setup != "reject":
         return []
     states = {op.setup_state for op in problem.operations if op.setup_state} | {"idle"}
     if not states:
         return []
-    keys: set[tuple[str | None, str, str]] = set()
-    for entry in problem.setup_matrix:
-        keys.add((entry.work_center_id, entry.from_state, entry.to_state))
     missing: list[str] = []
     for center in problem.work_centers:
         for from_state in states:

@@ -1,0 +1,363 @@
+{
+  "$defs": {
+    "PlannedAssignment": {
+      "additionalProperties": false,
+      "properties": {
+        "operation_id": {
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "work_center_id": {
+          "title": "Work Center Id",
+          "type": "string"
+        },
+        "start": {
+          "format": "date-time",
+          "title": "Start",
+          "type": "string"
+        },
+        "end": {
+          "format": "date-time",
+          "title": "End",
+          "type": "string"
+        },
+        "crew_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Crew Id"
+        },
+        "aux_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Aux Ids",
+          "type": "array"
+        },
+        "setup_minutes": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Setup Minutes",
+          "type": "integer"
+        },
+        "reason": {
+          "default": "",
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "operation_id",
+        "work_center_id",
+        "start",
+        "end"
+      ],
+      "title": "PlannedAssignment",
+      "type": "object"
+    },
+    "ResultStatus": {
+      "enum": [
+        "OPTIMAL",
+        "FEASIBLE",
+        "HEURISTIC_FEASIBLE",
+        "PARTIAL",
+        "INFEASIBLE",
+        "NOT_VERIFIED",
+        "MANUAL_REVIEW_REQUIRED",
+        "ERROR"
+      ],
+      "title": "ResultStatus",
+      "type": "string"
+    },
+    "Violation": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        },
+        "severity": {
+          "default": "hard",
+          "enum": [
+            "hard",
+            "kpi"
+          ],
+          "title": "Severity",
+          "type": "string"
+        },
+        "job_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Job Id"
+        },
+        "operation_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Operation Id"
+        },
+        "resource_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Resource Id"
+        },
+        "start": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Start"
+        },
+        "end": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "End"
+        },
+        "suggested_relaxation": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Suggested Relaxation"
+        },
+        "details": {
+          "additionalProperties": true,
+          "title": "Details",
+          "type": "object"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "title": "Violation",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "repairflow.result.v1",
+      "default": "repairflow.result.v1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "instance_id": {
+      "title": "Instance Id",
+      "type": "string"
+    },
+    "status": {
+      "$ref": "#/$defs/ResultStatus"
+    },
+    "verified_feasible": {
+      "title": "Verified Feasible",
+      "type": "boolean"
+    },
+    "input_hash": {
+      "title": "Input Hash",
+      "type": "string"
+    },
+    "config_hash": {
+      "title": "Config Hash",
+      "type": "string"
+    },
+    "result_hash": {
+      "default": "",
+      "title": "Result Hash",
+      "type": "string"
+    },
+    "repairflow_version": {
+      "title": "Repairflow Version",
+      "type": "string"
+    },
+    "synaps_commit": {
+      "title": "Synaps Commit",
+      "type": "string"
+    },
+    "claim_level": {
+      "default": "experiment",
+      "enum": [
+        "experiment",
+        "benchmark",
+        "pilot_candidate",
+        "production_verified"
+      ],
+      "title": "Claim Level",
+      "type": "string"
+    },
+    "data_provenance": {
+      "anyOf": [
+        {
+          "enum": [
+            "synthetic",
+            "open_data",
+            "customer_data",
+            "experiment",
+            "production_verified"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "default": "synthetic",
+      "title": "Data Provenance"
+    },
+    "kernel_status": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Kernel Status"
+    },
+    "solver_config": {
+      "default": "",
+      "title": "Solver Config",
+      "type": "string"
+    },
+    "claim_status": {
+      "anyOf": [
+        {
+          "enum": [
+            "usage_error",
+            "error",
+            "rejected",
+            "heuristic_feasible",
+            "verified",
+            "optimal"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Claim Status"
+    },
+    "solver_class": {
+      "anyOf": [
+        {
+          "enum": [
+            "heuristic",
+            "exact",
+            "baseline",
+            "recheck"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Solver Class"
+    },
+    "exit_code": {
+      "default": 2,
+      "title": "Exit Code",
+      "type": "integer"
+    },
+    "assignments": {
+      "items": {
+        "$ref": "#/$defs/PlannedAssignment"
+      },
+      "title": "Assignments",
+      "type": "array"
+    },
+    "rejected": {
+      "items": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "title": "Rejected",
+      "type": "array"
+    },
+    "violations": {
+      "items": {
+        "$ref": "#/$defs/Violation"
+      },
+      "title": "Violations",
+      "type": "array"
+    },
+    "objective": {
+      "additionalProperties": true,
+      "title": "Objective",
+      "type": "object"
+    },
+    "metadata": {
+      "additionalProperties": true,
+      "title": "Metadata",
+      "type": "object"
+    }
+  },
+  "required": [
+    "instance_id",
+    "status",
+    "verified_feasible",
+    "input_hash",
+    "config_hash",
+    "repairflow_version",
+    "synaps_commit",
+    "schema_version"
+  ],
+  "title": "RepairFlowResult",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/KonkovDV/SynAPS-RepairFlow/schemas/generated/repairflow.result.v1.json"
+}

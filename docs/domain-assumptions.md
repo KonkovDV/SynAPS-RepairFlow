@@ -1,21 +1,34 @@
 # Domain assumptions
 
 - One repair contour / shop, not a city-wide network.
-- A job is a linear technology card. `predecessor_ids` must equal the previous
-  `sequence` in the same job; a mismatch is rejected. Branching DAGs are out of scope.
+- A job may be a convergent DAG (`predecessor_ids`, including a join). Cycles are
+  rejected. The kernel still receives chains: `split_release_fixpoint` (default) or
+  `serialize`. The domain checker evaluates the original edges, not the segments.
+  See `docs/adr/0002-dag-over-chain-kernel.md`.
 - Dates are timezone-aware ISO-8601. Unix timestamps are rejected.
 - SynAPS encodes posts as work centres and crews/tooling as auxiliary resources.
   A published assignment always names a concrete `crew_id` when skills are required;
   skill-pools are an internal kernel encoding only.
 - Consumable spares are a blocking availability constraint, not inventory optimisation.
-- Empty calendars mean 24/7; a non-empty calendar is a hard single-window container.
-- Frozen rows with `immutable=true` must survive replan. A frozen crew must hold the
-  operation skills and the frozen post must be eligible; ingest rejects a mismatch.
+  An exchange pool is a separate stock ledger: a unit returns when every sink of
+  its card has finished, and dated demand withdraws stock. `hard=false` keeps a
+  stockout as a KPI.
+- A resource with no `calendar_id` is open for the whole horizon. A calendar with
+  zero windows means the resource is unavailable. A non-empty calendar is a hard
+  single-window container, including tooling (`AuxResource.calendar_id`).
+- `due_date` is a soft tardiness signal (`DUE_MISSED`, severity kpi). `deadline`
+  on the job is hard (`DEADLINE_MISSED`, exit 2).
+- `allow_partial_plan` does not produce exit 0. Missing operations are status
+  `PARTIAL` and exit 2.
+- Frozen rows with `immutable=true` must already be mutually feasible at ingest
+  (overlap, calendar, precedence among frozen rows) and must survive replan.
+  `immutable=false` is a note: it is stored and not enforced.
+- Duplicate setup-matrix cells are rejected.
 - Heuristic solvers never inherit the word OPTIMAL.
 - Missing `idle → first_state` setup cells are a hard contract error. Under
   `missing_setup=reject` the instance is refused; a plan that still uses a missing
   cell is fail-closed as `MISSING_SETUP` (exit 2).
-- Kernel GREED/RHC treat crews as auxiliary resources. The verified closer on the 52-op
-  `repair-site-mvp` fixture is RepairFlow's domain GREED list-scheduler. Kernel
-  `RHC-GREEDY-COVER` is exposed and checker-clean on `tiny`, but is not claimed verified
-  on the larger fixture.
+- Kernel GREED/RHC treat crews as auxiliary resources without a person calendar.
+  RepairFlow's domain GREED list-scheduler is the verified closer on `repair-site-mvp`.
+  Kernel `RHC-GREEDY-COVER` is checker-clean on `tiny` and is not claimed verified on
+  the larger fixture. Named crews keep their shift windows in the domain checker.

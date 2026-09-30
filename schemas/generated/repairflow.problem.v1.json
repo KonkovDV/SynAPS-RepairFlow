@@ -1,0 +1,788 @@
+{
+  "$defs": {
+    "AuxResource": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "resource_type": {
+          "default": "tool",
+          "title": "Resource Type",
+          "type": "string"
+        },
+        "capacity": {
+          "default": 1,
+          "minimum": 1,
+          "title": "Capacity",
+          "type": "integer"
+        },
+        "calendar_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Calendar Id"
+        },
+        "domain_attributes": {
+          "additionalProperties": true,
+          "title": "Domain Attributes",
+          "type": "object"
+        }
+      },
+      "required": [
+        "id",
+        "code"
+      ],
+      "title": "AuxResource",
+      "type": "object"
+    },
+    "Calendar": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "code": {
+          "default": "",
+          "title": "Code",
+          "type": "string"
+        },
+        "windows": {
+          "items": {
+            "$ref": "#/$defs/CalendarWindow"
+          },
+          "title": "Windows",
+          "type": "array"
+        },
+        "domain_attributes": {
+          "additionalProperties": true,
+          "title": "Domain Attributes",
+          "type": "object"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "title": "Calendar",
+      "type": "object"
+    },
+    "CalendarWindow": {
+      "additionalProperties": false,
+      "properties": {
+        "start": {
+          "format": "date-time",
+          "title": "Start",
+          "type": "string"
+        },
+        "end": {
+          "format": "date-time",
+          "title": "End",
+          "type": "string"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "title": "CalendarWindow",
+      "type": "object"
+    },
+    "Crew": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "skills": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Skills",
+          "type": "array"
+        },
+        "calendar_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Calendar Id"
+        },
+        "max_parallel": {
+          "default": 1,
+          "minimum": 1,
+          "title": "Max Parallel",
+          "type": "integer"
+        },
+        "domain_attributes": {
+          "additionalProperties": true,
+          "title": "Domain Attributes",
+          "type": "object"
+        }
+      },
+      "required": [
+        "id",
+        "code"
+      ],
+      "title": "Crew",
+      "type": "object"
+    },
+    "ExchangePool": {
+      "additionalProperties": false,
+      "description": "Serviceable-unit ledger. This is stock over time, not a simultaneous pool.",
+      "properties": {
+        "unit_type": {
+          "title": "Unit Type",
+          "type": "string"
+        },
+        "initial_serviceable": {
+          "minimum": 0,
+          "title": "Initial Serviceable",
+          "type": "integer"
+        },
+        "demand": {
+          "items": {
+            "$ref": "#/$defs/PoolDemand"
+          },
+          "title": "Demand",
+          "type": "array"
+        },
+        "hard": {
+          "default": false,
+          "title": "Hard",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "unit_type",
+        "initial_serviceable"
+      ],
+      "title": "ExchangePool",
+      "type": "object"
+    },
+    "FrozenAssignment": {
+      "additionalProperties": false,
+      "properties": {
+        "operation_id": {
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "work_center_id": {
+          "title": "Work Center Id",
+          "type": "string"
+        },
+        "start": {
+          "format": "date-time",
+          "title": "Start",
+          "type": "string"
+        },
+        "end": {
+          "format": "date-time",
+          "title": "End",
+          "type": "string"
+        },
+        "crew_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Crew Id"
+        },
+        "setup_minutes": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Setup Minutes",
+          "type": "integer"
+        },
+        "immutable": {
+          "default": true,
+          "title": "Immutable",
+          "type": "boolean"
+        },
+        "frozen_reason": {
+          "default": "",
+          "title": "Frozen Reason",
+          "type": "string"
+        },
+        "domain_attributes": {
+          "additionalProperties": true,
+          "title": "Domain Attributes",
+          "type": "object"
+        }
+      },
+      "required": [
+        "operation_id",
+        "work_center_id",
+        "start",
+        "end"
+      ],
+      "title": "FrozenAssignment",
+      "type": "object"
+    },
+    "Job": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "external_ref": {
+          "default": "",
+          "title": "External Ref",
+          "type": "string"
+        },
+        "asset_code": {
+          "default": "",
+          "title": "Asset Code",
+          "type": "string"
+        },
+        "unit_type": {
+          "default": "",
+          "title": "Unit Type",
+          "type": "string"
+        },
+        "due_date": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Due Date"
+        },
+        "deadline": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Deadline"
+        },
+        "release_date": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Release Date"
+        },
+        "priority": {
+          "default": 500,
+          "maximum": 999,
+          "minimum": 1,
+          "title": "Priority",
+          "type": "integer"
+        },
+        "domain_attributes": {
+          "additionalProperties": true,
+          "title": "Domain Attributes",
+          "type": "object"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "title": "Job",
+      "type": "object"
+    },
+    "Operation": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "job_id": {
+          "title": "Job Id",
+          "type": "string"
+        },
+        "sequence": {
+          "minimum": 1,
+          "title": "Sequence",
+          "type": "integer"
+        },
+        "duration_min": {
+          "minimum": 1,
+          "title": "Duration Min",
+          "type": "integer"
+        },
+        "predecessor_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Predecessor Ids",
+          "type": "array"
+        },
+        "eligible_work_center_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Eligible Work Center Ids",
+          "type": "array"
+        },
+        "required_skills": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Required Skills",
+          "type": "array"
+        },
+        "required_aux_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Required Aux Ids",
+          "type": "array"
+        },
+        "required_spare_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Required Spare Ids",
+          "type": "array"
+        },
+        "setup_state": {
+          "default": "",
+          "title": "Setup State",
+          "type": "string"
+        },
+        "earliest_start": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Earliest Start"
+        },
+        "latest_finish": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Latest Finish"
+        },
+        "domain_attributes": {
+          "additionalProperties": true,
+          "title": "Domain Attributes",
+          "type": "object"
+        }
+      },
+      "required": [
+        "id",
+        "job_id",
+        "sequence",
+        "duration_min"
+      ],
+      "title": "Operation",
+      "type": "object"
+    },
+    "PlanningHorizon": {
+      "additionalProperties": false,
+      "properties": {
+        "start": {
+          "format": "date-time",
+          "title": "Start",
+          "type": "string"
+        },
+        "end": {
+          "format": "date-time",
+          "title": "End",
+          "type": "string"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "title": "PlanningHorizon",
+      "type": "object"
+    },
+    "Policy": {
+      "additionalProperties": false,
+      "description": "Scheduling policy.\n\n`unsupported_dag` is kept so existing v1 documents still parse. Branching\ncards are compiled (ADR-0002); the flag no longer rejects a DAG.",
+      "properties": {
+        "unknown_fields": {
+          "const": "reject",
+          "default": "reject",
+          "title": "Unknown Fields",
+          "type": "string"
+        },
+        "missing_setup": {
+          "default": "reject",
+          "enum": [
+            "reject",
+            "zero"
+          ],
+          "title": "Missing Setup",
+          "type": "string"
+        },
+        "unsupported_dag": {
+          "const": "reject",
+          "default": "reject",
+          "title": "Unsupported Dag",
+          "type": "string"
+        },
+        "allow_partial_plan": {
+          "default": false,
+          "title": "Allow Partial Plan",
+          "type": "boolean"
+        },
+        "dag_strategy": {
+          "default": "split_release_fixpoint",
+          "enum": [
+            "split_release_fixpoint",
+            "serialize"
+          ],
+          "title": "Dag Strategy",
+          "type": "string"
+        },
+        "max_fixpoint_iter": {
+          "default": 8,
+          "maximum": 32,
+          "minimum": 1,
+          "title": "Max Fixpoint Iter",
+          "type": "integer"
+        },
+        "nervousness_warn_ratio": {
+          "default": 0.1,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Nervousness Warn Ratio",
+          "type": "number"
+        }
+      },
+      "title": "Policy",
+      "type": "object"
+    },
+    "PoolDemand": {
+      "additionalProperties": false,
+      "properties": {
+        "at": {
+          "format": "date-time",
+          "title": "At",
+          "type": "string"
+        },
+        "qty": {
+          "minimum": 1,
+          "title": "Qty",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "at",
+        "qty"
+      ],
+      "title": "PoolDemand",
+      "type": "object"
+    },
+    "SetupEntry": {
+      "additionalProperties": false,
+      "properties": {
+        "from_state": {
+          "title": "From State",
+          "type": "string"
+        },
+        "to_state": {
+          "title": "To State",
+          "type": "string"
+        },
+        "duration_min": {
+          "minimum": 0,
+          "title": "Duration Min",
+          "type": "integer"
+        },
+        "work_center_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Work Center Id"
+        },
+        "domain_attributes": {
+          "additionalProperties": true,
+          "title": "Domain Attributes",
+          "type": "object"
+        }
+      },
+      "required": [
+        "from_state",
+        "to_state",
+        "duration_min"
+      ],
+      "title": "SetupEntry",
+      "type": "object"
+    },
+    "Spare": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "quantity": {
+          "default": 1,
+          "minimum": 0,
+          "title": "Quantity",
+          "type": "integer"
+        },
+        "available_from": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Available From"
+        },
+        "domain_attributes": {
+          "additionalProperties": true,
+          "title": "Domain Attributes",
+          "type": "object"
+        }
+      },
+      "required": [
+        "id",
+        "code"
+      ],
+      "title": "Spare",
+      "type": "object"
+    },
+    "WorkCenter": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "capability_group": {
+          "default": "post",
+          "title": "Capability Group",
+          "type": "string"
+        },
+        "calendar_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Calendar Id"
+        },
+        "max_parallel": {
+          "default": 1,
+          "minimum": 1,
+          "title": "Max Parallel",
+          "type": "integer"
+        },
+        "eligible_unit_types": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Eligible Unit Types",
+          "type": "array"
+        },
+        "domain_attributes": {
+          "additionalProperties": true,
+          "title": "Domain Attributes",
+          "type": "object"
+        }
+      },
+      "required": [
+        "id",
+        "code"
+      ],
+      "title": "WorkCenter",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "repairflow.problem.v1",
+      "default": "repairflow.problem.v1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "instance_id": {
+      "title": "Instance Id",
+      "type": "string"
+    },
+    "data_provenance": {
+      "default": "synthetic",
+      "enum": [
+        "synthetic",
+        "open_data",
+        "customer_data",
+        "experiment",
+        "production_verified"
+      ],
+      "title": "Data Provenance",
+      "type": "string"
+    },
+    "planning_horizon": {
+      "$ref": "#/$defs/PlanningHorizon"
+    },
+    "jobs": {
+      "items": {
+        "$ref": "#/$defs/Job"
+      },
+      "title": "Jobs",
+      "type": "array"
+    },
+    "operations": {
+      "items": {
+        "$ref": "#/$defs/Operation"
+      },
+      "title": "Operations",
+      "type": "array"
+    },
+    "work_centers": {
+      "items": {
+        "$ref": "#/$defs/WorkCenter"
+      },
+      "title": "Work Centers",
+      "type": "array"
+    },
+    "crews": {
+      "items": {
+        "$ref": "#/$defs/Crew"
+      },
+      "title": "Crews",
+      "type": "array"
+    },
+    "aux_resources": {
+      "items": {
+        "$ref": "#/$defs/AuxResource"
+      },
+      "title": "Aux Resources",
+      "type": "array"
+    },
+    "setup_matrix": {
+      "items": {
+        "$ref": "#/$defs/SetupEntry"
+      },
+      "title": "Setup Matrix",
+      "type": "array"
+    },
+    "calendars": {
+      "items": {
+        "$ref": "#/$defs/Calendar"
+      },
+      "title": "Calendars",
+      "type": "array"
+    },
+    "frozen_assignments": {
+      "items": {
+        "$ref": "#/$defs/FrozenAssignment"
+      },
+      "title": "Frozen Assignments",
+      "type": "array"
+    },
+    "spares": {
+      "items": {
+        "$ref": "#/$defs/Spare"
+      },
+      "title": "Spares",
+      "type": "array"
+    },
+    "exchange_pools": {
+      "items": {
+        "$ref": "#/$defs/ExchangePool"
+      },
+      "title": "Exchange Pools",
+      "type": "array"
+    },
+    "policy": {
+      "$ref": "#/$defs/Policy"
+    },
+    "domain_attributes": {
+      "additionalProperties": true,
+      "title": "Domain Attributes",
+      "type": "object"
+    }
+  },
+  "required": [
+    "instance_id",
+    "planning_horizon",
+    "jobs",
+    "operations",
+    "work_centers",
+    "crews",
+    "schema_version"
+  ],
+  "title": "RepairFlowProblem",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/KonkovDV/SynAPS-RepairFlow/schemas/generated/repairflow.problem.v1.json"
+}
