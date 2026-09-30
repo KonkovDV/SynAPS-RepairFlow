@@ -1,235 +1,61 @@
 # SynAPS RepairFlow
 
-> **Auditable repair scheduling for urban-transport maintenance — offline, reproducible, and fail-closed.**
+> **Проверяемое планирование ремонта городского транспорта: offline, воспроизводимо, fail-closed.**
 
 [![CI](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/workflows/ci.yml/badge.svg)](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/workflows/ci.yml) [![Python](https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/) [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-## Executive summary for the jury
+# Русская версия
 
-SynAPS RepairFlow is a **research-grade domain adapter and independent checker** for repair-shop scheduling. It represents jobs, operations, work centres, crews, skills, tooling, sequence-dependent setup, calendars, frozen assignments, spares and exchange-pool constraints. It produces candidate schedules and then checks them independently against the declared hard constraints.
+## Кратко для жюри
 
-The central claim is deliberately narrow:
+SynAPS RepairFlow — исследовательский доменный адаптер и независимый checker для планирования ремонта. Он описывает задания, операции, посты, бригады, навыки, инструменты, sequence-dependent setup, календари, замороженные назначения, запчасти и обменный фонд. Система строит кандидатный план, а затем независимо проверяет его по объявленным ограничениям.
 
-> Given a formal repair instance, RepairFlow can construct a candidate schedule and independently report whether the declared hard constraints hold, or return structured reasons why they do not.
+**Допустимое утверждение:** для формального экземпляра RepairFlow строит кандидатный график и независимо сообщает, выполнены ли заявленные жёсткие ограничения, либо возвращает структурированные причины нарушения.
 
-This is an **offline laboratory and shadow-mode decision-support system**. It is not a dispatch system, an EAM/ERP/CMMS replacement, a safety controller, or an autonomous “AI decision maker”.
+Это лабораторный и shadow-mode инструмент. Это не диспетчеризация, не EAM/ERP/CMMS, не контур безопасности, не управление выпуском транспорта и не автономное решение «AI всё решил».
 
-### What the repository proves today
+### Что подтверждает текущая версия
 
-- the domain schema rejects malformed and ambiguous inputs rather than silently repairing them;
-- candidate plans are checked outside the solver search path;
-- resource capacity uses a half-open interval model and an exact sweep-line peak oracle;
-- setup time is part of resource occupancy where the contract requires it;
-- due-date lateness is separated from a hard deadline;
-- frozen assignments, calendars, precedence, skills, auxiliary resources and spares are explicit checker concerns;
-- inputs, configuration, solver pin and result hashes are part of the evidence path;
-- CI executes the documented quality gates on the repository state.
+- схема отклоняет неполные и неоднозначные входы;
+- checker отделён от solver search path;
+- capacity моделируется как `K` взаимозаменяемых half-open lanes `[start, end)`;
+- в одной точке времени `end` обрабатывается раньше `start`;
+- setup входит в occupancy, когда это требует контракт;
+- `due_date` отделён от жёсткого `deadline`;
+- проверяются precedence, crews, skills, calendars, auxiliary resources, spares и frozen assignments;
+- вход, конфигурация, результат и pin ядра участвуют в evidence-пути;
+- для sweep-line есть adversarial и property-based тесты против независимого brute-force oracle.
 
-### What the repository does **not** prove
+### Чего проект не подтверждает
 
-It does not prove industrial savings, customer accuracy, production readiness, optimality of heuristic schedules, labour-law compliance, a live SVARZ/Mosgortrans deployment, or replacement of an operational planning system. No customer or sponsor relationship is inferred from public information.
+Нет утверждений о промышленных KPI, экономии, customer accuracy, production readiness, сертификации безопасности, оптимальности эвристик, действующем заказчике, спонсоре или deployment на SVARZ/Mosgortrans. Публичные источники не превращаются в customer claim.
 
-## Current evidence boundary
+## Зафиксированная граница доказательств
 
-| Item | Current repository fact |
+| Факт | Значение |
 |---|---|
-| `main` this text was checked against | [`729db1d`](https://github.com/KonkovDV/SynAPS-RepairFlow/commit/729db1d144cd3dc87e040356ce3e886d5a73df22) |
-| CI for that `main` commit | [Actions run 36766397613](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/runs/36766397613) (success, including `test-slow`) |
-| Sweep-line commit, already on that `main` | [`a3621fd`](https://github.com/KonkovDV/SynAPS-RepairFlow/commit/a3621fd538019f4dcc0c681d5634c022260382e9) |
-| CI for the sweep-line push to `main` | [Actions run 36765925526](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/runs/36765925526) |
-| SynAPS dependency | [`6178c93`](https://github.com/KonkovDV/SynAPS/commit/6178c93b705ff58be21fa74a98651883a2da1169) |
-| Python | 3.12+ |
-| Solver dependency | `ortools==9.15.6755` |
-| Data | committed synthetic fixtures; no customer data in the repository |
-| Maturity | laboratory fixture / TRL 4 framing; not a pilot result |
+| Проверенный `main` | [`729db1d`](https://github.com/KonkovDV/SynAPS-RepairFlow/commit/729db1d144cd3dc87e040356ce3e886d5a73df22) |
+| CI для baseline | [Actions run 36766397613](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/runs/36766397613), success, включая `test-slow` |
+| Sweep-line commit | [`a3621fd`](https://github.com/KonkovDV/SynAPS-RepairFlow/commit/a3621fd538019f4dcc0c681d5634c022260382e9) |
+| SynAPS pin | [`6178c93`](https://github.com/KonkovDV/SynAPS/commit/6178c93b705ff58be21fa74a98651883a2da1169) |
+| Solver | `ortools==9.15.6755` |
+| Данные | committed synthetic fixtures; customer data отсутствуют |
+| Зрелость | laboratory fixture / TRL 4; не pilot result |
 
-The commit, dependency pin, dataset provenance, solver status, claim level and checker output must be read together. A number without this context is not an evidence claim.
+Число без commit, provenance, seed, solver status, checker output и denominator не является доказательством.
 
-## The problem
-
-Repair work is a constrained production-planning problem rather than a single “best schedule” button. A valid plan must respect, simultaneously:
-
-- technology-card precedence and convergent dependencies;
-- eligible work centres and capacity;
-- concrete crew assignment and required skills;
-- auxiliary resources and rotable/serviceable spares;
-- sequence-dependent setup and lane occupancy;
-- calendars and planning horizon;
-- immutable/frozen work already released;
-- soft `due_date` performance targets and hard `deadline` constraints;
-- disruption and inspection changes without silently changing the contract.
-
-A solver can return a schedule-shaped object while violating one of these constraints. RepairFlow therefore treats the independent checker as a first-class safety boundary, not as a formatting step after optimisation.
-
-## How to run the reproducible demo
-
-Requires Python 3.12+:
+## Быстрый воспроизводимый прогон
 
 ```bash
 python -m venv .venv
-source .venv/bin/activate                 # Windows: .venv\Scripts\activate
+source .venv/bin/activate                 # Windows: .venv\\Scripts\\activate
 python -m pip install -e ".[dev]"
-
 repairflow version
 repairflow demo --out out
-```
-
-The demo uses synthetic data only. It builds baseline and candidate plans, checks them independently, writes hashes and evidence artefacts, exercises a disruption path, deliberately checks a broken plan, and runs a small exact CP-SAT case. The clean path must verify; the intentionally broken path must remain fail-closed.
-
-Useful commands:
-
-```bash
-# Create a documented synthetic instance
-repairflow synthesize --preset repair-site-mvp --out data/repair-site-mvp.json
-
-# Build candidates
-repairflow solve data/repair-site-mvp.json --preset FIFO  --out out/fifo.json
-repairflow solve data/repair-site-mvp.json --preset EDD   --out out/edd.json
-repairflow solve data/repair-site-mvp.json --preset GREED --out out/greed.json
-
-# Independent verification and comparison
-repairflow check data/repair-site-mvp.json out/greed.json \
-  --verify-hashes --report out/greed.check.json
-repairflow compare data/repair-site-mvp.json out/fifo.json out/greed.json \
-  --out out/compare.json
-repairflow report data/repair-site-mvp.json out/greed.json \
-  --html out/report.html --md out/report.md
-
-# Replanning and benchmark matrix
-repairflow inspect data/repair-site-mvp.json out/greed.json event.json \
-  --out out/inspected.json
 repairflow benchmark --out bench
 ```
 
-A shorter makespan is not a quality win if coverage is incomplete or the independent checker reports a hard violation. The benchmark therefore reports feasibility, coverage, tardiness, setup, makespan, checker time, hashes and provenance separately.
-
-## Architecture and trust boundary
-
-```text
-formal instance
-      │
-      ▼
-schema + domain validation ──► reject ambiguous / incomplete input
-      │
-      ▼
-adapter + candidate planners ──► FIFO / EDD / GREED / bounded CP-SAT
-      │
-      ▼
-independent checker ──► hard violations, KPI violations, structured reasons
-      │
-      ▼
-evidence bundle ──► hashes · pin · metrics · report · reproducibility
-      │
-      ▼
-human operator decision (shadow mode; no write-back)
-```
-
-The checker does not import solver search code. It normalises the candidate into the domain representation and verifies it against the formal instance. The planner is not allowed to redefine the meaning of “feasible” after the fact.
-
-### Capacity semantics
-
-A resource with capacity `K` is modelled as `K` interchangeable lanes. Occupancy is half-open, `[start, end)`, so an operation ending exactly when another starts does not consume two lanes. Events at the same timestamp process ends before starts. Setup is included in the occupancy interval where required. The same sweep-line oracle is used for ordinary assignments and immutable frozen assignments.
-
-This fixes a common pairwise-overlap error: an interval that intersects an anchor is not automatically simultaneous with every other interval intersecting that anchor. The test suite includes staggered visits, touching endpoints, setup occupancy and a property-based comparison with an independent brute-force critical-point oracle.
-
-### Domain boundary
-
-The project currently uses a convergent technology-card model compiled to the pinned SynAPS chain kernel. The domain checker still evaluates the original dependency semantics. DAG support is a controlled boundary, not a licence to silently linearise unsupported semantics. The exchange-pool model is a ledger over time, not a simultaneous unlimited resource pool.
-
-## Evidence model
-
-Every result should carry four labels:
-
-1. **Data provenance:** `synthetic`, `open_data`, `customer_data`, `experiment`, or `production_verified`.
-2. **Solver status:** `OPTIMAL`, `FEASIBLE`, `HEURISTIC_FEASIBLE`, `PARTIAL`, `INFEASIBLE`, `NOT_VERIFIED`, or equivalent error state.
-3. **Claim level:** the schema allows `experiment`, `benchmark`, `pilot_candidate`, or `production_verified`. The constant shipped in this repository is `experiment`. `production_verified` is not a result this tree has produced.
-4. **Claim status:** `heuristic_feasible`, `verified`, or `optimal`, plus the failure words `rejected`, `error`, and `usage_error`. `verified` means full coverage and an empty hard notary. `optimal` means CP-SAT `OPTIMAL`, that same empty notary, and a single compiled pass. A heuristic does not inherit `optimal`.
-5. **Independent verification:** full coverage, empty hard-violation set, concrete kernel status, and matching input/config/result hashes.
-
-A local test run is development evidence, not a CI attestation.
-
-### False-positive safety invariant
-
-The principal safety metric is not “average schedule quality”. It is the rate at which an invalid plan is accepted as valid:
-
-```text
-false_accept_rate = invalid_plans_accepted_as_verified / invalid_plans_presented
-```
-
-For the correctness-oracle fixtures, the target is zero. Any change that improves a KPI while increasing false acceptance is a regression, not an improvement.
-
-## Benchmark ladder
-
-| Level | Purpose | Evidence expected |
-|---|---|---|
-| A — correctness oracle | 5–20 operation fixtures | exact reference, adversarial cases, false-accept rate |
-| B — domain fixture | committed synthetic repair site | same input, same seed, baseline comparison, checker and hashes |
-| C — public scheduling instances | algorithmic sanity check | bounds, gap, runtime, hardware and time budget |
-| D — disruption replay | post outage, crew loss, spare delay, duration extension | repair latency, churn, frozen preservation and post-repair hard violations |
-| E — shadow pilot | one agreed repair contour | anonymised data slice, baseline, holdout period, operator log and rollback |
-
-The benchmark ladder prevents a synthetic fixture from being presented as transport-industry validation. Public FJSP/RCPSP results would be algorithmic context, not proof of applicability to a depot.
-
-## Positioning against SOTA 2026
-
-RepairFlow does not claim a new general-purpose solver. Flexible job-shop scheduling with sequence-dependent setup, multi-resource constraints, maintenance and technician scheduling is an established research area. The defensible contribution here is the **engineering evidence boundary**:
-
-- explicit domain semantics instead of implicit solver assumptions;
-- independent fail-closed verification;
-- reproducible evidence with provenance and hashes;
-- adversarial and property-based tests for resource semantics;
-- separation of hard feasibility, soft performance and optimality;
-- an explicit path from laboratory fixture to a read-only pilot.
-
-Relevant 2024–2026 positioning sources are recorded in [`docs/SOTA_2026.md`](docs/SOTA_2026.md) and [`docs/SOTA_EVIDENCE_PROTOCOL.md`](docs/SOTA_EVIDENCE_PROTOCOL.md), including work on flexible job-shop scheduling, multi-resource CP/ALNS, maintenance scheduling, infeasibility certificates, robust filtering and conformal uncertainty. The repository does not copy published scores into its own results and does not call a roadmap method “implemented”.
-
-## FTIM and pilot framing
-
-Public OSINT is used to define a responsible entry gate, not to manufacture a customer story:
-
-- [FTIM pilot programme](https://ftim.ru/pilotirovanie/) describes testing on Moscow Transport infrastructure, a measurable hypothesis and a pilot feasible within 90 days.
-- The official [SVARZ profile](https://www.mosgortrans.ru/about/branches/filial-sokolnicheskii-vagonoremontno-stroitelnyi-zavod-svarz-gup-mosgortrans/) establishes that the plant repairs transport components; it does **not** establish a RepairFlow sponsor, current planning process or Excel workflow.
-- The [Moscow Innovation Cluster pilot page](https://i.moscow/pilot) lists readiness and rights requirements; RepairFlow currently declares laboratory TRL 4 and does not claim to satisfy a production pilot gate.
-
-A responsible first pilot would be read-only and shadow-only for one agreed repair contour:
-
-1. name a process owner and data owner;
-2. agree an anonymised problem extract and constraint catalogue;
-3. freeze a historical baseline and holdout interval;
-4. run RepairFlow without write-back;
-5. log every operator accept/reject/edit decision;
-6. measure hard violations, coverage, tardiness, makespan, setup, replanning latency and plan churn;
-7. keep a written rollback to the current process.
-
-No public page above proves sponsorship, deployment, savings, safety certification or operational acceptance.
-
-## What we learned from RailBreak
-
-The public [`KonkovDV/RailBreak`](https://github.com/KonkovDV/RailBreak) repository is a useful documentation precedent, not evidence for RepairFlow. Its jury-facing README and supporting artefacts demonstrate practices worth carrying over:
-
-- a one-command jury path and explicit prerequisites;
-- a results table with commit, data, method, metric, denominator and threshold;
-- separate documents for assumptions, results, TЗ traceability and references;
-- failure campaigns and “what this does not cover” sections;
-- explicit distinction between current-head evidence and historical artefacts;
-- honest treatment of missing inputs and degraded modes.
-
-RepairFlow applies the same discipline to scheduling: every claim must point to a source file, exact commit, input/seed, solver configuration, checker output and denominator. RailBreak’s odometry numbers, ROS assumptions and public transport context are not RepairFlow results.
-
-## Reproducibility and provenance
-
-For a reviewable result, record:
-
-- repository commit and dependency lock;
-- SynAPS commit and OR-Tools version;
-- input schema version, input hash and configuration hash;
-- solver class, preset, random seed and time limit;
-- checker version and complete violation output;
-- metric definitions, denominator and missing-data policy;
-- environment, Python version and CI run URL;
-- whether the data are synthetic, open, anonymised or customer-provided.
-
-The repository’s schema and evidence tools are part of CI:
+Для проверки качества:
 
 ```bash
 python tools/verify_schema.py
@@ -238,45 +64,142 @@ python -m ruff format --check src tests tools
 python -m ruff check src tests tools
 python -m mypy --strict src/repairflow
 python -m pytest -q -m "not slow"
+```
+
+Demo использует только synthetic data, проверяет чистый и намеренно сломанный план и должен сохранять fail-closed поведение.
+
+## Архитектура и safety boundary
+
+```text
+formal instance → schema/domain validation → candidate planner
+               → independent checker → evidence bundle → human decision
+```
+
+Checker не импортирует solver search code. Он проверяет нормализованный кандидат против исходного domain contract. Сокращение makespan не считается улучшением, если потеряно покрытие или появился hard violation.
+
+### Capacity oracle
+
+Ресурс ёмкости `K` — это `K` взаимозаменяемых lanes. Интервал `[start, end)` означает, что касание endpoint не создаёт overlap. Setup расширяет occupancy назад. Тот же sweep-line применяется к обычным и frozen assignments. Это устраняет ошибку anchor-based pairwise counting, когда несинхронные визиты ошибочно объявляются одновременными.
+
+### Evidence и false accept
+
+Каждый результат должен иметь provenance (`synthetic`, `open_data`, `experiment` и т. д.), solver status, claim level и independent verification. `OPTIMAL` допускается только для bounded exact run с proven bound и пустым независимым checker. Эвристика не наследует слово `optimal`.
+
+```text
+false_accept_rate = invalid_plans_accepted_as_verified / invalid_plans_presented
+```
+
+Для correctness-oracle fixtures целевой показатель — ноль.
+
+## SOTA 2026, FTIM и OSINT
+
+RepairFlow не выдаёт себя за новый general-purpose solver. Научно защищаемая позиция — корректность доменной семантики, независимая fail-closed проверка, provenance, reproducibility и controlled path к shadow pilot. Позиционирование и bibliography: [`docs/SOTA_2026.md`](docs/SOTA_2026.md) и [`docs/SOTA_EVIDENCE_PROTOCOL.md`](docs/SOTA_EVIDENCE_PROTOCOL.md).
+
+Публичный OSINT используется только для определения gate:
+
+- [FTIM pilot programme](https://ftim.ru/pilotirovanie/) описывает проверку на инфраструктуре московского транспорта, измеримую гипотезу и pilot до 90 дней;
+- [официальный профиль SVARZ](https://www.mosgortrans.ru/about/branches/filial-sokolnicheskii-vagonoremontno-stroitelnyi-zavod-svarz-gup-mosgortrans/) подтверждает ремонт транспортных компонентов, но не sponsor и не текущий workflow RepairFlow;
+- [Moscow Innovation Cluster](https://i.moscow/pilot) описывает readiness/right requirements; RepairFlow пока заявляет TRL 4.
+
+Первый пилот должен быть read-only/shadow: один contour, process owner, anonymised slice, baseline, holdout, operator accept/reject log, rollback и заранее определённые KPI. Ни один источник не доказывает sponsorship, savings, deployment или safety certification.
+
+## RailBreak как documentation precedent
+
+[`KonkovDV/RailBreak`](https://github.com/KonkovDV/RailBreak) изучен как пример jury-grade подачи: one-command demo, таблицы с commit/data/method/denominator, отдельные assumptions/results/TЗ audit/references, fault campaigns, degraded modes и раздел «что не покрыто». Его odometry numbers, ROS assumptions и transport claims не являются evidence для RepairFlow.
+
+## Пределы и документация
+
+В проекте нет write-back в EAM/ERP/CMMS, dispatch control, SCADA, safety function или customer data. Checker доказывает только явно объявленные ограничения. Подробная карта: [`docs/README.md`](docs/README.md), [`docs/traceability-matrix.md`](docs/traceability-matrix.md), [`docs/threat-model.md`](docs/threat-model.md), [`docs/osint-and-pilot-gates.md`](docs/osint-and-pilot-gates.md), [`SECURITY.md`](SECURITY.md), [`LICENSES.md`](LICENSES.md).
+
+---
+
+# English version
+
+## Jury summary
+
+SynAPS RepairFlow is a research-grade domain adapter and independent checker for repair-shop scheduling. It models jobs, operations, work centres, crews, skills, tooling, sequence-dependent setup, calendars, frozen assignments, spares and exchange-pool constraints. It builds candidate schedules and checks them independently against the declared hard constraints.
+
+**Allowed claim:** given a formal repair instance, RepairFlow can construct a candidate schedule and independently report whether the declared hard constraints hold, or return structured reasons why they fail.
+
+It is an offline laboratory and shadow-mode decision-support system. It is not dispatch control, an EAM/ERP/CMMS replacement, a safety controller, an autonomous AI decision maker, or proof of production readiness.
+
+### Current evidence
+
+- malformed and ambiguous inputs are rejected by the domain contract;
+- the checker is outside the solver search path;
+- capacity uses interchangeable half-open lanes `[start, end)`;
+- equal-time ends are processed before starts;
+- setup is included in occupancy where required;
+- soft `due_date` is separated from hard `deadline`;
+- precedence, crews, skills, calendars, auxiliary resources, spares and frozen assignments are explicit checker concerns;
+- hashes, dependency pins and checker output are evidence fields;
+- sweep-line semantics are tested with adversarial and property-based cases.
+
+### Explicit non-claims
+
+The repository does not prove industrial savings, customer accuracy, heuristic optimality, labour-law compliance, production deployment, safety certification, a live SVARZ/Mosgortrans customer relationship, or sponsorship inferred from public sources.
+
+## Reproducible run
+
+```bash
+python -m venv .venv
+source .venv/bin/activate                 # Windows: .venv\\Scripts\\activate
+python -m pip install -e ".[dev]"
+repairflow version
 repairflow demo --out out
 repairflow benchmark --out bench
 ```
 
-These commands establish reproducibility for the repository fixture. They do not establish production readiness.
+Quality gates:
 
-## Limitations and threat model
+```bash
+python tools/verify_schema.py
+python tools/export_schemas.py
+python -m ruff format --check src tests tools
+python -m ruff check src tests tools
+python -m mypy --strict src/repairflow
+python -m pytest -q -m "not slow"
+```
 
-Known limitations include:
+The demo uses synthetic data, checks clean and intentionally broken plans, and must remain fail-closed.
 
-- synthetic data are not a customer validation set;
-- the pinned kernel is a dependency boundary, not a proof of domain correctness;
-- heuristic schedules are not optimal;
-- missing or ambiguous setup, calendar, skill, spare or relation data must not be interpreted as zero risk;
-- soft due-date performance must not be reported as hard feasibility;
-- a checker can only prove the constraints declared in its contract;
-- a plan can be mathematically feasible and still be rejected by a human operator or a changed real-world condition;
-- no EAM/ERP/CMMS write-back, dispatch control, SCADA integration or safety function is present;
-- no live customer data, sponsor relationship or industrial KPI is claimed.
+## Trust boundary and semantics
 
-Security and provenance guidance is in [`SECURITY.md`](SECURITY.md), [`docs/threat-model.md`](docs/threat-model.md), [`docs/sbom-and-provenance.md`](docs/sbom-and-provenance.md) and [`LICENSES.md`](LICENSES.md).
+```text
+formal instance → schema/domain validation → candidate planner
+               → independent checker → evidence bundle → human decision
+```
 
-## Documentation map
+The checker does not import solver search code. A shorter makespan is not an improvement when coverage is incomplete or a hard violation is introduced.
 
-- [`docs/README.md`](docs/README.md) — documentation map and reviewer rule.
-- [`docs/SOTA_EVIDENCE_PROTOCOL.md`](docs/SOTA_EVIDENCE_PROTOCOL.md) — evidence hierarchy and benchmark ladder.
-- [`docs/SOTA_2026.md`](docs/SOTA_2026.md) — research positioning and agenda.
-- [`docs/traceability-matrix.md`](docs/traceability-matrix.md) — requirement-to-evidence mapping.
-- [`docs/domain-assumptions.md`](docs/domain-assumptions.md) — domain assumptions.
-- [`docs/red-team-remediation.md`](docs/red-team-remediation.md) — checker gaps and remediation.
-- [`docs/benchmark-protocol.md`](docs/benchmark-protocol.md) — reproducible comparisons.
-- [`docs/jury-demo.md`](docs/jury-demo.md) — demonstration script.
-- [`docs/pilot-protocol.md`](docs/pilot-protocol.md) — shadow-pilot protocol.
-- [`docs/osint-and-pilot-gates.md`](docs/osint-and-pilot-gates.md) — public OSINT register and gates.
-- [`APPLICATION.md`](APPLICATION.md) — concise application-safe summary.
-- [`CITATION.cff`](CITATION.cff) — citation metadata.
+A resource with capacity `K` has `K` interchangeable lanes. Occupancy is half-open, `[start, end)`, so touching endpoints do not overlap. Setup extends occupancy backwards. The same sweep-line oracle is used for ordinary and frozen assignments. This avoids the anchor-based pairwise error that rejects staggered visits as simultaneous.
 
-## License and contact boundary
+## Evidence and SOTA 2026
 
-The repository is MIT-licensed unless a file states otherwise. Third-party dependency licences are listed in [`LICENSES.md`](LICENSES.md). For security issues, use [`SECURITY.md`](SECURITY.md).
+Every result should state data provenance, solver status, claim level and independent verification. `OPTIMAL` is reserved for a bounded exact run with a proven bound and an empty independent checker. Heuristics never inherit `optimal`.
 
-This README is a research and engineering description. It is not a customer contract, safety case, procurement commitment or production-readiness certificate.
+```text
+false_accept_rate = invalid_plans_accepted_as_verified / invalid_plans_presented
+```
+
+The target for correctness-oracle fixtures is zero. RepairFlow does not claim a new general-purpose solver; its defensible position is explicit domain semantics, independent fail-closed verification, reproducibility, provenance and a controlled path to a shadow pilot. See [`docs/SOTA_2026.md`](docs/SOTA_2026.md) and [`docs/SOTA_EVIDENCE_PROTOCOL.md`](docs/SOTA_EVIDENCE_PROTOCOL.md).
+
+## FTIM / OSINT boundary
+
+- [FTIM pilot programme](https://ftim.ru/pilotirovanie/) is used only for public pilot-gate framing.
+- The [official SVARZ profile](https://www.mosgortrans.ru/about/branches/filial-sokolnicheskii-vagonoremontno-stroitelnyi-zavod-svarz-gup-mosgortrans/) establishes transport-component repair, not a RepairFlow sponsor or workflow.
+- [Moscow Innovation Cluster](https://i.moscow/pilot) describes readiness and rights requirements; this repository remains laboratory TRL 4.
+
+A first pilot must be read-only/shadow-only, limited to one contour, with an anonymised data slice, agreed baseline, holdout, operator decision log, rollback and pre-declared KPIs. These sources do not prove deployment, savings, sponsorship or certification.
+
+## RailBreak comparison
+
+The public [`KonkovDV/RailBreak`](https://github.com/KonkovDV/RailBreak) repository was used as a documentation precedent: one-command jury execution, evidence tables, assumptions/results/TЗ traceability, fault campaigns and explicit limitations. RailBreak measurements are not RepairFlow evidence.
+
+## Reproducibility, limits and documentation
+
+For every serious result record the repository commit, dependency lock, SynAPS pin, input/config/result hashes, solver class, seed, time limit, checker output, metric denominator, environment and CI run. The checker can only prove declared constraints. No EAM/ERP/CMMS write-back, dispatch, SCADA or safety function is included.
+
+See [`docs/README.md`](docs/README.md), [`docs/traceability-matrix.md`](docs/traceability-matrix.md), [`docs/threat-model.md`](docs/threat-model.md), [`docs/osint-and-pilot-gates.md`](docs/osint-and-pilot-gates.md), [`SECURITY.md`](SECURITY.md) and [`LICENSES.md`](LICENSES.md).
+
+The repository is MIT-licensed unless a file states otherwise. This README is a research and engineering description, not a customer contract, safety case, procurement commitment or production-readiness certificate.
