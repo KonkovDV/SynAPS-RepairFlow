@@ -17,23 +17,27 @@ SCHEMA = "synaps.agent_bus.v1"
 OPS = frozenset({"claim", "heartbeat", "blocked", "handoff", "steal", "done"})
 REQUIRED_CI_JOBS = ("lint", "test-fast", "synaps-pin", "demo-evidence", "benchmark")
 STEAL_AFTER_HOURS = 6
-_HEADING = re.compile(r"^### AGENT_BUS\s+synaps\.agent_bus\.v1\s*$", re.MULTILINE)
+_HEADING = re.compile(r"^### AGENT_BUS\\s+synaps\\.agent_bus\\.v1\\s*$", re.MULTILINE)
 _SHA = re.compile(r"^[0-9a-f]{7,40}$")
 _BRANCH = re.compile(r"^[A-Za-z0-9._/-]{1,100}$")
-_RUN_URL = re.compile(r"^https://github\.com/KonkovDV/SynAPS-RepairFlow/actions/runs/\d+$")
-_PR_URL = re.compile(r"^https://github\.com/KonkovDV/SynAPS-RepairFlow/pull/\d+$")
-_FORBIDDEN = {
-    "summary_passed",
-    "summary.passed",
-    "verified",
-    "verified_feasible",
-    "customer_go",
-    "market_go",
-    "deployment_go",
-    "accuracy_claim",
-    "customer_accuracy",
-    "mep_delivered",
-}
+_RUN_URL = re.compile(
+    r"^https://github\\.com/KonkovDV/SynAPS-RepairFlow/actions/runs/\\d+$"
+)
+_PR_URL = re.compile(r"^https://github\\.com/KonkovDV/SynAPS-RepairFlow/pull/\\d+$")
+_FORBIDDEN = frozenset(
+    {
+        "summary_passed",
+        "summary.passed",
+        "verified",
+        "verified_feasible",
+        "customer_go",
+        "market_go",
+        "deployment_go",
+        "accuracy_claim",
+        "customer_accuracy",
+        "mep_delivered",
+    }
+)
 
 
 class BusError(ValueError):
@@ -54,7 +58,7 @@ class Comment:
     body: str
 
 
-def _parse_time(value: str) -> datetime:
+def _time(value: str) -> datetime:
     try:
         result = datetime.fromisoformat(value.replace("Z", "+00:00"))
     except ValueError as exc:
@@ -77,7 +81,9 @@ def _reject_product_fields(value: object) -> None:
 
 def _branch(raw: Mapping[str, Any]) -> str:
     value = raw.get("branch")
-    if not isinstance(value, str) or ".." in value or _BRANCH.fullmatch(value) is None:
+    if not isinstance(value, str) or ".." in value:
+        raise BusError("branch must be a safe feature branch")
+    if _BRANCH.fullmatch(value) is None:
         raise BusError("branch must be a safe feature branch")
     bare = value
     for prefix in ("refs/heads/", "origin/"):
@@ -127,7 +133,7 @@ def validate_object(raw: Mapping[str, Any]) -> BusMessage:
             raise BusError("host must be local or cloud")
         _sha(raw, "base_sha")
         _branch(raw)
-        _parse_time(_text(raw, "until"))
+        _time(_text(raw, "until"))
     elif op == "heartbeat":
         _branch(raw)
     elif op == "blocked":
@@ -154,8 +160,10 @@ def validate_object(raw: Mapping[str, Any]) -> BusMessage:
         _url(raw, "pr_url", _PR_URL)
         _url(raw, "ci_run_id", _RUN_URL)
         gate = raw.get("test_quality_gate")
-        if not isinstance(gate, list) or not gate or any(not isinstance(item, str) for item in gate):
+        if not isinstance(gate, list) or not gate:
             raise BusError("done requires a test quality gate")
+        if any(not isinstance(item, str) or not item.strip() for item in gate):
+            raise BusError("done requires a text test quality gate")
     return BusMessage(op=str(op), issue=issue, agent=agent.strip(), fields=dict(raw))
 
 
@@ -180,14 +188,14 @@ def parse_messages(text: str) -> list[BusMessage]:
     messages: list[BusMessage] = []
     for index, heading in enumerate(headings):
         end = headings[index + 1].start() if index + 1 < len(headings) else len(text)
-        messages.append(validate_object(_json_after_heading(text[heading.end() : end])))
+        raw = _json_after_heading(text[heading.end() : end])
+        messages.append(validate_object(raw))
     return messages
 
 
 def _read_text(path: str) -> str:
-    data = Path(path).read_bytes()
     try:
-        return data.decode("utf-8-sig")
+        return Path(path).read_text(encoding="utf-8-sig")
     except UnicodeDecodeError as exc:
         raise BusError("file is not UTF-8") from exc
 
@@ -213,7 +221,7 @@ def _comments(payload: object) -> list[Comment]:
         stamp = row.get("createdAt", row.get("created_at"))
         if not isinstance(stamp, str):
             raise BusError("comment needs createdAt")
-        result.append(Comment(_parse_time(stamp), row["body"]))
+        result.append(Comment(_time(stamp), row["body"]))
     return sorted(result, key=lambda item: item.at)
 
 
@@ -221,7 +229,7 @@ def _expired(message: BusMessage, at: datetime, last: datetime) -> bool:
     until = message.fields.get("until") if message.op == "claim" else None
     if not isinstance(until, str):
         return at - last >= timedelta(hours=STEAL_AFTER_HOURS)
-    return at > _parse_time(until) or at - last >= timedelta(hours=STEAL_AFTER_HOURS)
+    return at > _time(until) or at - last >= timedelta(hours=STEAL_AFTER_HOURS)
 
 
 def run_failure_reason(payload: Mapping[str, Any]) -> str | None:
@@ -244,8 +252,9 @@ def run_failure_reason(payload: Mapping[str, Any]) -> str | None:
             heads.add(job["head_sha"])
         if isinstance(run_id, int) and job.get("run_id") not in {None, run_id}:
             return "jobs belong to another run"
-    if isinstance(payload.get("head_sha"), str) and heads and heads != {payload["head_sha"]}:
-        return "jobs belong to another SHA"
+    if isinstance(payload.get("head_sha"), str) and heads:
+        if heads != {payload["head_sha"]}:
+            return "jobs belong to another SHA"
     for name in REQUIRED_CI_JOBS:
         job = by_name.get(name)
         if job is None:
@@ -301,8 +310,10 @@ def inspect_thread(
             if holder is None or last is None:
                 return None, f"{message.op} has no holder"
             if message.op == "heartbeat":
-                if message.agent != holder.agent or message.fields.get("branch") != holder.fields.get("branch"):
+                if message.agent != holder.agent:
                     return None, "heartbeat is not from the holder"
+                if message.fields.get("branch") != holder.fields.get("branch"):
+                    return None, "heartbeat changed the branch"
                 last = comment.at
             elif message.op == "blocked":
                 if message.agent != holder.agent:
@@ -320,7 +331,8 @@ def inspect_thread(
                 if compare is None:
                     return None, "steal requires compare evidence"
                 base = str(holder.fields.get("base_sha", ""))
-                if not _compare_allows(compare, base, str(message.fields["branch"])):
+                branch = str(message.fields["branch"])
+                if not _compare_allows(compare, base, branch):
                     return None, "compare does not prove an empty claimed branch"
                 holder, last = message, comment.at
             elif message.op == "done":
