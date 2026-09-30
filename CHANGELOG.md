@@ -16,6 +16,9 @@
 - Post, crew, and tool capacity is a sweep-line lane count. Staggered visits
   that share a resource without exceeding `max_parallel` stay feasible.
   Endpoint contact does not consume two lanes. Frozen ingest uses the same oracle.
+- Setup on a parallel work centre is lane-local. The checker and the domain
+  list scheduler share that colouring: a lane is reused only after its
+  occupancy ends, and overflow stays an explicit capacity failure.
 - Pilot-boundary documents state TRL 4, shadow-only use, and the gates that
   are still external (legal entity, data owner, signed extract). The operator
   decision log is a contract, not a writer.

@@ -25,6 +25,7 @@ from repairflow.checker import check_plan, kernel_hard_violations
 from repairflow.dag_compiler import CompiledDag, compile_dag, propagate_windows
 from repairflow.events import InspectionEvent, apply_inspection
 from repairflow.evidence import evidence_stamp, fingerprint_payload, runtime_manifest, to_canonical
+from repairflow.lane_setup import LanePlacement, lane_local_setup_placements
 from repairflow.limits import CPSAT_OPS_CAP
 from repairflow.metrics import compute_metrics
 from repairflow.model import (
@@ -786,14 +787,107 @@ def _scan_slot(
     pred_end: datetime,
     deadline: datetime | None,
 ) -> PlannedAssignment | None:
-    ops = {op.id: op for op in problem.operations}
-    last_center = _last_on_center(center.id, placed, before=deadline)
-    prev_state = "idle"
-    prev_end = problem.planning_horizon.start
-    if last_center is not None:
-        prev_op = ops.get(last_center.operation_id)
-        prev_state = prev_op.setup_state if prev_op is not None else "idle"
-        prev_end = last_center.end
+    try:
+        gaps = _lane_gaps(problem, placed, center)
+    except ValueError:
+        return None
+    best: PlannedAssignment | None = None
+    best_lane = 0
+    for lane_index, prev_end, next_limit, prev_state, follower_id in gaps:
+        if not _follower_setup_holds(problem, placed, operation, follower_id):
+            continue
+        candidate = _slot_from_lane(
+            problem,
+            operation,
+            placed,
+            center,
+            crew,
+            pred_end,
+            deadline,
+            lane_index=lane_index,
+            prev_end=prev_end,
+            next_limit=next_limit,
+            prev_state=prev_state,
+        )
+        if candidate is None:
+            continue
+        if best is None or (candidate.start, lane_index) < (best.start, best_lane):
+            best = candidate
+            best_lane = lane_index
+    return best
+
+
+def _lane_gaps(
+    problem: RepairFlowProblem,
+    placed: list[PlannedAssignment],
+    center: WorkCenter,
+) -> list[tuple[int, datetime, datetime | None, str, str | None]]:
+    """Open intervals on each lane: previous end, next occupancy, previous state, follower."""
+
+    horizon = problem.planning_horizon.start
+    rows = [row for row in placed if row.work_center_id == center.id]
+    if not rows:
+        return [(0, horizon, None, "idle", None)]
+    operations = {op.id: op for op in problem.operations}
+    by_lane: dict[int, list[LanePlacement]] = {}
+    for item in lane_local_setup_placements(problem, rows):
+        by_lane.setdefault(item.lane_index, []).append(item)
+    gaps: list[tuple[int, datetime, datetime | None, str, str | None]] = []
+    for lane_index in sorted(by_lane):
+        sequence = sorted(by_lane[lane_index], key=lambda item: item.occupancy_start)
+        gaps.append((lane_index, horizon, sequence[0].occupancy_start, "idle", sequence[0].operation_id))
+        for previous, following in zip(sequence, sequence[1:], strict=False):
+            operation = operations.get(previous.operation_id)
+            state = operation.setup_state if operation is not None else ""
+            gaps.append((lane_index, previous.end, following.occupancy_start, state, following.operation_id))
+        last = sequence[-1]
+        operation = operations.get(last.operation_id)
+        state = operation.setup_state if operation is not None else ""
+        gaps.append((lane_index, last.end, None, state, None))
+    if len(by_lane) < center.max_parallel:
+        gaps.append((len(by_lane), horizon, None, "idle", None))
+    return gaps
+
+
+def _follower_setup_holds(
+    problem: RepairFlowProblem,
+    placed: list[PlannedAssignment],
+    operation: Operation,
+    follower_id: str | None,
+) -> bool:
+    """Inserting here must leave the next visit's already written setup intact."""
+
+    if follower_id is None:
+        return True
+    follower = next((row for row in problem.operations if row.id == follower_id), None)
+    written = next((row for row in placed if row.operation_id == follower_id), None)
+    if follower is None or written is None:
+        return False
+    expected = core_adapter.lookup_setup_minutes(
+        problem,
+        work_center_id=written.work_center_id,
+        from_state=operation.setup_state,
+        to_state=follower.setup_state,
+    )
+    if expected is None:
+        return problem.policy.missing_setup == "zero" and int(written.setup_minutes) == 0
+    return int(written.setup_minutes) == int(expected)
+
+
+def _slot_from_lane(
+    problem: RepairFlowProblem,
+    operation: Operation,
+    placed: list[PlannedAssignment],
+    center: WorkCenter,
+    crew: Crew,
+    pred_end: datetime,
+    deadline: datetime | None,
+    *,
+    lane_index: int,
+    prev_end: datetime,
+    next_limit: datetime | None,
+    prev_state: str,
+) -> PlannedAssignment | None:
     setup = core_adapter.lookup_setup_minutes(
         problem,
         work_center_id=center.id,
@@ -834,6 +928,8 @@ def _scan_slot(
             return None
         if deadline is not None and end > deadline:
             return None
+        if next_limit is not None and end > next_limit:
+            return None
         candidate = PlannedAssignment(
             operation_id=operation.id,
             work_center_id=center.id,
@@ -845,23 +941,35 @@ def _scan_slot(
             reason=f"list-schedule post={center.code} crew={crew.code} setup={setup}",
         )
         blocker = _conflict_end(problem, candidate, placed)
-        if blocker is None:
+        if blocker is None and _lane_choice_matches(
+            problem,
+            placed,
+            candidate,
+            lane_index=lane_index,
+            prev_state=prev_state,
+        ):
             return candidate
-        nxt = blocker + timedelta(minutes=setup)
+        step = blocker if blocker is not None else start
+        nxt = step + timedelta(minutes=1)
         cursor = nxt if nxt > cursor else cursor + timedelta(minutes=1)
     return None
 
 
-def _last_on_center(
-    center_id: str,
+def _lane_choice_matches(
+    problem: RepairFlowProblem,
     placed: list[PlannedAssignment],
+    candidate: PlannedAssignment,
     *,
-    before: datetime | None = None,
-) -> PlannedAssignment | None:
-    rows = [row for row in placed if row.work_center_id == center_id]
-    if before is not None:
-        rows = [row for row in rows if row.start < before]
-    return max(rows, key=lambda row: row.end) if rows else None
+    lane_index: int,
+    prev_state: str,
+) -> bool:
+    rows = [row for row in placed if row.work_center_id == candidate.work_center_id]
+    try:
+        placements = lane_local_setup_placements(problem, [*rows, candidate])
+    except ValueError:
+        return False
+    found = next(row for row in placements if row.operation_id == candidate.operation_id)
+    return found.lane_index == lane_index and found.previous_state == prev_state
 
 
 def _last_on_crew(
@@ -895,16 +1003,27 @@ def _conflict_end(
 ) -> datetime | None:
     occ_a = candidate.start - timedelta(minutes=candidate.setup_minutes)
     blocker: datetime | None = None
+    center_rows = [row for row in placed if row.work_center_id == candidate.work_center_id]
+    try:
+        lane_local_setup_placements(problem, [*center_rows, candidate])
+    except ValueError:
+        releases = [
+            other.end
+            for other in center_rows
+            if occ_a < other.end and other.start - timedelta(minutes=other.setup_minutes) < candidate.end
+        ]
+        if not releases and center_rows:
+            releases = [min(row.end for row in center_rows)]
+        if releases:
+            blocker = min(releases)
     for other in placed:
         occ_b = other.start - timedelta(minutes=other.setup_minutes)
         if not (occ_a < other.end and occ_b < candidate.end):
             continue
-        shares = other.work_center_id == candidate.work_center_id
-        shares = shares or (candidate.crew_id is not None and other.crew_id == candidate.crew_id)
-        shares = shares or bool(set(candidate.aux_ids) & set(other.aux_ids))
-        if shares:
+        shares_crew = candidate.crew_id is not None and other.crew_id == candidate.crew_id
+        shares_aux = bool(set(candidate.aux_ids) & set(other.aux_ids))
+        if shares_crew or shares_aux:
             blocker = other.end if blocker is None else max(blocker, other.end)
-    _ = problem
     return blocker
 
 

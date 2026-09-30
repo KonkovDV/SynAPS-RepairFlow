@@ -18,6 +18,9 @@
   the immutable-freeze ingest use the same sweep: demand is the maximum number
   of lanes open at one instant, and an endpoint touch does not take two lanes.
   Lanes are not named. Staggered visits that never exceed K are feasible.
+  Setup state belongs to the lane. The next visit takes the matrix cell from
+  the lane that became free earliest, and the lower index breaks ties. A centre
+  already at `max_parallel` is an explicit capacity failure.
 - A resource with no `calendar_id` is open for the whole horizon. A calendar with
   zero windows means the resource is unavailable. A non-empty calendar is a hard
   single-window container, including tooling (`AuxResource.calendar_id`).
