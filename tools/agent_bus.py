@@ -11,7 +11,6 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
-from urllib.parse import unquote
 
 SCHEMA = "synaps.agent_bus.v1"
 OPS = frozenset({"claim", "heartbeat", "blocked", "handoff", "steal", "done"})
@@ -50,12 +49,6 @@ class BusMessage:
     fields: Mapping[str, Any]
 
 
-@dataclass(frozen=True)
-class Comment:
-    at: datetime
-    body: str
-
-
 def _time(value: str) -> datetime:
     try:
         result = datetime.fromisoformat(value.replace("Z", "+00:00"))
@@ -77,14 +70,14 @@ def _reject(value: object) -> None:
             _reject(child)
 
 
-def _required_text(raw: Mapping[str, Any], key: str) -> str:
+def _text(raw: Mapping[str, Any], key: str) -> str:
     value = raw.get(key)
     if not isinstance(value, str) or not value.strip():
         raise BusError(f"{key} is required")
     return value
 
 
-def _required_sha(raw: Mapping[str, Any], key: str) -> str:
+def _sha(raw: Mapping[str, Any], key: str) -> str:
     value = raw.get(key)
     if not isinstance(value, str) or _SHA.fullmatch(value) is None:
         raise BusError(f"{key} must be a git SHA")
@@ -124,23 +117,23 @@ def validate_object(raw: Mapping[str, Any]) -> BusMessage:
     if op == "claim":
         if raw.get("host") not in {"local", "cloud"}:
             raise BusError("host must be local or cloud")
-        _required_sha(raw, "base_sha")
+        _sha(raw, "base_sha")
         _branch(raw)
-        _time(_required_text(raw, "until"))
+        _time(_text(raw, "until"))
     elif op == "heartbeat":
         _branch(raw)
     elif op == "blocked":
-        _required_text(raw, "reason")
+        _text(raw, "reason")
         blocked = raw.get("blocked_by")
         if not isinstance(blocked, list) or not blocked:
             raise BusError("blocked_by must contain issue numbers")
         if any(not isinstance(item, int) or isinstance(item, bool) or item < 1 for item in blocked):
             raise BusError("blocked_by must contain issue numbers")
     elif op == "handoff":
-        _required_sha(raw, "sha")
+        _sha(raw, "sha")
         _url(raw, "pr_url", _PR_URL)
-        _required_text(raw, "done_note")
-        _required_text(raw, "left_note")
+        _text(raw, "done_note")
+        _text(raw, "left_note")
     elif op == "steal":
         _branch(raw)
         hours = raw.get("stale_heartbeat_hours")
@@ -149,7 +142,7 @@ def validate_object(raw: Mapping[str, Any]) -> BusMessage:
         if raw.get("branch_commits_since_claim") != 0:
             raise BusError("steal requires zero branch commits")
     elif op == "done":
-        _required_sha(raw, "sha")
+        _sha(raw, "sha")
         _url(raw, "pr_url", _PR_URL)
         _url(raw, "ci_run_id", _RUN_URL)
         gate = raw.get("test_quality_gate")
@@ -167,12 +160,12 @@ def parse_messages(text: str) -> list[BusMessage]:
         end = headings[index + 1].start() if index + 1 < len(headings) else len(text)
         section = text[heading.end() : end]
         marker = section.find("```json")
-        if marker < 0:
-            raise BusError("AGENT_BUS heading has no json block")
         start = section.find("\n", marker)
+        if marker < 0 or start < 0:
+            raise BusError("AGENT_BUS heading has no json block")
         try:
             raw, _ = json.JSONDecoder().raw_decode(section[start + 1 :].lstrip())
-        except (json.JSONDecodeError, IndexError) as exc:
+        except json.JSONDecodeError as exc:
             raise BusError("AGENT_BUS json is invalid") from exc
         if not isinstance(raw, dict):
             raise BusError("AGENT_BUS json must be an object")
@@ -194,11 +187,6 @@ def run_failure_reason(payload: Mapping[str, Any]) -> str | None:
         for job in jobs
         if isinstance(job, Mapping) and isinstance(job.get("name"), str)
     }
-    run_id = payload.get("id")
-    for job in jobs:
-        if isinstance(run_id, int) and isinstance(job, Mapping):
-            if job.get("run_id") not in {None, run_id}:
-                return "jobs belong to another run"
     for name in REQUIRED_CI_JOBS:
         job = by_name.get(name)
         if job is None:
@@ -237,10 +225,9 @@ def inspect_thread(
     rows = payload.get("comments") if isinstance(payload, Mapping) else payload
     if not isinstance(rows, list):
         raise BusError("comments must be a list")
-    comments = sorted(rows, key=lambda row: str(row.get("createdAt", row.get("created_at", ""))))
     holder: BusMessage | None = None
     last: datetime | None = None
-    for row in comments:
+    for row in sorted(rows, key=lambda item: str(item.get("createdAt", ""))):
         if not isinstance(row, Mapping) or not isinstance(row.get("body"), str):
             raise BusError("comment needs a body")
         stamp = row.get("createdAt", row.get("created_at"))
@@ -256,23 +243,25 @@ def inspect_thread(
                 continue
             if holder is None or last is None:
                 return None, f"{message.op} has no holder"
-            if message.agent != holder.agent and message.op != "steal":
-                return None, f"{message.op} is not from the holder"
-            if message.op == "heartbeat" or message.op == "blocked":
+            if message.op in {"heartbeat", "blocked"}:
+                if message.agent != holder.agent:
+                    return None, f"{message.op} is not from the holder"
                 last = at
             elif message.op == "handoff":
+                if message.agent != holder.agent:
+                    return None, "handoff is not from the holder"
                 holder, last = None, None
             elif message.op == "steal":
                 if message.fields.get("branch") != holder.fields.get("branch"):
                     return None, "steal must keep the claimed branch"
-                if at - last < timedelta(hours=_STALE_HOURS) or compare is None:
-                    return None, "steal lacks stale compare evidence"
-                if compare.get("ahead_by") != 0 or compare.get("total_commits") != 0:
-                    return None, "claimed branch has commits"
+                if message.agent == holder.agent or at - last < timedelta(hours=_STALE_HOURS):
+                    return None, "steal requires another stale agent"
+                if compare is None or compare.get("ahead_by") != 0:
+                    return None, "steal lacks empty compare evidence"
                 holder, last = message, at
             elif message.op == "done":
-                if run is None:
-                    return None, "done requires run evidence"
+                if message.agent != holder.agent or run is None:
+                    return None, "done requires holder and run evidence"
                 reason = run_failure_reason(run)
                 if reason is not None:
                     return None, reason
@@ -285,23 +274,13 @@ def inspect_thread(
     return holder.agent, None
 
 
-def _json(path: str) -> Mapping[str, Any]:
-    try:
-        value = json.loads(Path(path).read_text(encoding="utf-8-sig"))
-    except (OSError, json.JSONDecodeError) as exc:
-        raise BusError("JSON file is invalid") from exc
-    if not isinstance(value, dict):
-        raise BusError("JSON root must be an object")
-    return value
-
-
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     sub = parser.add_subparsers(dest="command", required=True)
     comment = sub.add_parser("check-comment")
     comment.add_argument("path")
     run = sub.add_parser("check-run")
-    run.add_argument("run")
+    run.add_argument("path")
     args = parser.parse_args(argv)
     try:
         if args.command == "check-comment":
@@ -310,11 +289,12 @@ def main(argv: Sequence[str] | None = None) -> int:
                 raise BusError("no bus message")
             print(f"{len(messages)} bus message(s)")
         else:
-            reason = run_failure_reason(_json(args.run))
+            payload = json.loads(Path(args.path).read_text(encoding="utf-8"))
+            reason = run_failure_reason(payload)
             if reason is not None:
                 raise BusError(reason)
             print("run attested")
-    except (OSError, BusError) as exc:
+    except (OSError, json.JSONDecodeError, BusError) as exc:
         print(str(exc), file=sys.stderr)
         return 1
     return 0
