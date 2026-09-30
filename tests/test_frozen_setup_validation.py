@@ -19,7 +19,7 @@ def test_duplicate_setup_cell_is_rejected_deterministically() -> None:
 
 
 def test_overlapping_immutable_fragment_is_rejected() -> None:
-    problem = synthesize("tiny", seed=1)
+    problem = synthesize("repair-site-mvp", seed=42)
     first = problem.frozen_assignments[0]
     second_operation = next(
         operation
