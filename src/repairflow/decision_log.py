@@ -7,7 +7,7 @@ import re
 from datetime import datetime, timezone
 from enum import StrEnum
 from pathlib import Path
-from typing import Any
+from typing import Any, Self
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -77,7 +77,7 @@ class DecisionEvent(BaseModel):
         return value.astimezone(timezone.utc)
 
     @model_validator(mode="after")
-    def validate_decision_requirements(self) -> DecisionEvent:
+    def validate_decision_requirements(self) -> Self:
         if self.decision in {Decision.REJECTED, Decision.MANUAL_FALLBACK} and not self.reason:
             raise ValueError("reason is required for rejection or manual fallback")
         if self.decision is Decision.ACCEPTED_WITH_EDITS and not self.edit_summary:
