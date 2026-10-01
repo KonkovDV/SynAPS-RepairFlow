@@ -29,9 +29,7 @@ def test_post_utilization_includes_setup_and_exposes_components() -> None:
     )
 
     metrics = compute_metrics(loaded, [assignment])
-    horizon_minutes = int(
-        (loaded.planning_horizon.end - loaded.planning_horizon.start).total_seconds() // 60
-    )
+    horizon_minutes = int((loaded.planning_horizon.end - loaded.planning_horizon.start).total_seconds() // 60)
     capacity_minutes = sum(row.max_parallel for row in loaded.work_centers) * horizon_minutes
     processing = operation.duration_min / capacity_minutes
     setup = 10 / capacity_minutes
