@@ -25,6 +25,11 @@ from repairflow.checker import check_plan, kernel_hard_violations
 from repairflow.dag_compiler import CompiledDag, compile_dag, propagate_windows
 from repairflow.events import InspectionEvent, apply_inspection
 from repairflow.evidence import evidence_stamp, fingerprint_payload, runtime_manifest, to_canonical
+from repairflow.kernel_compat import (
+    KERNEL_CALENDAR_UNSUPPORTED,
+    assert_kernel_calendar_compatibility,
+    unsupported_auxiliary_calendars,
+)
 from repairflow.lane_setup import LanePlacement, lane_local_setup_placements
 from repairflow.limits import CPSAT_OPS_CAP
 from repairflow.metrics import compute_metrics
@@ -102,6 +107,9 @@ def plan(
             )
         if solver_config.upper().startswith("CPSAT") and len(problem.operations) > CPSAT_OPS_CAP:
             raise ValueError(f"CP-SAT refused on {len(problem.operations)} ops (cap {CPSAT_OPS_CAP})")
+        refused = _kernel_calendar_refusal(problem, solver_config=solver_config, compiled=compiled)
+        if refused is not None:
+            return refused
         if solver_config.upper().startswith("CPSAT") and "warm_start_assignments" not in kwargs:
             kwargs["warm_start_assignments"] = _as_kernel_assignments(domain_greed(problem), id_map)
             kwargs["auto_greedy_warm_start"] = False
@@ -142,6 +150,9 @@ def replan_after_disruption(
             disrupted_operation_ids=list(disrupted_operation_ids),
             solver_config=solver_config.upper(),
         )
+    refused = _kernel_calendar_refusal(problem, solver_config=f"repair:{solver_config}")
+    if refused is not None:
+        return refused
     schedule_problem, id_map = to_schedule_problem(problem)
     skip = set(disrupted_operation_ids)
     locked = extract_frozen_from_planned(
@@ -429,6 +440,7 @@ def wrap(
     kwargs_for_hash: dict[str, Any] | None = None,
     kernel_status_override: str | None | object = ...,
     fixpoint: dict[str, Any] | None = None,
+    extra_violations: list[Violation] | None = None,
 ) -> PlanOutcome:
     kernel_status = result.status.value if result.status is not None else None
     if kernel_status_override is not ...:
@@ -441,6 +453,11 @@ def wrap(
         id_map=id_map,
         kernel_status=kernel_status,
     )
+    if extra_violations:
+        domain_violations.extend(extra_violations)
+        domain_violations.sort(
+            key=lambda row: (row.code, row.operation_id or "", row.resource_id or "", row.message)
+        )
     fixpoint_info = fixpoint or _fixpoint_meta(compile_dag(problem), iterations=0, converged=True)
     if not fixpoint_info.get("converged", True):
         domain_violations.append(
@@ -605,6 +622,50 @@ def _fixpoint_meta(compiled: CompiledDag, *, iterations: int, converged: bool) -
         "cross_edges": len(compiled.cross_edges),
         "optimality_scope": scope,
     }
+
+
+def _kernel_calendar_refusal(
+    problem: RepairFlowProblem,
+    *,
+    solver_config: str,
+    compiled: CompiledDag | None = None,
+) -> PlanOutcome | None:
+    """Refuse a kernel solve that would drop crew or auxiliary calendars."""
+
+    try:
+        assert_kernel_calendar_compatibility(problem)
+    except ValueError as exc:
+        detail = str(exc)
+    else:
+        return None
+    current = compiled if compiled is not None else compile_dag(problem)
+    schedule_problem, id_map = to_schedule_problem(problem, current)
+    result = ScheduleResult(
+        status=SolverStatus.ERROR,
+        solver_name=solver_config,
+        assignments=[],
+        objective=ObjectiveValues(
+            coverage=0.0,
+            unscheduled_operations=len(problem.operations),
+        ),
+        metadata={"error": KERNEL_CALENDAR_UNSUPPORTED, "detail": detail},
+    )
+    violation = Violation(
+        code=ReasonCode.KERNEL_CALENDAR_UNSUPPORTED,
+        message=detail,
+        severity="hard",
+        suggested_relaxation=SUGGESTIONS[ReasonCode.KERNEL_CALENDAR_UNSUPPORTED],
+        details={"resources": unsupported_auxiliary_calendars(problem)},
+    )
+    return wrap(
+        problem,
+        schedule_problem,
+        id_map,
+        result,
+        solver_config=solver_config,
+        extra_violations=[violation],
+        fixpoint=_fixpoint_meta(current, iterations=0, converged=True),
+    )
 
 
 def _kernel_fixpoint(

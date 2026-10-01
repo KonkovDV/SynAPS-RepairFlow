@@ -34,6 +34,7 @@ REASON_CODES = (
     "DAG_FIXPOINT_NOT_CONVERGED",
     "EXCHANGE_POOL_STOCKOUT",
     "NERVOUSNESS_HIGH",
+    "KERNEL_CALENDAR_UNSUPPORTED",
 )
 
 
@@ -67,6 +68,7 @@ class ReasonCode(StrEnum):
     DAG_FIXPOINT_NOT_CONVERGED = "DAG_FIXPOINT_NOT_CONVERGED"
     EXCHANGE_POOL_STOCKOUT = "EXCHANGE_POOL_STOCKOUT"
     NERVOUSNESS_HIGH = "NERVOUSNESS_HIGH"
+    KERNEL_CALENDAR_UNSUPPORTED = "KERNEL_CALENDAR_UNSUPPORTED"
 
 
 REASON_RU: dict[str, str] = {
@@ -99,6 +101,9 @@ REASON_RU: dict[str, str] = {
     ReasonCode.DAG_FIXPOINT_NOT_CONVERGED: ("окна межсегментных связей не сошлись за лимит итераций"),
     ReasonCode.EXCHANGE_POOL_STOCKOUT: "обменный фонд ушёл в минус",
     ReasonCode.NERVOUSNESS_HIGH: "перепланирование сдвинуло слишком большую долю работ",
+    ReasonCode.KERNEL_CALENDAR_UNSUPPORTED: (
+        "календарь бригады или оснастки нельзя передать в закреплённое ядро"
+    ),
 }
 
 
@@ -121,4 +126,7 @@ SUGGESTIONS: dict[str, str] = {
     ),
     ReasonCode.EXCHANGE_POOL_STOCKOUT: "сдвинуть выдачу, пополнить фонд или снять hard",
     ReasonCode.NERVOUSNESS_HIGH: "сузить окрестность перепланирования или поднять порог",
+    ReasonCode.KERNEL_CALENDAR_UNSUPPORTED: (
+        "считать этот экземпляр domain GREED/EDD или снять календарь ресурса, которого нет в ядре"
+    ),
 }

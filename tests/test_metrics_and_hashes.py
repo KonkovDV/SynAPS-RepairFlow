@@ -8,9 +8,16 @@ from pathlib import Path
 from repairflow.cli import main
 from repairflow.evidence import canonical_json, verify_plan_hashes
 from repairflow.metrics import compute_metrics
+from repairflow.model import RepairFlowProblem
 from repairflow.planner import plan
 from repairflow.sbom import PINNED_ORTOOLS, build_sbom
 from repairflow.synthetic import synthesize
+
+
+def _without_auxiliary_calendars(problem: RepairFlowProblem) -> RepairFlowProblem:
+    crews = [row.model_copy(update={"calendar_id": None}) for row in problem.crews]
+    aux_resources = [row.model_copy(update={"calendar_id": None}) for row in problem.aux_resources]
+    return problem.model_copy(update={"crews": crews, "aux_resources": aux_resources})
 
 
 def test_makespan_is_measured_from_the_horizon() -> None:
@@ -40,7 +47,8 @@ def test_edd_is_feasible_where_fifo_is_not() -> None:
 
 
 def test_cpsat_records_a_domain_greed_warm_start() -> None:
-    outcome = plan(synthesize("tiny", seed=1), solver_config="CPSAT-10")
+    problem = _without_auxiliary_calendars(synthesize("tiny", seed=1))
+    outcome = plan(problem, solver_config="CPSAT-10")
     assert outcome.result.claim_status == "optimal"
     solver = outcome.result.metadata["solver"]
     assert solver["warm_start"] == "domain_greed"

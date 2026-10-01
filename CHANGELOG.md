@@ -21,6 +21,9 @@
   occupancy ends, and overflow stays an explicit capacity failure.
 - GREED/EDD disruption repair uses that same colouring. The broken slot is
   consumed, the tail of that lane is rescheduled, and the other lanes stay put.
+- Kernel solvers and kernel disruption repair refuse a problem whose crew or
+  auxiliary resource has a calendar. The pinned core has no field for that
+  constraint. Domain FIFO, GREED and EDD still enforce it themselves.
 - Pilot-boundary documents state TRL 4, shadow-only use, and the gates that
   are still external (legal entity, data owner, signed extract). The operator
   decision log is a contract, not a writer.
