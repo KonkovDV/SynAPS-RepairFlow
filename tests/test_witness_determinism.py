@@ -24,7 +24,7 @@ def _rotable_fixture() -> tuple[RepairFlowProblem, list[PlannedAssignment], list
             update={
                 "quantity": 1,
                 "domain_attributes": {"kind": "rotable", "return_lag_min": 10_000},
-            }
+            },
         )
         if row.id == "SP-BEARING"
         else row
