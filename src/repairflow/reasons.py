@@ -21,6 +21,7 @@ REASON_CODES = (
     "DAG_UNSUPPORTED",
     "PARTIAL_COVERAGE",
     "KERNEL_STATUS_MISSING",
+    "KERNEL_CALENDAR_UNSUPPORTED",
     "DUPLICATE_ASSIGNMENT",
     "INVALID_DURATION",
     "HORIZON_VIOLATION",
@@ -54,6 +55,7 @@ class ReasonCode(StrEnum):
     DAG_UNSUPPORTED = "DAG_UNSUPPORTED"
     PARTIAL_COVERAGE = "PARTIAL_COVERAGE"
     KERNEL_STATUS_MISSING = "KERNEL_STATUS_MISSING"
+    KERNEL_CALENDAR_UNSUPPORTED = "KERNEL_CALENDAR_UNSUPPORTED"
     DUPLICATE_ASSIGNMENT = "DUPLICATE_ASSIGNMENT"
     INVALID_DURATION = "INVALID_DURATION"
     HORIZON_VIOLATION = "HORIZON_VIOLATION"
@@ -86,6 +88,9 @@ REASON_RU: dict[str, str] = {
     ReasonCode.DAG_UNSUPPORTED: "ветвящийся DAG не поддержан и не линеаризуется",
     ReasonCode.PARTIAL_COVERAGE: "не все операции покрыты планом",
     ReasonCode.KERNEL_STATUS_MISSING: "в результате нет статуса ядра",
+    ReasonCode.KERNEL_CALENDAR_UNSUPPORTED: (
+        "прикладной календарь ресурса не представим в закреплённом ядре"
+    ),
     ReasonCode.DUPLICATE_ASSIGNMENT: "операция назначена более одного раза",
     ReasonCode.INVALID_DURATION: "нулевая или отрицательная длительность слота",
     ReasonCode.HORIZON_VIOLATION: "назначение выходит за горизонт планирования",
@@ -115,6 +120,10 @@ SUGGESTIONS: dict[str, str] = {
     ReasonCode.FROZEN_MOVED: "оставить замороженный слот без изменений",
     ReasonCode.SPARE_UNAVAILABLE: "отложить старт до available_from или заменить артикул",
     ReasonCode.PARTIAL_COVERAGE: "увеличить горизонт, ресурсы или разрешить частичный план явно",
+    ReasonCode.KERNEL_STATUS_MISSING: "получить явный статус ядра перед подтверждением плана",
+    ReasonCode.KERNEL_CALENDAR_UNSUPPORTED: (
+        "использовать domain GREED/list-scheduler или ядро с поддержкой календарей ресурсов"
+    ),
     ReasonCode.DAG_UNSUPPORTED: "разбить ветвление на линейные техкарты или расширить ядро",
     ReasonCode.DAG_FIXPOINT_NOT_CONVERGED: (
         "повторить со стратегией serialize или увеличить max_fixpoint_iter"
