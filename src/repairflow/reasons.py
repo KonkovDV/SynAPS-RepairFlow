@@ -6,6 +6,7 @@ from enum import StrEnum
 
 REASON_CODES = (
     "MISSING_SETUP",
+    "CREW_UNBOUND",
     "CREW_OVERLAP",
     "AUX_OVERLAP",
     "SKILL_MISMATCH",
@@ -40,6 +41,7 @@ REASON_CODES = (
 
 class ReasonCode(StrEnum):
     MISSING_SETUP = "MISSING_SETUP"
+    CREW_UNBOUND = "CREW_UNBOUND"
     CREW_OVERLAP = "CREW_OVERLAP"
     AUX_OVERLAP = "AUX_OVERLAP"
     SKILL_MISMATCH = "SKILL_MISMATCH"
@@ -73,6 +75,7 @@ class ReasonCode(StrEnum):
 
 REASON_RU: dict[str, str] = {
     ReasonCode.MISSING_SETUP: "нет записи переналадки в матрице",
+    ReasonCode.CREW_UNBOUND: "операции с требуемыми навыками не назначена бригада",
     ReasonCode.CREW_OVERLAP: "бригада назначена на пересекающиеся интервалы",
     ReasonCode.AUX_OVERLAP: "оснастка занята другим назначением",
     ReasonCode.SKILL_MISMATCH: "бригада без требуемой квалификации",
@@ -109,6 +112,7 @@ REASON_RU: dict[str, str] = {
 
 SUGGESTIONS: dict[str, str] = {
     ReasonCode.MISSING_SETUP: "добавить ячейку setup_matrix для пары состояний на посту",
+    ReasonCode.CREW_UNBOUND: "явно назначить квалифицированную crew_id до проверки",
     ReasonCode.CREW_OVERLAP: "сдвинуть одну из работ или добавить смену бригады",
     ReasonCode.AUX_OVERLAP: "развести работы по времени или добавить единицу оснастки",
     ReasonCode.SKILL_MISMATCH: "назначить бригаду с требуемой квалификацией",

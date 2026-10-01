@@ -10,7 +10,7 @@ from uuid import UUID
 from synaps.model import Assignment, ScheduleProblem, ScheduleResult
 
 from repairflow.capacity import Occupancy, excess_arrivals
-from repairflow.checker_primitives import bind_concrete_crews, reverse_ids
+from repairflow.checker_primitives import reverse_ids
 from repairflow.lane_setup import lane_setup_evidence
 from repairflow.ledger import exchange_pool_violations
 from repairflow.model import (
@@ -41,7 +41,7 @@ def check_plan(
             )
         ]
 
-    mapped = bind_concrete_crews(problem, _normalize_assignments(assignments, id_map))
+    mapped = _normalize_assignments(assignments, id_map)
     issues = _id_map_issues(problem, schedule_problem, id_map)
     if issues:
         return issues
@@ -290,12 +290,13 @@ def _skills_and_eligibility(
             if asn.crew_id is None:
                 out.append(
                     _violation(
-                        ReasonCode.SKILL_MISMATCH,
+                        ReasonCode.CREW_UNBOUND,
                         f"operation {op.id} requires skills {op.required_skills} but has no crew",
                         operation_id=op.id,
                         job_id=op.job_id,
                         start=asn.start,
                         end=asn.end,
+                        suggested_relaxation=SUGGESTIONS[ReasonCode.CREW_UNBOUND],
                     )
                 )
             else:

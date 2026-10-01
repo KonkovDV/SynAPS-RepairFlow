@@ -133,6 +133,7 @@ def plan(
         usage_error=usage_error,
         kwargs_for_hash={"apply_frozen": apply_frozen, **kwargs},
         fixpoint=fixpoint,
+        bind_crews=True,
     )
 
 
@@ -202,6 +203,7 @@ def replan_after_disruption(
             "disrupted_operation_ids": list(disrupted_operation_ids),
             "repair_engine": "INCREMENTAL_REPAIR",
         },
+        bind_crews=True,
     )
 
 
@@ -258,6 +260,7 @@ def _replan_lane_local(
             "disrupted_operation_ids": list(disrupted_operation_ids),
             "repair_engine": "LANE_LOCAL_REPAIR",
         },
+        bind_crews=True,
     )
 
 
@@ -420,6 +423,7 @@ def recheck(
         assignments=kernel_assignments,
         metadata={"verification_origin": "independent_recheck"},
     )
+    submitted = [row for row in assignments if isinstance(row, PlannedAssignment)]
     outcome = wrap(
         problem,
         schedule_problem,
@@ -428,6 +432,7 @@ def recheck(
         solver_config=solver_config,
         kwargs_for_hash={"verification_origin": "independent_recheck"},
         kernel_status_override=kernel_status,
+        domain_assignments=submitted if len(submitted) == len(assignments) else None,
     )
     outcome.result.metadata["verification_origin"] = "independent_recheck"
     return outcome
@@ -445,11 +450,18 @@ def wrap(
     kernel_status_override: str | None | object = ...,
     fixpoint: dict[str, Any] | None = None,
     extra_violations: list[Violation] | None = None,
+    bind_crews: bool = False,
+    domain_assignments: list[PlannedAssignment] | None = None,
 ) -> PlanOutcome:
     kernel_status = result.status.value if result.status is not None else None
     if kernel_status_override is not ...:
         kernel_status = kernel_status_override  # type: ignore[assignment]
-    planned = bind_concrete_crews(problem, _planned_from_kernel(problem, result.assignments, id_map))
+    if domain_assignments is not None:
+        planned = list(domain_assignments)
+    else:
+        planned = _planned_from_kernel(problem, result.assignments, id_map)
+    if bind_crews:
+        planned = bind_concrete_crews(problem, planned)
     domain_violations = check_plan(
         problem,
         schedule_problem=schedule_problem,

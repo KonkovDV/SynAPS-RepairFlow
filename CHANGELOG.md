@@ -33,6 +33,9 @@
 - `ATC` has a bounded local ordering contract in `repairflow.atc_baseline`.
   It is not planner-integrated, not a SynAPS config, and cannot produce an
   `optimal` or `verified` claim by itself.
+- The checker no longer invents a `crew_id`. A skilled assignment without one
+  is `CREW_UNBOUND`. An explicit unknown crew stays `UNKNOWN_RESOURCE`, and an
+  explicit unqualified crew stays `SKILL_MISMATCH`.
 - `docs/evidence-manifest.json` records main `a832d62` and CI run `36855570364`,
   including `test-slow`, against the pinned SynAPS commit.
 - Kernel and domain checkers agree on the hard decision for a compatible plan:
