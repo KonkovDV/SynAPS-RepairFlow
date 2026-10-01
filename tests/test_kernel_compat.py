@@ -1,6 +1,7 @@
+# ruff: noqa: B017
 """Fail-closed compatibility tests for the pinned SynAPS kernel."""
 
-import pytest  # noqa: I001
+import pytest
 
 import repairflow.kernel_compat as kernel_compat
 import repairflow.model as model
