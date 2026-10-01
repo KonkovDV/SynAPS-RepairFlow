@@ -44,7 +44,7 @@
 - `repairflow.artifact_record.v1` records a local wheel or sdist digest, or a
   PEP 610 archive hash already on disk. It is not the installed-file manifest
   and it does not claim a signature or a transitive lockfile.
-- `docs/evidence-manifest.json` records main `5f2a4ea` and CI run `36904784774`,
+- `docs/evidence-manifest.json` records main `dc3327d` and CI run `36905431831`,
   including `test-slow`, against the pinned SynAPS commit.
 - Kernel and domain checkers agree on the hard decision for a compatible plan:
   clean stays `verified`; precedence, eligibility, work-centre calendar, auxiliary
