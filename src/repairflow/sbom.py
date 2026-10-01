@@ -6,6 +6,8 @@ import hashlib
 from importlib import metadata
 from typing import Any
 
+from repairflow.versions import REPAIRFLOW_VERSION, SYNAPS_COMMIT
+
 COMPONENTS = ("synaps-repairflow", "synaps", "pydantic", "ortools")
 PINNED_ORTOOLS = "9.15.6755"
 
@@ -59,8 +61,8 @@ def runtime_binding() -> dict[str, Any]:
         )
     return {
         "schema": "repairflow.runtime_binding.v1",
-        "repairflow_version": _version("synaps-repairflow"),
-        "synaps_commit": "6178c93b705ff58be21fa74a98651883a2da1169",
+        "repairflow_version": REPAIRFLOW_VERSION,
+        "synaps_commit": SYNAPS_COMMIT,
         "components": components,
     }
 
