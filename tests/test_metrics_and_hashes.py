@@ -10,7 +10,7 @@ from repairflow.evidence import canonical_json, verify_plan_hashes
 from repairflow.metrics import compute_metrics
 from repairflow.model import RepairFlowProblem
 from repairflow.planner import plan
-from repairflow.sbom import PINNED_ORTOOLS, build_sbom
+from repairflow.sbom import PINNED_ORTOOLS, build_sbom, runtime_binding
 from repairflow.synthetic import synthesize
 
 
@@ -105,3 +105,16 @@ def test_sbom_pins_ortools() -> None:
     assert document["bomFormat"] == "CycloneDX"
     versions = {row["name"]: row["version"] for row in document["components"]}
     assert versions["ortools"] == PINNED_ORTOOLS
+
+
+def test_runtime_binding_is_reproducible_and_explicit() -> None:
+    first = runtime_binding()
+    second = runtime_binding()
+    assert first == second
+    assert first["schema"] == "repairflow.runtime_binding.v1"
+    for component in first["components"]:
+        assert set(component) == {"name", "version", "manifest_sha256", "file_count", "files"}
+        assert component["file_count"] == len(component["files"])
+        if component["version"] != "absent":
+            assert len(component["manifest_sha256"]) == 64
+            assert all(len(row["sha256"]) == 64 for row in component["files"])
