@@ -6,6 +6,7 @@ from repairflow.adapter import to_schedule_problem
 from repairflow.checker import check_plan
 from repairflow.explanations import deletion_minimal_operation_ids
 from repairflow.model import PlannedAssignment, RepairFlowProblem, Violation
+from repairflow.planner import plan
 from repairflow.reasons import ReasonCode
 from repairflow.synthetic import synthesize
 from repairflow.witnesses import domain_hard_witnesses, kernel_hard_witnesses, same_hard_decision
@@ -31,17 +32,16 @@ def _rotable_fixture() -> tuple[RepairFlowProblem, list[PlannedAssignment], list
         for op in kernel_compatible.operations
     ]
     loaded = kernel_compatible.model_copy(update={"spares": spares, "operations": operations})
-    assignments = list(
-        __import__("repairflow.planner", fromlist=["plan"]).plan(loaded, solver_config="CPSAT-10").result.assignments
-    )
+    assignments = list(plan(loaded, solver_config="CPSAT-10").result.assignments)
     return loaded, assignments, sorted(users)
 
 
 def test_deletion_minimal_witness_is_stable_under_assignment_order() -> None:
     problem, assignments, expected = _rotable_fixture()
     variants = [assignments, list(reversed(assignments))]
-    user_rows = [row for row in assignments if row.operation_id in set(expected)]
-    variants.append(user_rows + [row for row in assignments if row.operation_id not in set(expected)])
+    expected_ids = set(expected)
+    user_rows = [row for row in assignments if row.operation_id in expected_ids]
+    variants.append(user_rows + [row for row in assignments if row.operation_id not in expected_ids])
 
     witnesses = [
         tuple(
