@@ -29,9 +29,8 @@ def build_evidence_table(
 
     rows: list[dict[str, Any]] = []
     for solver_name, result in sorted(results.items()):
-        scope = result.metadata.get("optimality_scope")
-        if scope is not None and not isinstance(scope, str):
-            scope = None
+        raw_scope = result.metadata.get("optimality_scope")
+        scope = raw_scope if isinstance(raw_scope, str) else None
         rows.append(
             {
                 "solver": solver_name,
@@ -55,7 +54,7 @@ def build_evidence_table(
 
     input_hash = next(iter(input_hashes), fingerprint_payload(problem.model_dump(mode="json")))
     config_hash = fingerprint_payload([row["config_hash"] for row in rows])
-    table = {
+    table: dict[str, Any] = {
         "schema": TABLE_SCHEMA,
         "repairflow_version": REPAIRFLOW_VERSION,
         "synaps_commit": SYNAPS_COMMIT,
