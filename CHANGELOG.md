@@ -41,7 +41,7 @@
   explicit unqualified crew stays `SKILL_MISMATCH`.
 - CSV bundles round-trip `exchange_pools`: stock, the hard flag, and each
   dated demand. A demand row missing either instant or quantity is rejected.
-- `docs/evidence-manifest.json` records main `a0a0d25` and CI run `36899623559`,
+- `docs/evidence-manifest.json` records main `d4fb3fa` and CI run `36899969371`,
   including `test-slow`, against the pinned SynAPS commit.
 - Kernel and domain checkers agree on the hard decision for a compatible plan:
   clean stays `verified`; precedence, eligibility, work-centre calendar, auxiliary
