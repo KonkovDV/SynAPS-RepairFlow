@@ -13,8 +13,16 @@ from datetime import datetime, timedelta
 from typing import Literal
 
 from repairflow.capacity import Occupancy, excess_arrivals
-from repairflow.model import PlannedAssignment, RepairFlowProblem, Violation
+from repairflow.model import PlannedAssignment, RepairFlowProblem, Spare, Violation
 from repairflow.reasons import REASON_RU, SUGGESTIONS, ReasonCode
+
+
+def spare_is_rotable(spare: Spare) -> bool:
+    """True when the unit returns to stock instead of being consumed."""
+
+    attrs = spare.domain_attributes
+    mode_value: object = attrs.get("mode", attrs.get("kind", "consumable"))
+    return str(mode_value).lower() == "rotable"
 
 
 def exchange_pool_violations(
@@ -89,11 +97,9 @@ def _rotable_spare_violations(
     by_op = {row.operation_id: row for row in assignments}
     out: list[Violation] = []
     for spare in problem.spares:
-        attrs = spare.domain_attributes
-        mode_value: object = attrs.get("mode", attrs.get("kind", "consumable"))
-        mode = str(mode_value).lower()
-        if mode != "rotable":
+        if not spare_is_rotable(spare):
             continue
+        attrs = spare.domain_attributes
         raw_lag: object = attrs.get("return_lag_min", 0)
         if isinstance(raw_lag, bool) or not isinstance(raw_lag, int) or raw_lag < 0:
             out.append(

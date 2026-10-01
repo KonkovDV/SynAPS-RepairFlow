@@ -62,7 +62,7 @@ A shorter makespan is not sufficient if the plan is unstable for the planner.
 
 ## Domain correctness gates
 
-The MVP deliberately uses a linear technology-card contract. `predecessor_ids` must agree with `sequence`; unsupported branching must be rejected, not silently linearised. A future DAG release must change the adapter and checker together.
+Same-job predecessor edges must point strictly backwards in `sequence`. Cross-job edges stay legal dependencies. The compiler may publish a chain for the kernel; the checker still judges the original edges. A result whose proof is only `compiled_windows` is not `optimal`.
 
 Every accepted assignment must name a concrete crew when a skill is required. A skill pool alone is not an operational assignment.
 
