@@ -10,6 +10,7 @@ import pytest
 
 from repairflow.checker_primitives import lookup_setup_minutes
 from repairflow.cli import main
+from repairflow.kernel_compat import KERNEL_CALENDAR_UNSUPPORTED
 from repairflow.model import Calendar, CalendarWindow, FrozenAssignment, RepairFlowProblem, ResultStatus
 from repairflow.planner import plan, recheck, replan_after_disruption
 from repairflow.reasons import ReasonCode
@@ -37,7 +38,7 @@ def test_allow_partial_never_green() -> None:
     assert any(row.code == ReasonCode.PARTIAL_COVERAGE for row in outcome.result.violations)
 
 
-@pytest.mark.parametrize("solver", ["FIFO", "GREED", "CPSAT-10"])
+@pytest.mark.parametrize("solver", ["FIFO", "GREED"])
 def test_aux_calendar_rejects_work_outside_the_window(solver: str) -> None:
     problem = synthesize("tiny", seed=1)
     start = problem.planning_horizon.start
@@ -80,6 +81,35 @@ def test_aux_calendar_rejects_work_outside_the_window(solver: str) -> None:
         row.code == ReasonCode.CALENDAR_BROKEN and row.resource_id == "AUX-CRANE"
         for row in outcome.result.violations
     )
+
+
+def test_kernel_mode_rejects_aux_calendar_before_solving() -> None:
+    problem = synthesize("tiny", seed=1)
+    tool = Calendar(
+        id="CAL-TOOL",
+        code="CAL-TOOL",
+        windows=[
+            CalendarWindow(
+                start=problem.planning_horizon.start,
+                end=problem.planning_horizon.end,
+            )
+        ],
+    )
+    loaded = RepairFlowProblem.model_validate(
+        problem.model_copy(
+            update={
+                "calendars": [*problem.calendars, tool],
+                "aux_resources": [
+                    row.model_copy(update={"calendar_id": "CAL-TOOL"})
+                    if row.id == "AUX-CRANE"
+                    else row
+                    for row in problem.aux_resources
+                ],
+            }
+        ).model_dump(mode="python")
+    )
+    with pytest.raises(ValueError, match=KERNEL_CALENDAR_UNSUPPORTED):
+        plan(loaded, solver_config="CPSAT-10")
 
 
 def test_empty_calendar_is_unavailable_and_missing_calendar_is_open() -> None:
