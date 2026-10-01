@@ -113,7 +113,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         if args.command == "version":
-            sys.stdout.write(f"repairflow {REPAIRFLOW_VERSION} · synaps {SYNAPS_COMMIT}\n")
+            sys.stdout.write(f"repairflow {REPAIRFLOW_VERSION} \u00b7 synaps {SYNAPS_COMMIT}\n")
             return 0
         if args.command == "synthesize":
             problem = synthesize(args.preset, seed=args.seed)
