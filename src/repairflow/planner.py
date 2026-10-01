@@ -25,6 +25,7 @@ from repairflow.checker import check_plan, kernel_hard_violations
 from repairflow.dag_compiler import CompiledDag, compile_dag, propagate_windows
 from repairflow.events import InspectionEvent, apply_inspection
 from repairflow.evidence import evidence_stamp, fingerprint_payload, runtime_manifest, to_canonical
+from repairflow.kernel_compat import assert_kernel_calendar_compatibility
 from repairflow.lane_setup import LanePlacement, lane_local_setup_placements
 from repairflow.limits import CPSAT_OPS_CAP
 from repairflow.metrics import compute_metrics
@@ -77,32 +78,41 @@ def plan(
     solve_kwargs: dict[str, Any] | None = None,
     apply_frozen: bool = True,
 ) -> PlanOutcome:
-    compiled = compile_dag(problem)
-    schedule_problem, id_map = to_schedule_problem(problem, compiled)
-    kwargs = dict(solve_kwargs or {})
-    if "random_seed" not in kwargs:
-        kwargs["random_seed"] = int(problem.domain_attributes.get("seed", 42))
-
-    usage_error = False
-    fixpoint = _fixpoint_meta(compiled, iterations=0, converged=True)
-    if solver_config.upper() == "FIFO":
-        if apply_frozen:
-            frozen = compile_frozen_assignments(problem, id_map)
-            if frozen:
-                kwargs["frozen_assignments"] = frozen
-        result = plan_fifo(problem, schedule_problem, id_map, apply_frozen=apply_frozen)
-    elif solver_config.upper() in {"GREED", "EDD"}:
-        result = plan_domain_greed(problem, schedule_problem, id_map, order=solver_config.upper())
-    else:
+    normalized_solver = solver_config.upper()
+    kernel_mode = normalized_solver not in {"FIFO", "EDD", "GREED"}
+    if kernel_mode:
         configs = set(available_solver_configs())
         if solver_config not in configs:
             raise ValueError(
                 f"unknown solver_config {solver_config!r}; expected FIFO, EDD, GREED, "
                 f"or one of {sorted(configs)}"
             )
-        if solver_config.upper().startswith("CPSAT") and len(problem.operations) > CPSAT_OPS_CAP:
+        if normalized_solver.startswith("CPSAT") and len(problem.operations) > CPSAT_OPS_CAP:
             raise ValueError(f"CP-SAT refused on {len(problem.operations)} ops (cap {CPSAT_OPS_CAP})")
-        if solver_config.upper().startswith("CPSAT") and "warm_start_assignments" not in kwargs:
+        assert_kernel_calendar_compatibility(problem)
+
+    compiled = compile_dag(problem)
+    schedule_problem, id_map = to_schedule_problem(
+        problem,
+        compiled,
+        enforce_kernel_compatibility=kernel_mode,
+    )
+    kwargs = dict(solve_kwargs or {})
+    if "random_seed" not in kwargs:
+        kwargs["random_seed"] = int(problem.domain_attributes.get("seed", 42))
+
+    usage_error = False
+    fixpoint = _fixpoint_meta(compiled, iterations=0, converged=True)
+    if normalized_solver == "FIFO":
+        if apply_frozen:
+            frozen = compile_frozen_assignments(problem, id_map)
+            if frozen:
+                kwargs["frozen_assignments"] = frozen
+        result = plan_fifo(problem, schedule_problem, id_map, apply_frozen=apply_frozen)
+    elif normalized_solver in {"GREED", "EDD"}:
+        result = plan_domain_greed(problem, schedule_problem, id_map, order=normalized_solver)
+    else:
+        if normalized_solver.startswith("CPSAT") and "warm_start_assignments" not in kwargs:
             kwargs["warm_start_assignments"] = _as_kernel_assignments(domain_greed(problem), id_map)
             kwargs["auto_greedy_warm_start"] = False
         result, schedule_problem, id_map, compiled, converged, iterations = _kernel_fixpoint(
@@ -225,7 +235,10 @@ def _replan_lane_local(
             "frozen_assignments": list(existing.values()),
         }
     )
-    schedule_problem, id_map = to_schedule_problem(patched)
+    schedule_problem, id_map = to_schedule_problem(
+        patched,
+        enforce_kernel_compatibility=False,
+    )
     result = plan_domain_greed(patched, schedule_problem, id_map, order=solver_config)
     tagged = result.model_copy(
         update={
@@ -380,7 +393,10 @@ def recheck(
     kernel_status: str | None,
     id_map: dict[str, UUID] | None = None,
 ) -> PlanOutcome:
-    schedule_problem, live_map = to_schedule_problem(problem)
+    schedule_problem, live_map = to_schedule_problem(
+        problem,
+        enforce_kernel_compatibility=False,
+    )
     if id_map is not None and id_map != live_map:
         dummy = ScheduleResult(
             solver_name=solver_config,
