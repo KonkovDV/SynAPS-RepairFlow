@@ -63,9 +63,7 @@ def test_append_is_canonical_and_preserves_order(tmp_path: Path) -> None:
     assert [row.event_id for row in loaded] == [first.event_id, second.event_id]
     lines = path.read_text(encoding="utf-8").splitlines()
     assert len(lines) == 2
-    assert all(
-        json.dumps(json.loads(line), sort_keys=True, separators=(",", ":")) == line for line in lines
-    )
+    assert all(json.dumps(json.loads(line), sort_keys=True, separators=(",", ":")) == line for line in lines)
 
 
 def test_append_refuses_tampered_or_malformed_history(tmp_path: Path) -> None:
