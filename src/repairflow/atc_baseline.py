@@ -37,7 +37,7 @@ def atc_priority(
     *,
     now: datetime,
     average_processing_min: float,
-    config: ATCConfig = ATCConfig(),
+    config: ATCConfig | None = None,
 ) -> float:
     """Return one deterministic ATC score for a known operation.
 
@@ -47,6 +47,7 @@ def atc_priority(
     ``max(due - now - p, 0)`` in minutes.
     """
 
+    settings = config or ATCConfig()
     operations = {operation.id: operation for operation in problem.operations}
     operation = operations.get(operation_id)
     if operation is None:
@@ -61,7 +62,7 @@ def atc_priority(
     duration = float(operation.duration_min)
     due = job.due_date or problem.planning_horizon.end
     slack = max(0.0, (due - now).total_seconds() / 60.0 - duration)
-    urgency = exp(-slack / (config.k * average_processing_min))
+    urgency = exp(-slack / (settings.k * average_processing_min))
     return float(max(1, job.priority) / duration * urgency)
 
 
@@ -70,7 +71,7 @@ def atc_order(
     operation_ids: Sequence[str],
     *,
     now: datetime,
-    config: ATCConfig = ATCConfig(),
+    config: ATCConfig | None = None,
 ) -> list[str]:
     """Return a deterministic ATC order for a supplied ready-operation set.
 
