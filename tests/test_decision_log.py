@@ -12,8 +12,8 @@ _HASH_A = "a" * 64
 _HASH_B = "b" * 64
 
 
-def _event(decision: Decision = Decision.ACCEPTED, **updates: str) -> DecisionEvent:
-    payload: dict[str, str] = {
+def _event(decision: Decision = Decision.ACCEPTED, **updates: object) -> DecisionEvent:
+    payload: dict[str, object] = {
         "operator_code": "op-shadow-01",
         "instance_id": "instance-01",
         "input_hash": _HASH_A,
@@ -63,14 +63,16 @@ def test_append_is_canonical_and_preserves_order(tmp_path: Path) -> None:
     assert [row.event_id for row in loaded] == [first.event_id, second.event_id]
     lines = path.read_text(encoding="utf-8").splitlines()
     assert len(lines) == 2
-    assert all(json.dumps(json.loads(line), sort_keys=True, separators=(",", ":")) == line for line in lines)
+    assert all(
+        json.dumps(json.loads(line), sort_keys=True, separators=(",", ":")) == line for line in lines
+    )
 
 
 def test_append_refuses_tampered_or_malformed_history(tmp_path: Path) -> None:
     path = tmp_path / "decisions.jsonl"
     append_decision(path, _event())
     original = path.read_text(encoding="utf-8")
-    path.write_text(original.replace(_HASH_A, "c" * 64), encoding="utf-8")
+    path.write_text(original.replace(_HASH_A, "not-a-hash"), encoding="utf-8")
     with pytest.raises(ValueError, match="invalid decision log line"):
         append_decision(path, _event())
 

@@ -92,7 +92,8 @@ def read_decision_log(path: str | Path) -> list[DecisionEvent]:
     if not log_path.exists():
         return []
     events: list[DecisionEvent] = []
-    for line_number, line in enumerate(log_path.read_text(encoding="utf-8").splitlines(), start=1):
+    lines = log_path.read_text(encoding="utf-8").splitlines()
+    for line_number, line in enumerate(lines, start=1):
         if not line.strip():
             raise ValueError(f"decision log line {line_number} is empty")
         try:

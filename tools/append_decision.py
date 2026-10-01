@@ -15,11 +15,19 @@ def main() -> int:
     parser.add_argument("--instance-id", required=True)
     parser.add_argument("--input-hash", required=True)
     parser.add_argument("--result-hash", required=True)
-    parser.add_argument("--decision", choices=("accepted", "accepted_with_edits", "rejected", "manual_fallback"), required=True)
+    parser.add_argument(
+        "--decision",
+        choices=("accepted", "accepted_with_edits", "rejected", "manual_fallback"),
+        required=True,
+    )
     parser.add_argument("--edit-summary", default="")
     parser.add_argument("--reason", default="")
     parser.add_argument("--rollback-reference", default="")
-    parser.add_argument("--timestamp", default=None, help="ISO-8601 timestamp with timezone; defaults to current UTC")
+    parser.add_argument(
+        "--timestamp",
+        default=None,
+        help="ISO-8601 timestamp with timezone; defaults to current UTC",
+    )
     args = parser.parse_args()
     payload = {
         "operator_code": args.operator_code,
