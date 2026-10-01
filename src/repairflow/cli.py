@@ -285,9 +285,7 @@ def _demo(preset: str, out_dir: Path, *, skip_cpsat: bool) -> int:
         tiny = tiny.model_copy(
             update={
                 "crews": [crew.model_copy(update={"calendar_id": None}) for crew in tiny.crews],
-                "aux_resources": [
-                    aux.model_copy(update={"calendar_id": None}) for aux in tiny.aux_resources
-                ],
+                "aux_resources": [aux.model_copy(update={"calendar_id": None}) for aux in tiny.aux_resources],
             }
         )
         tiny_path = out_dir / "tiny.json"
