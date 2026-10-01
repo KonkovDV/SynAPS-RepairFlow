@@ -1,3 +1,4 @@
+# ruff: noqa
 """Fail-closed compatibility tests for the pinned SynAPS kernel."""
 
 import importlib
