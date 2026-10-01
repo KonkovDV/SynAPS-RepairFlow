@@ -26,6 +26,11 @@
   constraint. Domain FIFO, GREED and EDD still enforce it themselves.
 - Sweep-line excess arrivals are checked against an independent critical-point
   reference, including setup occupancy. A hard capacity violation stays unverified.
+- Kernel and domain checkers agree on the hard decision for a compatible plan:
+  clean stays `verified`; precedence, eligibility, work-centre calendar, auxiliary
+  capacity, centre overlap and setup mismatch are rejected by both. Diagnostic
+  text is not required to match. Crew and auxiliary calendars stay a separate
+  kernel refusal.
 - Pilot-boundary documents state TRL 4, shadow-only use, and the gates that
   are still external (legal entity, data owner, signed extract). The operator
   decision log is a contract, not a writer.
