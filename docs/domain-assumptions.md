@@ -43,3 +43,10 @@
   the verified closer on `repair-site-mvp` and on the synthetic site. A kernel
   solve runs only when those calendars are absent. Named crews keep their shift
   windows in the domain checker.
+- A rotable spare is busy from its issue until the operation ends plus
+  `return_lag_min`. The pinned kernel has no field for that reuse. When the
+  domain ledger reports `SPARE_UNAVAILABLE`, the plan is not `verified` even
+  if the kernel feasibility checker is empty.
+- A converged fixpoint may lift cross-edge windows over several solves. The
+  domain checker still judges the original edges. More than one iteration
+  keeps the claim at `verified`.
