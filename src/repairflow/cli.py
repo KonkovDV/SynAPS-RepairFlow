@@ -286,10 +286,11 @@ def _demo(preset: str, out_dir: Path, *, skip_cpsat: bool) -> int:
         tiny_path.write_text(tiny.model_dump_json(indent=2), encoding="utf-8")
         cpsat = plan(tiny, solver_config="CPSAT-10")
         _write_json(out_dir / "cpsat.json", cpsat.result.model_dump(mode="json"))
-        cpsat_ok = cpsat.result.status.value == "OPTIMAL" and cpsat.result.verified_feasible
+        refused = any(row.code == "KERNEL_CALENDAR_UNSUPPORTED" for row in cpsat.result.violations)
+        cpsat_ok = refused and cpsat.result.exit_code == 2 and cpsat.result.verified_feasible is False
         cpsat_line = (
             f"  CPSAT status={cpsat.result.status.value} verified={cpsat.result.verified_feasible} "
-            f"exit={cpsat.result.exit_code}\n"
+            f"exit={cpsat.result.exit_code} code=KERNEL_CALENDAR_UNSUPPORTED\n"
         )
 
     sys.stdout.write(

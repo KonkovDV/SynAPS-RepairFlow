@@ -28,12 +28,11 @@ The domain model supports calendars on work centres, crews and auxiliary resourc
 The pinned SynAPS `AuxiliaryResource` contract has no calendar field. Consequently,
 auxiliary-resource and crew calendars cannot be compiled into the kernel without
 silently dropping constraints. They are represented by the stable compatibility
-reason `KERNEL_CALENDAR_UNSUPPORTED` and must be rejected by the kernel-planning
-boundary until the pinned core exposes an equivalent capability.
-
-The domain list scheduler and independent domain checker remain responsible for
-crew and auxiliary calendar enforcement in modes that do not rely on the kernel
-calendar model. No upstream API extension is assumed here.
+reason `KERNEL_CALENDAR_UNSUPPORTED`. `plan()` calls
+`assert_kernel_calendar_compatibility` before `solve_schedule`, and kernel
+disruption repair calls it before `repair_schedule`. Domain FIFO, GREED and EDD
+do not: they keep enforcing those calendars in the list scheduler and the
+independent checker. No upstream API extension is assumed here.
 
 `cf10ca3e` was not swapped in. Moving the pin without recapturing the lab
 fixtures would break the three-way SHA lock (`pyproject.toml`,

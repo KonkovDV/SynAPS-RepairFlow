@@ -38,7 +38,8 @@
 - Missing `idle → first_state` setup cells are a hard contract error. Under
   `missing_setup=reject` the instance is refused; a plan that still uses a missing
   cell is fail-closed as `MISSING_SETUP` (exit 2).
-- Kernel GREED/RHC treat crews as auxiliary resources without a person calendar.
-  RepairFlow's domain GREED list-scheduler is the verified closer on `repair-site-mvp`.
-  Kernel `RHC-GREEDY-COVER` is checker-clean on `tiny` and is not claimed verified on
-  the larger fixture. Named crews keep their shift windows in the domain checker.
+- Kernel CP-SAT and RHC refuse a crew or auxiliary calendar
+  (`KERNEL_CALENDAR_UNSUPPORTED`) instead of dropping it. Domain GREED remains
+  the verified closer on `repair-site-mvp` and on the synthetic site. A kernel
+  solve runs only when those calendars are absent. Named crews keep their shift
+  windows in the domain checker.
