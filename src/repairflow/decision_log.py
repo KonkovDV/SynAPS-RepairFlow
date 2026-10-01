@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import StrEnum
 from pathlib import Path
 from typing import Any, Self
@@ -31,7 +31,7 @@ class DecisionEvent(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
     event_id: UUID = Field(default_factory=uuid4)
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
     operator_code: str
     instance_id: str
     input_hash: str
@@ -74,7 +74,7 @@ class DecisionEvent(BaseModel):
     def normalize_timestamp(cls, value: datetime) -> datetime:
         if value.tzinfo is None or value.utcoffset() is None:
             raise ValueError("timestamp must include a timezone")
-        return value.astimezone(timezone.utc)
+        return value.astimezone(UTC)
 
     @model_validator(mode="after")
     def validate_decision_requirements(self) -> Self:
