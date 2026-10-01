@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import pytest
-import repairflow.kernel_compat as kernel_compat
 
+import repairflow.kernel_compat as kernel_compat
 from repairflow.model import RepairFlowProblem
 from repairflow.synthetic import synthesize
 
