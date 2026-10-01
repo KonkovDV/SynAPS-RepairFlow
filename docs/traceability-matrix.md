@@ -10,6 +10,7 @@
 | Crew skills and a named crew on the published plan | implemented | planner names the crew on publication; the checker rejects `CREW_UNBOUND` |
 | Crew and aux calendars, including an empty calendar | implemented | domain checker, `tests/test_verdict_safety.py` |
 | Crew calendars inside the kernel model | documented | kernel solve and kernel repair refuse `KERNEL_CALENDAR_UNSUPPORTED`; domain FIFO/GREED/EDD still enforce them |
+| CP-SAT on more than 80 operations | implemented | recorded `CPSAT_OPS_CAP` refusal; the exact solver is not called |
 | Full coverage as a verification condition | implemented | `allow_partial_plan` cannot yield exit 0 |
 | Checker independent of the adapter | implemented | `checker.py` imports `checker_primitives` only |
 | Blocking spares | implemented | checker spare tests |

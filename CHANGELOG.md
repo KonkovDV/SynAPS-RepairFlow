@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- CP-SAT above 80 operations is a recorded capability refusal (`CPSAT_OPS_CAP`),
+  not an exception and not a silent fallback. The exact solver is not called.
+  The result is empty, exit 2, not `verified` and not `optimal`.
 - Exit 0 requires full coverage. `allow_partial_plan` no longer hides missing
   operations; those plans are `PARTIAL` / exit 2.
 - Tooling calendars and empty calendars are hard. `due_date` stays soft;
