@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from repairflow.model import RepairFlowProblem
 
-
 KERNEL_CALENDAR_UNSUPPORTED = "KERNEL_CALENDAR_UNSUPPORTED"
 
 
