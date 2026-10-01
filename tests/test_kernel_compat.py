@@ -1,6 +1,6 @@
 """Fail-closed compatibility tests for the pinned SynAPS kernel."""
 
-import pytest
+import pytest  # noqa: I001
 
 import repairflow.kernel_compat as kernel_compat
 import repairflow.model as model
