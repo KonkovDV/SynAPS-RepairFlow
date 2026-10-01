@@ -7,10 +7,13 @@ from datetime import UTC, datetime, timedelta
 import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
+from synaps.model import SolverStatus
+from synaps.solvers.coverage_outcome import CoverageClass
 
-from repairflow.capacity import Occupancy, excess_arrivals, peak_concurrency
+from repairflow.capacity import Excess, Occupancy, excess_arrivals, peak_concurrency
 from repairflow.checker import _capacity_overlaps
-from repairflow.model import FrozenAssignment, PlannedAssignment, RepairFlowProblem
+from repairflow.model import FrozenAssignment, PlannedAssignment, RepairFlowProblem, Violation
+from repairflow.planner import classify_result
 from repairflow.reasons import ReasonCode
 from repairflow.synthetic import synthesize
 
@@ -140,3 +143,130 @@ def test_sweep_matches_critical_point_count(spans: list[tuple[int, int]]) -> Non
         _occ(start, start + duration, f"op-{index}") for index, (start, duration) in enumerate(spans)
     ]
     assert peak_concurrency(intervals) == brute_peak(intervals)
+
+
+def reference_excess(intervals: list[Occupancy], capacity: int) -> list[Excess]:
+    """Arrivals that push coverage above K, ordered by start then list index.
+
+    Coverage at an instant is half-open. Ends at that instant are already gone.
+    Arrivals that share a timestamp are taken in list order, which is the sweep
+    tie-break, without using the sweep itself.
+    """
+
+    positive = [(index, row) for index, row in enumerate(intervals) if row.start < row.end]
+    witnesses: list[Excess] = []
+    for instant in sorted({row.start for _, row in positive}):
+        open_rows = [row for _, row in positive if row.start < instant < row.end]
+        arrivals = [row for _, row in sorted(positive) if row.start == instant]
+        for row in arrivals:
+            open_rows.append(row)
+            active = len(open_rows)
+            if active <= capacity:
+                continue
+            others = sorted(item.operation_id for item in open_rows if item is not row)
+            witnesses.append(
+                Excess(
+                    operation_id=row.operation_id,
+                    other_operation_id=others[0] if others else None,
+                    start=instant,
+                    end=min(item.end for item in open_rows),
+                    active=active,
+                )
+            )
+    return witnesses
+
+
+def test_simultaneous_starts_blame_only_the_arrivals_past_capacity() -> None:
+    intervals = [_occ(0, 10, "a"), _occ(0, 10, "b"), _occ(0, 8, "c")]
+    assert excess_arrivals(intervals, 1) == reference_excess(intervals, 1)
+    assert [row.operation_id for row in excess_arrivals(intervals, 1)] == ["b", "c"]
+    assert [row.active for row in excess_arrivals(intervals, 1)] == [2, 3]
+
+
+def test_negative_capacity_is_rejected() -> None:
+    with pytest.raises(ValueError, match="capacity must be non-negative"):
+        excess_arrivals([_occ(0, 1, "a")], -1)
+
+
+def test_unknown_resource_defaults_to_one_lane() -> None:
+    rows = [_planned("a", 0, 10), _planned("b", 0, 10)]
+    hit = _capacity_overlaps({"UNKNOWN": rows}, {}, ReasonCode.CENTER_OVERLAP, include_setup=True)
+    assert [row.operation_id for row in hit] == ["b"]
+    assert hit[0].details["capacity"] == 1
+
+
+def test_capacity_violation_cannot_be_verified() -> None:
+    violation = Violation(
+        code=ReasonCode.CENTER_OVERLAP, message="resource exceeds capacity", severity="hard"
+    )
+    status, verified, exit_code, claim = classify_result(
+        solver_config="GREED",
+        kernel_status=SolverStatus.FEASIBLE,
+        coverage=CoverageClass.FULL,
+        violations=[violation],
+        engine_violations=[],
+        usage_error=False,
+    )
+    assert verified is False
+    assert exit_code == 2
+    assert claim == "rejected"
+    assert status.value != "OPTIMAL"
+
+
+@given(
+    st.lists(
+        st.tuples(
+            st.integers(min_value=0, max_value=80),
+            st.integers(min_value=-5, max_value=40),
+        ),
+        max_size=12,
+    ),
+    st.integers(min_value=0, max_value=8),
+)
+@settings(max_examples=40, deadline=None)
+def test_excess_arrivals_match_the_critical_point_reference(
+    spans: list[tuple[int, int]],
+    capacity: int,
+) -> None:
+    intervals = [
+        _occ(start, start + duration, f"op-{index}") for index, (start, duration) in enumerate(spans)
+    ]
+    assert excess_arrivals(intervals, capacity) == reference_excess(intervals, capacity)
+    assert peak_concurrency(intervals) == brute_peak(intervals)
+    assert (peak_concurrency(intervals) > capacity) == bool(excess_arrivals(intervals, capacity))
+
+
+@given(
+    st.lists(
+        st.tuples(
+            st.integers(min_value=0, max_value=80),
+            st.integers(min_value=0, max_value=40),
+            st.integers(min_value=0, max_value=20),
+        ),
+        max_size=8,
+    ),
+    st.integers(min_value=0, max_value=6),
+)
+@settings(max_examples=40, deadline=None)
+def test_checker_setup_occupancy_matches_the_reference(
+    spans: list[tuple[int, int, int]],
+    capacity: int,
+) -> None:
+    rows = [
+        _planned(f"op-{index}", start, start + duration, setup=setup)
+        for index, (start, duration, setup) in enumerate(spans)
+    ]
+    intervals = [
+        Occupancy(row.start - timedelta(minutes=row.setup_minutes), row.end, row.operation_id) for row in rows
+    ]
+    expected = reference_excess(intervals, capacity)
+    found = _capacity_overlaps(
+        {"POST": rows},
+        {"POST": capacity},
+        ReasonCode.CENTER_OVERLAP,
+        include_setup=True,
+    )
+    assert [(row.operation_id, row.details["active"], row.start, row.end) for row in found] == [
+        (row.operation_id, row.active, row.start, row.end) for row in expected
+    ]
+    assert all(row.code == ReasonCode.CENTER_OVERLAP and row.severity == "hard" for row in found)
