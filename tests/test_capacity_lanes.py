@@ -86,7 +86,17 @@ def test_frozen_lanes_follow_the_same_peak() -> None:
     post = problem.operations[0].eligible_work_center_ids[0]
     ops = []
     for operation in problem.operations[:3]:
-        ops.append(operation.model_copy(update={"predecessor_ids": [], "eligible_work_center_ids": [post]}))
+        ops.append(
+            operation.model_copy(
+                update={
+                    "predecessor_ids": [],
+                    "eligible_work_center_ids": [post],
+                    "duration_min": 1,
+                    "setup_state": "engine",
+                    "domain_attributes": {"duration_policy": "min"},
+                }
+            )
+        )
     others = [row for row in problem.operations if row.id not in {item.id for item in ops}]
     centers = [
         row.model_copy(update={"max_parallel": 2}) if row.id == post else row for row in problem.work_centers

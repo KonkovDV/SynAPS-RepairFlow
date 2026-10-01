@@ -47,6 +47,7 @@ from repairflow.model import (
 )
 from repairflow.nervousness import compare as compare_nervousness
 from repairflow.reasons import REASON_RU, SUGGESTIONS, ReasonCode
+from repairflow.scheduling_contract import end_covering_open_minutes, is_unattended, policy_of
 from repairflow.versions import CLAIM_LEVEL, REPAIRFLOW_VERSION, SYNAPS_COMMIT
 
 ClaimStatus = Literal[
@@ -1170,6 +1171,7 @@ def _slot_from_lane(
         last_aux,
     )
     for _ in range(256):
+        preemptive = policy_of(operation.domain_attributes) == "preemptive"
         start = _advance_calendar(
             problem,
             center.calendar_id,
@@ -1177,10 +1179,22 @@ def _slot_from_lane(
             cursor,
             setup,
             operation.duration_min,
+            preemptive=preemptive,
         )
         if start is None:
             return None
-        end = start + timedelta(minutes=operation.duration_min)
+        if preemptive:
+            end = end_covering_open_minutes(
+                start,
+                operation.duration_min,
+                _attended_window_masks(problem, center.calendar_id, crew.calendar_id),
+                problem.planning_horizon.end,
+            )
+            if end is None:
+                cursor = start + timedelta(minutes=30)
+                continue
+        else:
+            end = start + timedelta(minutes=operation.duration_min)
         if end > problem.planning_horizon.end:
             return None
         if deadline is not None and end > deadline:
@@ -1284,6 +1298,30 @@ def _conflict_end(
     return blocker
 
 
+def _calendar_is_unattended(problem: RepairFlowProblem, calendar_id: str) -> bool:
+    users = [row.domain_attributes for row in problem.work_centers if row.calendar_id == calendar_id]
+    users.extend(row.domain_attributes for row in problem.crews if row.calendar_id == calendar_id)
+    users.extend(row.domain_attributes for row in problem.aux_resources if row.calendar_id == calendar_id)
+    return bool(users) and all(is_unattended(row) for row in users)
+
+
+def _attended_window_masks(
+    problem: RepairFlowProblem,
+    center_cal: str | None,
+    crew_cal: str | None,
+) -> list[list[tuple[datetime, datetime]]]:
+    calendars = {row.id: row for row in problem.calendars}
+    masks: list[list[tuple[datetime, datetime]]] = []
+    for cal_id in (center_cal, crew_cal):
+        if not cal_id or _calendar_is_unattended(problem, cal_id):
+            continue
+        calendar = calendars.get(cal_id)
+        if calendar is None or not calendar.windows:
+            continue
+        masks.append([(window.start, window.end) for window in calendar.windows])
+    return masks
+
+
 def _advance_calendar(
     problem: RepairFlowProblem,
     center_cal: str | None,
@@ -1291,14 +1329,30 @@ def _advance_calendar(
     start: datetime,
     setup: int,
     duration: int,
+    *,
+    preemptive: bool = False,
 ) -> datetime | None:
     occupancy = timedelta(minutes=setup + duration)
     calendars = {row.id: row for row in problem.calendars}
     windows = []
     for cal_id in (center_cal, crew_cal):
-        calendar = calendars.get(cal_id or "")
-        if calendar is not None and calendar.windows:
-            windows.append(calendar.windows)
+        if not cal_id:
+            continue
+        calendar = calendars.get(cal_id)
+        if calendar is None:
+            continue
+        if not calendar.windows:
+            if _calendar_is_unattended(problem, cal_id):
+                continue
+            return None
+        windows.append(calendar.windows)
+    if preemptive:
+        occ_start = start
+        if occ_start - timedelta(minutes=setup) < problem.planning_horizon.start:
+            occ_start = problem.planning_horizon.start + timedelta(minutes=setup)
+        if occ_start >= problem.planning_horizon.end:
+            return None
+        return occ_start
     if not windows:
         occ_start = start
         end = start + timedelta(minutes=duration)

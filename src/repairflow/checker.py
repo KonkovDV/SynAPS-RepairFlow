@@ -21,6 +21,7 @@ from repairflow.model import (
     Violation,
 )
 from repairflow.reasons import REASON_RU, SUGGESTIONS, ReasonCode
+from repairflow.scheduling_contract import held_minutes, is_unattended, open_minutes, policy_of
 
 
 def check_plan(
@@ -211,18 +212,8 @@ def _ref_and_duration(
             )
         else:
             op = _op(problem, asn.operation_id)
-            held = int((asn.end - asn.start).total_seconds() // 60)
-            if op is not None and held < op.duration_min:
-                out.append(
-                    _violation(
-                        ReasonCode.INVALID_DURATION,
-                        f"scheduled {held} min is shorter than duration_min={op.duration_min}",
-                        operation_id=asn.operation_id,
-                        job_id=op.job_id,
-                        start=asn.start,
-                        end=asn.end,
-                    )
-                )
+            if op is not None:
+                out.extend(_duration_violation(problem, op, asn))
     return out
 
 
@@ -505,6 +496,7 @@ def _calendars_windows_horizon(
                     end=asn.end,
                 )
             )
+        preemptive = op is not None and policy_of(op.domain_attributes) == "preemptive"
         center = centers.get(asn.work_center_id)
         if center is not None:
             out.extend(
@@ -513,6 +505,8 @@ def _calendars_windows_horizon(
                     asn,
                     occ_start,
                     resource_id=center.id,
+                    preemptive=preemptive,
+                    unattended=is_unattended(center.domain_attributes),
                 )
             )
         if asn.crew_id:
@@ -524,6 +518,8 @@ def _calendars_windows_horizon(
                         asn,
                         occ_start,
                         resource_id=crew.id,
+                        preemptive=preemptive,
+                        unattended=is_unattended(crew.domain_attributes),
                     )
                 )
         needed = set(asn.aux_ids)
@@ -539,9 +535,80 @@ def _calendars_windows_horizon(
                     asn,
                     occ_start,
                     resource_id=aux.id,
+                    preemptive=preemptive,
+                    unattended=is_unattended(aux.domain_attributes),
                 )
             )
     return out
+
+
+def _duration_violation(
+    problem: RepairFlowProblem,
+    op: Operation,
+    asn: PlannedAssignment,
+) -> list[Violation]:
+    policy = policy_of(op.domain_attributes)
+    held = held_minutes(asn.start, asn.end)
+    if policy == "invalid":
+        message = "duration_policy must be exact, min, or preemptive"
+    elif policy == "min" and held < op.duration_min:
+        message = f"scheduled {held} min is shorter than duration_min={op.duration_min}"
+    elif policy == "exact" and held != op.duration_min:
+        message = f"scheduled {held} min is not duration_min={op.duration_min}"
+    elif policy == "preemptive":
+        masks = _attended_masks(problem, op, asn)
+        open_held = open_minutes(asn.start, asn.end, masks) if masks else held
+        message = (
+            ""
+            if open_held == op.duration_min
+            else f"open minutes {open_held} are not duration_min={op.duration_min}"
+        )
+    else:
+        message = ""
+    if not message:
+        return []
+    return [
+        _violation(
+            ReasonCode.INVALID_DURATION,
+            message,
+            operation_id=asn.operation_id,
+            job_id=op.job_id,
+            start=asn.start,
+            end=asn.end,
+            details={"duration_policy": policy, "held_min": held},
+        )
+    ]
+
+
+def _attended_masks(
+    problem: RepairFlowProblem,
+    op: Operation,
+    asn: PlannedAssignment,
+) -> list[list[tuple[datetime, datetime]]]:
+    calendars = {row.id: row for row in problem.calendars}
+    masks: list[list[tuple[datetime, datetime]]] = []
+
+    def add(calendar_id: str | None, attributes: dict[str, object]) -> None:
+        if is_unattended(attributes) or not calendar_id:
+            return
+        calendar = calendars.get(calendar_id)
+        if calendar is None:
+            return
+        masks.append([(window.start, window.end) for window in calendar.windows])
+
+    center = next((row for row in problem.work_centers if row.id == asn.work_center_id), None)
+    if center is not None:
+        add(center.calendar_id, center.domain_attributes)
+    if asn.crew_id:
+        crew = next((row for row in problem.crews if row.id == asn.crew_id), None)
+        if crew is not None:
+            add(crew.calendar_id, crew.domain_attributes)
+    aux_ids = set(asn.aux_ids)
+    aux_ids.update(op.required_aux_ids)
+    for aux in problem.aux_resources:
+        if aux.id in aux_ids:
+            add(aux.calendar_id, aux.domain_attributes)
+    return masks
 
 
 def _calendar_fit(
@@ -550,8 +617,10 @@ def _calendar_fit(
     occ_start: datetime,
     *,
     resource_id: str,
+    preemptive: bool,
+    unattended: bool,
 ) -> list[Violation]:
-    if calendar is None:
+    if calendar is None or unattended:
         return []
     if not calendar.windows:
         return [
@@ -564,6 +633,8 @@ def _calendar_fit(
                 end=assignment.end,
             )
         ]
+    if preemptive:
+        return []
     for window in calendar.windows:
         if occ_start >= window.start and assignment.end <= window.end:
             return []
@@ -837,6 +908,13 @@ def _violation(
 
 
 def kernel_hard_violations(schedule_problem: ScheduleProblem, result: ScheduleResult) -> list[dict[str, Any]]:
+    """Read the pinned SynAPS feasibility checker.
+
+    The domain checker does not import solver search. This function does use
+    the same SynAPS package, so a published verdict is independent of search
+    and is not independent of the SynAPS ecosystem.
+    """
+
     from synaps.solvers.feasibility_checker import FeasibilityChecker, proven_hard_violations
 
     raw = FeasibilityChecker().check(
