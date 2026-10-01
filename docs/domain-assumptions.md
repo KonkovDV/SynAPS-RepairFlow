@@ -20,7 +20,9 @@
   Lanes are not named. Staggered visits that never exceed K are feasible.
   Setup state belongs to the lane. The next visit takes the matrix cell from
   the lane that became free earliest, and the lower index breaks ties. A centre
-  already at `max_parallel` is an explicit capacity failure.
+  already at `max_parallel` is an explicit capacity failure. A broken visit
+  restarts at or after its old end. That lane's tail is rescheduled; the other
+  lanes of the same post stay frozen with their own setup state.
 - A resource with no `calendar_id` is open for the whole horizon. A calendar with
   zero windows means the resource is unavailable. A non-empty calendar is a hard
   single-window container, including tooling (`AuxResource.calendar_id`).

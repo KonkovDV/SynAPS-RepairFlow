@@ -12,7 +12,7 @@ from repairflow.checker import _setup
 from repairflow.checker_primitives import lookup_setup_minutes
 from repairflow.lane_setup import lane_local_setup_placements
 from repairflow.model import PlannedAssignment
-from repairflow.planner import domain_greed
+from repairflow.planner import domain_greed, plan, replan_after_disruption
 from repairflow.synthetic import synthesize
 
 
@@ -206,6 +206,98 @@ def test_domain_greed_overlaps_independent_lanes() -> None:
     assert left.start < right.end and right.start < left.end
     assert _setup(loaded, placed) == []
     assert {row.setup_minutes for row in placed} == {0}
+
+
+def test_disruption_repair_does_not_borrow_the_other_lane() -> None:
+    problem = synthesize("tiny", seed=1)
+    post = "POST-U1"
+    mechanical = [
+        row
+        for row in problem.operations
+        if post in row.eligible_work_center_ids and "mechanical" in row.required_skills
+    ]
+    anchor, other = mechanical[:2]
+    follower = anchor.model_copy(update={"id": f"{anchor.id}-F", "sequence": anchor.sequence + 1})
+    operations = [
+        anchor.model_copy(
+            update={
+                "setup_state": "engine",
+                "predecessor_ids": [],
+                "required_aux_ids": [],
+                "required_spare_ids": [],
+                "duration_min": 30,
+                "eligible_work_center_ids": [post],
+            }
+        ),
+        follower.model_copy(
+            update={
+                "setup_state": "gearbox",
+                "predecessor_ids": [anchor.id],
+                "required_aux_ids": [],
+                "required_spare_ids": [],
+                "duration_min": 30,
+                "eligible_work_center_ids": [post],
+            }
+        ),
+        other.model_copy(
+            update={
+                "setup_state": "compressor",
+                "predecessor_ids": [],
+                "required_aux_ids": [],
+                "required_spare_ids": [],
+                "duration_min": 30,
+                "eligible_work_center_ids": [post],
+            }
+        ),
+    ]
+    crew = next(row for row in problem.crews if "mechanical" in row.skills)
+    jobs = []
+    for job in problem.jobs:
+        if job.id in {anchor.job_id, other.job_id, follower.job_id}:
+            jobs.append(job.model_copy(update={"release_date": problem.planning_horizon.start}))
+    loaded = problem.model_copy(
+        update={
+            "operations": operations,
+            "jobs": jobs,
+            "crews": [
+                crew,
+                crew.model_copy(update={"id": "CREW-MECH-2", "code": "CREW-MECH-2"}),
+            ],
+            "work_centers": [
+                row.model_copy(update={"max_parallel": 2}) if row.id == post else row
+                for row in problem.work_centers
+            ],
+            "frozen_assignments": [],
+        }
+    )
+    base = plan(loaded, solver_config="GREED")
+    assert base.result.exit_code == 0
+    before = lane_local_setup_placements(loaded, base.result.assignments)
+    before_by_id = {row.operation_id: row for row in before}
+    assert before_by_id[other.id].lane_index != before_by_id[anchor.id].lane_index
+    repaired = replan_after_disruption(
+        loaded,
+        base=base,
+        disrupted_operation_ids=[anchor.id],
+    )
+    assert repaired.result.exit_code == 0
+    assert not any(row.code == "SETUP_MISMATCH" for row in repaired.result.violations)
+    after = {row.operation_id: row for row in repaired.result.assignments}
+    kept = after[other.id]
+    original = next(row for row in base.result.assignments if row.operation_id == other.id)
+    assert (kept.work_center_id, kept.start, kept.end, kept.setup_minutes) == (
+        original.work_center_id,
+        original.start,
+        original.end,
+        original.setup_minutes,
+    )
+    coloured = lane_local_setup_placements(repaired.problem, repaired.result.assignments)
+    coloured_by_id = {row.operation_id: row for row in coloured}
+    assert coloured_by_id[other.id].previous_state == before_by_id[other.id].previous_state
+    assert coloured_by_id[other.id].previous_operation_id is None
+    follower_row = coloured_by_id[follower.id]
+    written = after[follower.id]
+    assert follower_row.expected_setup_minutes == written.setup_minutes
 
 
 def test_lane_colouring_matches_lexicographic_brute_force() -> None:
