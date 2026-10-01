@@ -113,7 +113,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         if args.command == "version":
-            sys.stdout.write(f"repairflow {REPAIRFLOW_VERSION} \u00b7 synaps {SYNAPS_COMMIT}\n")
+            sys.stdout.write(f"repairflow {REPAIRFLOW_VERSION} · synaps {SYNAPS_COMMIT}\n")
             return 0
         if args.command == "synthesize":
             problem = synthesize(args.preset, seed=args.seed)
@@ -282,6 +282,14 @@ def _demo(preset: str, out_dir: Path, *, skip_cpsat: bool) -> int:
     cpsat_line = "  CPSAT skipped\n"
     if not skip_cpsat:
         tiny = synthesize("tiny", seed=1)
+        tiny = tiny.model_copy(
+            update={
+                "crews": [crew.model_copy(update={"calendar_id": None}) for crew in tiny.crews],
+                "aux_resources": [
+                    aux.model_copy(update={"calendar_id": None}) for aux in tiny.aux_resources
+                ],
+            }
+        )
         tiny_path = out_dir / "tiny.json"
         tiny_path.write_text(tiny.model_dump_json(indent=2), encoding="utf-8")
         cpsat = plan(tiny, solver_config="CPSAT-10")
