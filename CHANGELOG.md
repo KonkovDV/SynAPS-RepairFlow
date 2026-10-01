@@ -26,6 +26,10 @@
   constraint. Domain FIFO, GREED and EDD still enforce it themselves.
 - Sweep-line excess arrivals are checked against an independent critical-point
   reference, including setup occupancy. A hard capacity violation stays unverified.
+- A rotable clash is a domain hard decision. The pinned kernel has no return-lag
+  field, so its silence does not make that plan `verified`. A converged DAG
+  fixpoint that both verifiers accept stays `verified` and is not `optimal`.
+  A deletion-minimal operation set explains one hard code and is not a CP-MUS.
 - Kernel and domain checkers agree on the hard decision for a compatible plan:
   clean stays `verified`; precedence, eligibility, work-centre calendar, auxiliary
   capacity, centre overlap and setup mismatch are rejected by both. Diagnostic

@@ -6,6 +6,7 @@
 4. No labour-law rostering or ТК РФ certification.
 5. GREED, FIFO, ALNS, RHC are not optimal.
 6. Checker proves declared hard constraints, not MUS/IIS and not economic effect.
+   A deletion-minimal set of operation ids explains one domain code. It is not an MUS or an IIS.
 7. ISO 16290 TRL 4 (laboratory). Not TRL 5/6, not a paid pilot.
 8. Do not write “used by the Department of Transport” or “cuts repair time by X%”.
 9. A soft `due_date` miss is the KPI `DUE_MISSED`. A hard finish is
