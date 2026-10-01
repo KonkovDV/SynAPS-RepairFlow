@@ -30,7 +30,7 @@ def build_evidence_table(
     rows: list[dict[str, Any]] = []
     for solver_name, result in sorted(results.items()):
         raw_scope = result.metadata.get("optimality_scope")
-        scope = raw_scope if isinstance(raw_scope, str) else None
+        scope: str | None = raw_scope if isinstance(raw_scope, str) else None
         rows.append(
             {
                 "solver": solver_name,
