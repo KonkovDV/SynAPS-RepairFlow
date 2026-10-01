@@ -99,7 +99,7 @@ def read_decision_log(path: str | Path) -> list[DecisionEvent]:
         try:
             payload: Any = json.loads(line)
             events.append(DecisionEvent.model_validate(payload))
-        except (json.JSONDecodeError, TypeError, ValueError) as exc:
+        except (TypeError, ValueError) as exc:
             raise ValueError(f"invalid decision log line {line_number}: {exc}") from exc
     return events
 
