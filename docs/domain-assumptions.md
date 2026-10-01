@@ -43,6 +43,9 @@
   the verified closer on `repair-site-mvp` and on the synthetic site. A kernel
   solve runs only when those calendars are absent. Named crews keep their shift
   windows in the domain checker.
+- `ATC` is a local list-dispatch baseline with fixed lookahead `k = 2`. It is
+  not a SynAPS solver. A clean ATC plan is checker-`verified` and is not
+  `optimal`.
 - A rotable spare is busy from its issue until the operation ends plus
   `return_lag_min`. The pinned kernel has no field for that reuse. When the
   domain ledger reports `SPARE_UNAVAILABLE`, the plan is not `verified` even
