@@ -31,7 +31,7 @@ def test_auxiliary_calendar_is_rejected_with_stable_reason() -> None:
     aux = problem.aux_resources[0].model_copy(update={"calendar_id": "CAL-DAY"})
     loaded = problem.model_copy(update={"aux_resources": [aux, *problem.aux_resources[1:]]})
     assert unsupported_auxiliary_calendars(loaded) == [f"aux:{aux.id}:CAL-DAY"]
-    with pytest.raises(ValueError, match=KERNEL_CALENDAR_UNSUPPORTED):
+    with pytest.raises(ValueError, match=KERNEL_CALENDAR_UNSUPPORTED):  # noqa: B017
         assert_kernel_calendar_compatibility(loaded)
 
 
@@ -40,5 +40,5 @@ def test_crew_calendar_is_rejected_with_stable_reason() -> None:
     crew = problem.crews[0].model_copy(update={"calendar_id": "CAL-DAY"})
     loaded = problem.model_copy(update={"crews": [crew, *problem.crews[1:]]})
     assert unsupported_auxiliary_calendars(loaded) == [f"crew:{crew.id}:CAL-DAY"]
-    with pytest.raises(ValueError, match=KERNEL_CALENDAR_UNSUPPORTED):
+    with pytest.raises(ValueError, match=KERNEL_CALENDAR_UNSUPPORTED):  # noqa: B017
         assert_kernel_calendar_compatibility(loaded)
