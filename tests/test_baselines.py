@@ -17,6 +17,18 @@ def test_fifo_is_dirty_and_greed_is_verified() -> None:
     assert ReasonCode.SKILL_MISMATCH in codes or ReasonCode.CENTER_OVERLAP in codes
 
 
+def test_edd_is_verified_baseline_and_not_optimal() -> None:
+    outcome = plan(synthesize("tiny", seed=42), solver_config="EDD")
+
+    assert outcome.result.exit_code == 0
+    assert outcome.result.verified_feasible is True
+    assert outcome.result.status.value == "HEURISTIC_FEASIBLE"
+    assert outcome.result.claim_status == "verified"
+    assert outcome.result.claim_status != "optimal"
+    assert outcome.result.solver_class == "baseline"
+    assert outcome.result.objective["origin"] == "horizon_start"
+
+
 def test_same_seed_same_input_hash() -> None:
     left = plan(synthesize("tiny", seed=1), solver_config="FIFO")
     right = plan(synthesize("tiny", seed=1), solver_config="FIFO")
