@@ -30,8 +30,9 @@
   field, so its silence does not make that plan `verified`. A converged DAG
   fixpoint that both verifiers accept stays `verified` and is not `optimal`.
   A deletion-minimal operation set explains one hard code and is not a CP-MUS.
-- `ATC` is a RepairFlow list baseline (`k = 2`), not a SynAPS config. A clean
-  ATC plan stays checker-`verified` and cannot be claimed `optimal`.
+- `ATC` has a bounded local ordering contract in `repairflow.atc_baseline`.
+  It is not planner-integrated, not a SynAPS config, and cannot produce an
+  `optimal` or `verified` claim by itself.
 - `docs/evidence-manifest.json` records main `a832d62` and CI run `36855570364`,
   including `test-slow`, against the pinned SynAPS commit.
 - Kernel and domain checkers agree on the hard decision for a compatible plan:
