@@ -21,7 +21,8 @@
 | Canonical metrics and hash verification | implemented | `src/repairflow/metrics.py`, `repairflow check --verify-hashes` |
 | SynAPS commit pin | implemented | `tools/verify_lock.py` |
 | OR-Tools pin and direct SBOM | implemented | `ortools==9.15.6755`, `repairflow.sbom` |
-| Transitive wheel hashes and a signed artifact | blocked | `docs/sbom-and-provenance.md` |
+| Installed wheel or sdist identity, distinct from the file manifest | implemented | `repairflow.artifact_record`; signature stays `absent` |
+| Transitive lockfile and a signed artifact | blocked | `docs/sbom-and-provenance.md`; no lockfile, no signature |
 | Offline / shadow boundary | documented | threat model, ADR-0003, pilot protocol |
 | Operator acceptance log | documented | JSONL contract; no writer |
 | `POST_DOWN`, `PART_DELAY`, route-variant catalogue | blocked | `docs/limitations.md` |
