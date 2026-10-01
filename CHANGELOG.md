@@ -24,6 +24,8 @@
 - Kernel solvers and kernel disruption repair refuse a problem whose crew or
   auxiliary resource has a calendar. The pinned core has no field for that
   constraint. Domain FIFO, GREED and EDD still enforce it themselves.
+- Sweep-line excess arrivals are checked against an independent critical-point
+  reference, including setup occupancy. A hard capacity violation stays unverified.
 - Pilot-boundary documents state TRL 4, shadow-only use, and the gates that
   are still external (legal entity, data owner, signed extract). The operator
   decision log is a contract, not a writer.
