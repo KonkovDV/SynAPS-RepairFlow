@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import Any, Literal
@@ -57,8 +58,11 @@ ClaimStatus = Literal[
     "optimal",
 ]
 
-HEURISTIC_PREFIXES = ("FIFO", "EDD", "GREED", "BEAM", "ALNS", "RHC", "repair:")
+HEURISTIC_PREFIXES = ("FIFO", "EDD", "ATC", "GREED", "BEAM", "ALNS", "RHC", "repair:")
 DEFAULT_SOLVER = "GREED"
+# RepairFlow list-dispatch bound. Not a SynAPS solver parameter.
+ATC_LOOKAHEAD_K = 2.0
+_DOMAIN_LIST_ORDERS = frozenset({"GREED", "EDD", "ATC"})
 
 
 @dataclass
@@ -96,13 +100,13 @@ def plan(
             if frozen:
                 kwargs["frozen_assignments"] = frozen
         result = plan_fifo(problem, schedule_problem, id_map, apply_frozen=apply_frozen)
-    elif solver_config.upper() in {"GREED", "EDD"}:
+    elif solver_config.upper() in _DOMAIN_LIST_ORDERS:
         result = plan_domain_greed(problem, schedule_problem, id_map, order=solver_config.upper())
     else:
         configs = set(available_solver_configs())
         if solver_config not in configs:
             raise ValueError(
-                f"unknown solver_config {solver_config!r}; expected FIFO, EDD, GREED, "
+                f"unknown solver_config {solver_config!r}; expected FIFO, EDD, ATC, GREED, "
                 f"or one of {sorted(configs)}"
             )
         if solver_config.upper().startswith("CPSAT") and len(problem.operations) > CPSAT_OPS_CAP:
@@ -143,7 +147,7 @@ def replan_after_disruption(
     unknown = [op_id for op_id in disrupted_operation_ids if op_id not in known]
     if unknown:
         raise ValueError("UNKNOWN_OPERATION: " + ", ".join(unknown))
-    if solver_config.upper() in {"GREED", "EDD"}:
+    if solver_config.upper() in _DOMAIN_LIST_ORDERS:
         return _replan_lane_local(
             problem,
             base=base,
@@ -606,7 +610,7 @@ def _solver_class(solver_config: str) -> Literal["heuristic", "exact", "baseline
     upper = solver_config.upper()
     if upper.startswith("CPSAT"):
         return "exact"
-    if upper.startswith("FIFO") or upper.startswith("EDD"):
+    if upper.startswith("FIFO") or upper.startswith("EDD") or upper.startswith("ATC"):
         return "baseline"
     if solver_config in {"recheck", "broken"} or upper.startswith("RECHECK"):
         return "recheck"
@@ -830,6 +834,13 @@ def plan_domain_greed(
     status = (
         SolverStatus.INFEASIBLE if schedule_problem.operations and not assignments else SolverStatus.FEASIBLE
     )
+    metadata: dict[str, Any] = {
+        "constructive": "repairflow_list_schedule",
+        "metric_tag": "synthetic_experiment",
+    }
+    if order == "ATC":
+        metadata["dispatch_rule"] = "repairflow_atc"
+        metadata["atc_k"] = ATC_LOOKAHEAD_K
     return ScheduleResult(
         solver_name=order,
         status=status,
@@ -839,7 +850,7 @@ def plan_domain_greed(
             coverage=coverage,
             unscheduled_operations=unscheduled,
         ),
-        metadata={"constructive": "repairflow_list_schedule", "metric_tag": "synthetic_experiment"},
+        metadata=metadata,
     )
 
 
@@ -862,9 +873,11 @@ def domain_greed(problem: RepairFlowProblem, *, order: str = "GREED") -> list[Pl
             reason="frozen",
         )
     deadlines = _frozen_ancestor_deadlines(problem)
+    durations = [max(op.duration_min, 1) for op in problem.operations]
+    mean_duration = (sum(durations) / len(durations)) if durations else 1.0
     while pending:
         ready = [op for op in pending.values() if all(pred_id in placed for pred_id in op.predecessor_ids)]
-        ready.sort(key=lambda op: _list_key(problem, op, order))
+        ready.sort(key=lambda op: _list_key(problem, op, order, placed, mean_duration))
         placed_one = False
         for operation in ready:
             choice = _best_slot(problem, operation, list(placed.values()), deadlines.get(operation.id))
@@ -1255,12 +1268,62 @@ def _advance_calendar(
     return None
 
 
-def _list_key(problem: RepairFlowProblem, operation: Operation, order: str) -> tuple[object, ...]:
+def _list_key(
+    problem: RepairFlowProblem,
+    operation: Operation,
+    order: str,
+    placed: dict[str, PlannedAssignment],
+    mean_duration: float,
+) -> tuple[object, ...]:
     due = _job_due(problem, operation.job_id)
+    if order == "ATC":
+        index = _atc_index(problem, operation, placed, mean_duration=mean_duration)
+        return (-index, operation.id)
     if order == "EDD":
         job = next(row for row in problem.jobs if row.id == operation.job_id)
         return (due, -job.priority, operation.sequence, operation.id)
     return (due, operation.sequence, operation.id)
+
+
+def _atc_index(
+    problem: RepairFlowProblem,
+    operation: Operation,
+    placed: dict[str, PlannedAssignment],
+    *,
+    mean_duration: float,
+) -> float:
+    """Local apparent-tardiness index. Higher is dispatched first.
+
+    ``weight / duration * exp(-max(slack, 0) / (k * mean_duration))``.
+    ``k`` is ``ATC_LOOKAHEAD_K``. Weight is ``Job.priority``. Slack is the due
+    date minus duration minus the earliest start already fixed by release and
+    placed predecessors. This rule is not a SynAPS solver.
+    """
+
+    duration = max(operation.duration_min, 1)
+    now = _dispatch_time(problem, operation, placed)
+    slack = (_job_due(problem, operation.job_id) - now).total_seconds() / 60.0 - duration
+    scale = ATC_LOOKAHEAD_K * max(mean_duration, 1.0)
+    job = next(row for row in problem.jobs if row.id == operation.job_id)
+    return (job.priority / duration) * math.exp(-max(slack, 0.0) / scale)
+
+
+def _dispatch_time(
+    problem: RepairFlowProblem,
+    operation: Operation,
+    placed: dict[str, PlannedAssignment],
+) -> datetime:
+    moments = [problem.planning_horizon.start]
+    job = next(row for row in problem.jobs if row.id == operation.job_id)
+    if job.release_date is not None:
+        moments.append(job.release_date)
+    if operation.earliest_start is not None:
+        moments.append(operation.earliest_start)
+    for pred_id in operation.predecessor_ids:
+        placed_pred = placed.get(pred_id)
+        if placed_pred is not None:
+            moments.append(placed_pred.end)
+    return max(moments)
 
 
 def _solver_record(
