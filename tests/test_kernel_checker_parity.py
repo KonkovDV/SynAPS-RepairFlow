@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from repairflow.kernel_compat import KERNEL_CALENDAR_UNSUPPORTED
-from repairflow.model import RepairFlowProblem, PlannedAssignment
+from repairflow.model import PlannedAssignment, RepairFlowProblem
 from repairflow.planner import kernel_hard_violations, plan, recheck
 from repairflow.reasons import ReasonCode
 from repairflow.synthetic import synthesize
