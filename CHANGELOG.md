@@ -30,6 +30,8 @@
   field, so its silence does not make that plan `verified`. A converged DAG
   fixpoint that both verifiers accept stays `verified` and is not `optimal`.
   A deletion-minimal operation set explains one hard code and is not a CP-MUS.
+- `docs/evidence-manifest.json` records main `a832d62` and CI run `36855570364`,
+  including `test-slow`, against the pinned SynAPS commit.
 - Kernel and domain checkers agree on the hard decision for a compatible plan:
   clean stays `verified`; precedence, eligibility, work-centre calendar, auxiliary
   capacity, centre overlap and setup mismatch are rejected by both. Diagnostic

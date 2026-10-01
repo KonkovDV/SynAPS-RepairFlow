@@ -1,0 +1,20 @@
+{
+  "schema": "repairflow.evidence_manifest.v1",
+  "attests_commit": "a832d62386501237a5517c398234d0fe4c54f6c6",
+  "ci_run_id": "36855570364",
+  "ci_run_url": "https://github.com/KonkovDV/SynAPS-RepairFlow/actions/runs/36855570364",
+  "ci_result": "success",
+  "ci_includes_test_slow": true,
+  "synaps_commit": "6178c93b705ff58be21fa74a98651883a2da1169",
+  "synaps_repo": "https://github.com/KonkovDV/SynAPS",
+  "claim_level": "experiment",
+  "trl": 4,
+  "hard_decision": "verified requires full coverage and an empty hard notary; kernel diagnostic text is not identified with domain reason codes",
+  "not_claimed": [
+    "production readiness",
+    "safety certification",
+    "heuristic optimality",
+    "CP-MUS",
+    "CP-MCS"
+  ]
+}
