@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- A rotable spare is not counted as a consumable. Sequential reuse after return
+  stays admissible; overlap during use or return lag stays `SPARE_UNAVAILABLE`.
+- An id map whose values are not unique is `INVALID_ID_MAP`, even when the
+  operation and work-center keys match.
 - CP-SAT above 80 operations is a recorded capability refusal (`CPSAT_OPS_CAP`),
   not an exception and not a silent fallback. The exact solver is not called.
   The result is empty, exit 2, not `verified` and not `optimal`.

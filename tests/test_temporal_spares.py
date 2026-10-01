@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
+from repairflow.adapter import to_schedule_problem
+from repairflow.checker import check_plan
 from repairflow.ledger import exchange_pool_violations
 from repairflow.model import PlannedAssignment, RepairFlowProblem
 from repairflow.reasons import ReasonCode
@@ -58,6 +60,65 @@ def _assignments(
             end=second_start + timedelta(minutes=20),
         ),
     ]
+
+
+def _checker_spare_hits(
+    problem: RepairFlowProblem,
+    rows: list[PlannedAssignment],
+) -> list[str]:
+    schedule, id_map = to_schedule_problem(problem)
+    violations = check_plan(
+        problem,
+        schedule_problem=schedule,
+        assignments=rows,
+        id_map=id_map,
+        kernel_status="feasible",
+    )
+    return [
+        row.message
+        for row in violations
+        if row.code == ReasonCode.SPARE_UNAVAILABLE and row.resource_id == "SP-BEARING"
+    ]
+
+
+def test_checker_accepts_sequential_rotable_reuse() -> None:
+    problem, operation_ids = _problem(lag=0)
+    first_start = problem.planning_horizon.start + timedelta(hours=8)
+    messages = _checker_spare_hits(
+        problem,
+        _assignments(problem, operation_ids, first_start + timedelta(minutes=20)),
+    )
+    assert messages == []
+
+
+def test_checker_still_rejects_overlapping_rotable_reuse() -> None:
+    problem, operation_ids = _problem(lag=0)
+    first_start = problem.planning_horizon.start + timedelta(hours=8)
+    messages = _checker_spare_hits(
+        problem,
+        _assignments(problem, operation_ids, first_start),
+    )
+    assert any("reused before return" in message for message in messages)
+
+
+def test_checker_still_counts_consumable_reuse() -> None:
+    problem, operation_ids = _problem(lag=0)
+    spare = next(row for row in problem.spares if row.id == "SP-BEARING")
+    consumable = problem.model_copy(
+        update={
+            "spares": [
+                spare.model_copy(update={"domain_attributes": {"kind": "consumable"}}),
+                *[row for row in problem.spares if row.id != spare.id],
+            ]
+        }
+    )
+    loaded = RepairFlowProblem.model_validate(consumable.model_dump(mode="python"))
+    first_start = loaded.planning_horizon.start + timedelta(hours=8)
+    messages = _checker_spare_hits(
+        loaded,
+        _assignments(loaded, operation_ids, first_start + timedelta(minutes=20)),
+    )
+    assert any("used 2 times" in message for message in messages)
 
 
 def test_rotable_spare_can_be_reused_after_return() -> None:

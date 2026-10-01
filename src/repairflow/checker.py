@@ -12,7 +12,7 @@ from synaps.model import Assignment, ScheduleProblem, ScheduleResult
 from repairflow.capacity import Occupancy, excess_arrivals
 from repairflow.checker_primitives import reverse_ids
 from repairflow.lane_setup import lane_setup_evidence
-from repairflow.ledger import exchange_pool_violations
+from repairflow.ledger import exchange_pool_violations, spare_is_rotable
 from repairflow.model import (
     Calendar,
     Operation,
@@ -111,7 +111,9 @@ def _id_map_issues(
     wc_keys = {f"wc:{wc.id}" for wc in problem.work_centers}
     supplied_ops = {key for key in id_map if key.startswith("op:")}
     supplied_wcs = {key for key in id_map if key.startswith("wc:")}
-    if op_keys != supplied_ops or wc_keys != supplied_wcs:
+    complete = op_keys == supplied_ops and wc_keys == supplied_wcs
+    injective = len(set(id_map.values())) == len(id_map)
+    if not complete or not injective:
         return [
             _violation(
                 ReasonCode.INVALID_ID_MAP,
@@ -641,6 +643,9 @@ def _due_release_spares(
         if op is None:
             continue
         for spare_id in op.required_spare_ids:
+            spare = spares.get(spare_id)
+            if spare is not None and spare_is_rotable(spare):
+                continue
             used[spare_id] += 1
     for spare_id, count in used.items():
         spare = spares.get(spare_id)
