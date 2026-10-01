@@ -36,6 +36,8 @@
 - The checker no longer invents a `crew_id`. A skilled assignment without one
   is `CREW_UNBOUND`. An explicit unknown crew stays `UNKNOWN_RESOURCE`, and an
   explicit unqualified crew stays `SKILL_MISMATCH`.
+- CSV bundles round-trip `exchange_pools`: stock, the hard flag, and each
+  dated demand. A demand row missing either instant or quantity is rejected.
 - `docs/evidence-manifest.json` records main `ed66802` and CI run `36882275468`,
   including `test-slow`, against the pinned SynAPS commit.
 - Kernel and domain checkers agree on the hard decision for a compatible plan:
