@@ -23,7 +23,7 @@ def _file_manifest(name: str) -> tuple[str, list[dict[str, str]]]:
     """Hash every installed file advertised by a distribution's RECORD."""
 
     try:
-        distribution = metadata.distribution(name)
+        distribution: Any = metadata.distribution(name)
     except metadata.PackageNotFoundError:
         return "absent", []
 
