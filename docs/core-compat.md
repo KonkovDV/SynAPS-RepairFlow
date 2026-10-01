@@ -31,9 +31,13 @@ silently dropping constraints. They are represented by the stable compatibility
 reason `KERNEL_CALENDAR_UNSUPPORTED` and must be rejected by the kernel-planning
 boundary until the pinned core exposes an equivalent capability.
 
-The domain list scheduler and independent domain checker remain responsible for
-crew and auxiliary calendar enforcement in modes that do not rely on the kernel
-calendar model. No upstream API extension is assumed here.
+The planner calls `assert_kernel_calendar_compatibility()` before entering the
+kernel fixpoint. `adapter.to_schedule_problem()` also enforces the same guard by
+default, so direct kernel compilation cannot silently erase these calendars.
+The explicit opt-out is used only by FIFO/EDD/GREED and independent recheck paths;
+those paths do not invoke kernel solving. The domain list scheduler and independent
+domain checker remain responsible for crew and auxiliary calendar enforcement in
+those modes. No upstream API extension is assumed here.
 
 `cf10ca3e` was not swapped in. Moving the pin without recapturing the lab
 fixtures would break the three-way SHA lock (`pyproject.toml`,

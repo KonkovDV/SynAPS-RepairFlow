@@ -37,6 +37,7 @@ __all__ = [
     "to_schedule_problem",
 ]
 from repairflow.dag_compiler import CompiledDag, compile_dag
+from repairflow.kernel_compat import assert_kernel_calendar_compatibility
 from repairflow.model import (
     FrozenAssignment,
     PlannedAssignment,
@@ -66,7 +67,14 @@ def _preserve_sequence(op_ids: tuple[str, ...], ops_by_id: dict[str, DomainOpera
 def to_schedule_problem(
     problem: RepairFlowProblem,
     compiled: CompiledDag | None = None,
+    *,
+    enforce_kernel_compatibility: bool = True,
 ) -> tuple[ScheduleProblem, dict[str, UUID]]:
+    """Compile a domain problem, rejecting kernel-inexpressible calendars by default."""
+
+    if enforce_kernel_compatibility:
+        assert_kernel_calendar_compatibility(problem)
+
     id_map: dict[str, UUID] = {}
     states_by_code: dict[str, State] = {}
 
