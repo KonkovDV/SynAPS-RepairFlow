@@ -2,6 +2,7 @@
 
 Makespan is measured from the planning-horizon start, not from the first
 assignment. Raw solver objectives stay in ``metadata['solver_objective']``.
+Post utilization is setup-inclusive and normalized by parallel lane capacity.
 """
 
 from __future__ import annotations
@@ -43,14 +44,21 @@ def compute_metrics(
         late = (last.end - job.due_date).total_seconds() / 60.0
         if late > 0:
             tardiness += late
-    busy = sum((row.end - row.start).total_seconds() / 60.0 for row in assignments)
-    posts = max(1, len(problem.work_centers))
+    processing_minutes = sum((row.end - row.start).total_seconds() / 60.0 for row in assignments)
+    post_capacity_lanes = max(1, sum(center.max_parallel for center in problem.work_centers))
+    post_capacity_minutes = post_capacity_lanes * horizon_minutes
+    setup_utilization = setup / post_capacity_minutes
+    processing_utilization = processing_minutes / post_capacity_minutes
     return {
         "makespan_minutes": round(makespan, 3),
         "total_setup_minutes": int(setup),
         "total_tardiness_minutes": round(tardiness, 3),
         "coverage": round(coverage, 6),
         "unscheduled_operations": int(unscheduled),
-        "post_utilization": round(busy / (posts * horizon_minutes), 6),
+        "post_capacity_lanes": int(post_capacity_lanes),
+        "post_processing_utilization": round(processing_utilization, 6),
+        "post_setup_utilization": round(setup_utilization, 6),
+        "post_utilization": round(processing_utilization + setup_utilization, 6),
+        "post_utilization_denominator": "sum_work_center_max_parallel * horizon_minutes",
         "origin": "horizon_start",
     }
