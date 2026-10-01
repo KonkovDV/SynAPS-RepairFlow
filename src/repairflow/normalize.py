@@ -46,6 +46,7 @@ def problem_from_csv_bundle(path: Path) -> RepairFlowProblem:
         "calendars": _read_calendars(directory / "calendars.csv"),
         "frozen_assignments": _read_csv(directory / "frozen_assignments.csv", optional=True),
         "spares": _read_csv(directory / "spares.csv", optional=True),
+        "exchange_pools": _read_exchange_pools(directory / "exchange_pools.csv"),
         "policy": {"unknown_fields": "reject", "missing_setup": "reject", "unsupported_dag": "reject"},
     }
     payload = _split_list_fields(payload)
@@ -75,6 +76,37 @@ def _read_calendars(path: Path) -> list[dict[str, Any]]:
         grouped.setdefault(cal_id, {"id": cal_id, "code": row.get("code", cal_id), "windows": []})
         grouped[cal_id]["windows"].append({"start": row["start"], "end": row["end"]})
     return list(grouped.values())
+
+
+def _read_exchange_pools(path: Path) -> list[dict[str, Any]]:
+    grouped: dict[str, dict[str, Any]] = {}
+    order: list[str] = []
+    for row in _read_csv(path, optional=True):
+        unit_type = row.get("unit_type")
+        if not isinstance(unit_type, str) or not unit_type:
+            raise ValueError(f"{path} exchange pool row needs unit_type")
+        if unit_type not in grouped:
+            initial = row.get("initial_serviceable")
+            hard = row.get("hard")
+            if isinstance(initial, bool) or not isinstance(initial, int):
+                raise ValueError(f"{path} exchange pool {unit_type} needs initial_serviceable")
+            if not isinstance(hard, bool):
+                raise ValueError(f"{path} exchange pool {unit_type} needs hard true/false")
+            grouped[unit_type] = {
+                "unit_type": unit_type,
+                "initial_serviceable": initial,
+                "hard": hard,
+                "demand": [],
+            }
+            order.append(unit_type)
+        at = row.get("demand_at")
+        qty = row.get("demand_qty")
+        if at is None and qty is None:
+            continue
+        if not isinstance(at, str) or isinstance(qty, bool) or not isinstance(qty, int):
+            raise ValueError(f"{path} exchange pool {unit_type} demand needs demand_at and demand_qty")
+        grouped[unit_type]["demand"].append({"at": at, "qty": qty})
+    return [grouped[key] for key in order]
 
 
 def _require_horizon(directory: Path) -> dict[str, str]:
@@ -252,6 +284,30 @@ def write_csv_bundle(directory: Path, problem: RepairFlowProblem) -> None:
             for spare in problem.spares
         ],
     )
+    pool_rows: list[dict[str, Any]] = []
+    for pool in problem.exchange_pools:
+        if not pool.demand:
+            pool_rows.append(
+                {
+                    "unit_type": pool.unit_type,
+                    "initial_serviceable": pool.initial_serviceable,
+                    "hard": pool.hard,
+                    "demand_at": "",
+                    "demand_qty": "",
+                }
+            )
+            continue
+        for demand in pool.demand:
+            pool_rows.append(
+                {
+                    "unit_type": pool.unit_type,
+                    "initial_serviceable": pool.initial_serviceable,
+                    "hard": pool.hard,
+                    "demand_at": demand.at.isoformat(),
+                    "demand_qty": demand.qty,
+                }
+            )
+    _write_table(directory / "exchange_pools.csv", pool_rows)
 
 
 def _write_table(path: Path, rows: list[dict[str, Any]]) -> None:
