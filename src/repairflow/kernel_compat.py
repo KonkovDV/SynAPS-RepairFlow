@@ -1,4 +1,3 @@
-# ruff: noqa
 """Explicit compatibility checks for the pinned SynAPS kernel."""
 
 from __future__ import annotations

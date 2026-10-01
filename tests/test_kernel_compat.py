@@ -1,19 +1,14 @@
-# ruff: noqa
 """Fail-closed compatibility tests for the pinned SynAPS kernel."""
-
-import importlib
 
 import pytest
 
-from repairflow.model import RepairFlowProblem
-from repairflow.synthetic import synthesize
+import repairflow.kernel_compat as kernel_compat
+import repairflow.model as model
+import repairflow.synthetic as synthetic
 
 
-kernel_compat = importlib.import_module("repairflow.kernel_compat")
-
-
-def _kernel_compatible_problem() -> RepairFlowProblem:
-    problem = synthesize("tiny", seed=1)
+def _kernel_compatible_problem() -> model.RepairFlowProblem:
+    problem = synthetic.synthesize("tiny", seed=1)
     crews = [row.model_copy(update={"calendar_id": None}) for row in problem.crews]
     aux_resources = [row.model_copy(update={"calendar_id": None}) for row in problem.aux_resources]
     return problem.model_copy(update={"crews": crews, "aux_resources": aux_resources})
