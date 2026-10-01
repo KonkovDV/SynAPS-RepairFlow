@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from repairflow.evidence import evidence_stamp, fingerprint_payload
 from repairflow.metrics import compute_metrics
 from repairflow.model import RepairFlowProblem, RepairFlowResult
@@ -19,7 +17,7 @@ def _optional_string(value: object) -> str | None:
 def build_evidence_table(
     problem: RepairFlowProblem,
     results: dict[str, RepairFlowResult],
-) -> dict[str, Any]:
+) -> dict[str, object]:
     """Build a comparable table without changing any solver verdicts.
 
     Every row is scored with the same independent metric function and must refer
@@ -31,7 +29,7 @@ def build_evidence_table(
     if len(input_hashes) > 1:
         raise ValueError("evidence table cannot mix different input hashes")
 
-    rows: list[dict[str, Any]] = []
+    rows: list[dict[str, object]] = []
     for solver_name, result in sorted(results.items()):
         scope = _optional_string(result.metadata.get("optimality_scope"))
         rows.append(
@@ -57,7 +55,7 @@ def build_evidence_table(
 
     input_hash = next(iter(input_hashes), fingerprint_payload(problem.model_dump(mode="json")))
     config_hash = fingerprint_payload([row["config_hash"] for row in rows])
-    table: dict[str, Any] = {
+    table: dict[str, object] = {
         "schema": TABLE_SCHEMA,
         "repairflow_version": REPAIRFLOW_VERSION,
         "synaps_commit": SYNAPS_COMMIT,
@@ -72,11 +70,12 @@ def build_evidence_table(
         },
         "rows": rows,
     }
-    table["table_hash"] = fingerprint_payload(table["rows"])
+    table_hash = fingerprint_payload(rows)
+    table["table_hash"] = table_hash
     table["evidence"] = evidence_stamp(
         input_hash=input_hash,
         config_hash=config_hash,
         data_provenance=str(problem.data_provenance),
-        extra={"table_hash": table["table_hash"]},
+        extra={"table_hash": table_hash},
     )
     return table
