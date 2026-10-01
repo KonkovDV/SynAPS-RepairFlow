@@ -33,7 +33,7 @@ def _file_manifest(name: str) -> tuple[str, list[dict[str, str]]]:
         if not path.is_file():
             continue
         digest = hashlib.sha256(path.read_bytes()).hexdigest()
-        files.append({"path": relative.as_posix(), "sha256": digest})
+        files.append({"path": str(relative), "sha256": digest})
     if not files:
         return "empty", []
     manifest = "\n".join(f"{row['path']}\0{row['sha256']}" for row in files)
