@@ -40,9 +40,7 @@ def test_checker_rejects_unbound_skilled_candidate() -> None:
     clean = plan(problem, solver_config="GREED")
     operations = {op.id: op for op in problem.operations}
     candidate = [
-        row.model_copy(update={"crew_id": None})
-        if operations[row.operation_id].required_skills
-        else row
+        row.model_copy(update={"crew_id": None}) if operations[row.operation_id].required_skills else row
         for row in clean.result.assignments
     ]
 
@@ -57,3 +55,70 @@ def test_checker_rejects_unbound_skilled_candidate() -> None:
     assert outcome.result.exit_code == 2
     assert outcome.result.claim_status == "rejected"
     assert any(row.code == ReasonCode.CREW_UNBOUND for row in outcome.result.violations)
+    skilled = [row for row in outcome.result.assignments if operations[row.operation_id].required_skills]
+    assert skilled
+    assert all(row.crew_id is None for row in skilled)
+
+
+def test_checker_rejects_an_unknown_explicit_crew() -> None:
+    problem = synthesize("tiny", seed=1)
+    clean = plan(problem, solver_config="GREED")
+    skilled = next(op for op in problem.operations if op.required_skills)
+    rows = [
+        row.model_copy(update={"crew_id": "CREW-MISSING"}) if row.operation_id == skilled.id else row
+        for row in clean.result.assignments
+    ]
+    outcome = recheck(
+        problem,
+        assignments=rows,
+        kernel_status="feasible",
+        solver_config="unknown-crew-adversarial",
+    )
+    assert outcome.result.verified_feasible is False
+    assert any(
+        row.code == ReasonCode.UNKNOWN_RESOURCE and row.resource_id == "CREW-MISSING"
+        for row in outcome.result.violations
+    )
+    assert not any(
+        row.code == ReasonCode.CREW_UNBOUND and row.operation_id == skilled.id
+        for row in outcome.result.violations
+    )
+    kept = next(row for row in outcome.result.assignments if row.operation_id == skilled.id)
+    assert kept.crew_id == "CREW-MISSING"
+
+
+def test_checker_rejects_an_unqualified_explicit_crew() -> None:
+    problem = synthesize("tiny", seed=1)
+    clean = plan(problem, solver_config="GREED")
+    skilled = next(op for op in problem.operations if "mechanical" in op.required_skills)
+    rows = [
+        row.model_copy(update={"crew_id": "CREW-TEST"}) if row.operation_id == skilled.id else row
+        for row in clean.result.assignments
+    ]
+    outcome = recheck(
+        problem,
+        assignments=rows,
+        kernel_status="feasible",
+        solver_config="unqualified-crew-adversarial",
+    )
+    assert outcome.result.verified_feasible is False
+    assert any(
+        row.code == ReasonCode.SKILL_MISMATCH and row.operation_id == skilled.id
+        for row in outcome.result.violations
+    )
+    kept = next(row for row in outcome.result.assignments if row.operation_id == skilled.id)
+    assert kept.crew_id == "CREW-TEST"
+
+
+def test_explicit_qualified_crew_stays_clean() -> None:
+    problem = synthesize("tiny", seed=1)
+    clean = plan(problem, solver_config="GREED")
+    outcome = recheck(
+        problem,
+        assignments=list(clean.result.assignments),
+        kernel_status="feasible",
+        solver_config="explicit-crew",
+    )
+    assert outcome.result.verified_feasible is True
+    assert outcome.result.exit_code == 0
+    assert not any(row.code == ReasonCode.CREW_UNBOUND for row in outcome.result.violations)

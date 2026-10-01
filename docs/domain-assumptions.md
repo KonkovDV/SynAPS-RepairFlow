@@ -7,8 +7,11 @@
   See `docs/adr/0002-dag-over-chain-kernel.md`.
 - Dates are timezone-aware ISO-8601. Unix timestamps are rejected.
 - SynAPS encodes posts as work centres and crews/tooling as auxiliary resources.
-  A published assignment always names a concrete `crew_id` when skills are required;
-  skill-pools are an internal kernel encoding only.
+  A published plan names a concrete `crew_id` when skills are required;
+  skill-pools are an internal kernel encoding only. The checker does not fill
+  a missing `crew_id`: that candidate is `CREW_UNBOUND`. An explicit unknown
+  crew is `UNKNOWN_RESOURCE`. An explicit crew without the required skills is
+  `SKILL_MISMATCH`.
 - Consumable spares are a blocking availability constraint, not inventory optimisation.
   An exchange pool is a separate stock ledger: a unit returns when every sink of
   its card has finished, and dated demand withdraws stock. `hard=false` keeps a

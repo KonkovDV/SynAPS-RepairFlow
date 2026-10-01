@@ -7,7 +7,7 @@
 | Strict domain schema and UTC instants | implemented | `src/repairflow/model.py`, `tools/export_schemas.py` |
 | Convergent DAG repair card | implemented | `src/repairflow/dag_compiler.py`, `tests/test_dag_compiler.py`, ADR-0002 |
 | Finite posts and setup matrix | implemented | adapter, checker, setup tests |
-| Crew skills and a named crew on the published plan | implemented | `checker_primitives.bind_concrete_crews` |
+| Crew skills and a named crew on the published plan | implemented | planner names the crew on publication; the checker rejects `CREW_UNBOUND` |
 | Crew and aux calendars, including an empty calendar | implemented | domain checker, `tests/test_verdict_safety.py` |
 | Crew calendars inside the kernel model | documented | kernel solve and kernel repair refuse `KERNEL_CALENDAR_UNSUPPORTED`; domain FIFO/GREED/EDD still enforce them |
 | Full coverage as a verification condition | implemented | `allow_partial_plan` cannot yield exit 0 |
