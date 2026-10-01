@@ -109,8 +109,10 @@ def plan(
                 f"unknown solver_config {solver_config!r}; expected FIFO, EDD, ATC, GREED, "
                 f"or one of {sorted(configs)}"
             )
-        if solver_config.upper().startswith("CPSAT") and len(problem.operations) > CPSAT_OPS_CAP:
-            raise ValueError(f"CP-SAT refused on {len(problem.operations)} ops (cap {CPSAT_OPS_CAP})")
+        if solver_config.upper().startswith("CPSAT"):
+            refused_cap = _cpsat_cap_refusal(problem, solver_config=solver_config, compiled=compiled)
+            if refused_cap is not None:
+                return refused_cap
         refused = _kernel_calendar_refusal(problem, solver_config=solver_config, compiled=compiled)
         if refused is not None:
             return refused
@@ -148,6 +150,10 @@ def replan_after_disruption(
     unknown = [op_id for op_id in disrupted_operation_ids if op_id not in known]
     if unknown:
         raise ValueError("UNKNOWN_OPERATION: " + ", ".join(unknown))
+    if solver_config.upper().startswith("CPSAT"):
+        refused_cap = _cpsat_cap_refusal(problem, solver_config=f"repair:{solver_config}")
+        if refused_cap is not None:
+            return refused_cap
     if solver_config.upper() in _DOMAIN_LIST_ORDERS:
         return _replan_lane_local(
             problem,
@@ -638,6 +644,62 @@ def _fixpoint_meta(compiled: CompiledDag, *, iterations: int, converged: bool) -
         "cross_edges": len(compiled.cross_edges),
         "optimality_scope": scope,
     }
+
+
+def _cpsat_cap_refusal(
+    problem: RepairFlowProblem,
+    *,
+    solver_config: str,
+    compiled: CompiledDag | None = None,
+) -> PlanOutcome | None:
+    """Refuse CP-SAT before solve when the instance is above the lab cap.
+
+    The recorded route is a capability refusal. Domain list solvers are not
+    substituted, and the exact solver is not called.
+    """
+
+    count = len(problem.operations)
+    if count <= CPSAT_OPS_CAP:
+        return None
+    current = compiled if compiled is not None else compile_dag(problem)
+    schedule_problem, id_map = to_schedule_problem(problem, current)
+    result = ScheduleResult(
+        status=SolverStatus.ERROR,
+        solver_name=solver_config,
+        assignments=[],
+        objective=ObjectiveValues(
+            coverage=0.0,
+            unscheduled_operations=count,
+        ),
+        metadata={
+            "error": ReasonCode.CPSAT_OPS_CAP.value,
+            "routing": "refused",
+            "cpsat_invoked": False,
+            "operation_count": count,
+            "cpsat_ops_cap": CPSAT_OPS_CAP,
+        },
+    )
+    violation = Violation(
+        code=ReasonCode.CPSAT_OPS_CAP,
+        message=REASON_RU[ReasonCode.CPSAT_OPS_CAP],
+        severity="hard",
+        suggested_relaxation=SUGGESTIONS[ReasonCode.CPSAT_OPS_CAP],
+        details={
+            "routing": "refused",
+            "cpsat_invoked": False,
+            "operation_count": count,
+            "cpsat_ops_cap": CPSAT_OPS_CAP,
+        },
+    )
+    return wrap(
+        problem,
+        schedule_problem,
+        id_map,
+        result,
+        solver_config=solver_config,
+        extra_violations=[violation],
+        fixpoint=_fixpoint_meta(current, iterations=0, converged=True),
+    )
 
 
 def _kernel_calendar_refusal(

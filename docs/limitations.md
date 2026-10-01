@@ -19,4 +19,10 @@
 11. `optimal` does not mean “optimal repair plan” when the compiler changed the card.
     The report scope is the compiled chain/windows. More than one fixpoint iteration
     caps the claim at `verified`.
-12. CP-SAT is refused above `CPSAT_OPS_CAP` (80 operations in this lab build).
+12. CP-SAT is a lab capability boundary, not evidence that a real instance of
+    that size solves. `plan` and kernel repair refuse a request with more than
+    `CPSAT_OPS_CAP` operations (80). The refusal is a recorded result: empty
+    assignments, hard `CPSAT_OPS_CAP`, exit 2, not `verified` and not `optimal`.
+    The exact solver is not called, and a domain list solver is not substituted.
+    FIFO, GREED, EDD and ATC are outside this cap. Eighty is the last accepted
+    count, not a claim that an 80-operation instance is solvable.

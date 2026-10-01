@@ -15,5 +15,6 @@ MAX_FROZEN = 20_000
 MAX_SPARES = 20_000
 MAX_POOLS = 500
 MAX_PRED_PER_OP = 8
+# Solver capability, not a DoS quota and not evidence that an 80-op instance solves.
 CPSAT_OPS_CAP = 80
 MVP_TARGET_OPS = (20, 100)

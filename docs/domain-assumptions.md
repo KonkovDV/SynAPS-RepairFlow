@@ -41,6 +41,10 @@
 - Missing `idle → first_state` setup cells are a hard contract error. Under
   `missing_setup=reject` the instance is refused; a plan that still uses a missing
   cell is fail-closed as `MISSING_SETUP` (exit 2).
+- CP-SAT is refused, and not invoked, when the instance has more than 80
+  operations (`CPSAT_OPS_CAP`). The result records that route. It is not a
+  fallback to GREED and not evidence that a real shop of that size is solvable.
+  Domain FIFO, GREED, EDD and ATC do not use this cap.
 - Kernel CP-SAT and RHC refuse a crew or auxiliary calendar
   (`KERNEL_CALENDAR_UNSUPPORTED`) instead of dropping it. Domain GREED remains
   the verified closer on `repair-site-mvp` and on the synthetic site. A kernel

@@ -22,6 +22,14 @@ Checked on this pin:
 RepairFlow calls `FeasibilityChecker.check` with `exhaustive=True` and
 `strict_setup_matrix=True`.
 
+## CP-SAT size boundary
+
+`CPSAT_OPS_CAP` is 80 operations on the submitted instance. A CP-SAT `plan` or
+kernel repair above that count returns a recorded refusal (`CPSAT_OPS_CAP`)
+and does not call `solve_schedule` or `repair_schedule`. The cap is not a
+measured limit of a real shop and not a claim that an instance of 80 operations
+reaches `optimal`. Domain list solvers are unaffected.
+
 ## Calendar capability boundary
 
 The domain model supports calendars on work centres, crews and auxiliary resources.

@@ -36,6 +36,7 @@ REASON_CODES = (
     "EXCHANGE_POOL_STOCKOUT",
     "NERVOUSNESS_HIGH",
     "KERNEL_CALENDAR_UNSUPPORTED",
+    "CPSAT_OPS_CAP",
 )
 
 
@@ -71,6 +72,7 @@ class ReasonCode(StrEnum):
     EXCHANGE_POOL_STOCKOUT = "EXCHANGE_POOL_STOCKOUT"
     NERVOUSNESS_HIGH = "NERVOUSNESS_HIGH"
     KERNEL_CALENDAR_UNSUPPORTED = "KERNEL_CALENDAR_UNSUPPORTED"
+    CPSAT_OPS_CAP = "CPSAT_OPS_CAP"
 
 
 REASON_RU: dict[str, str] = {
@@ -107,6 +109,7 @@ REASON_RU: dict[str, str] = {
     ReasonCode.KERNEL_CALENDAR_UNSUPPORTED: (
         "календарь бригады или оснастки нельзя передать в закреплённое ядро"
     ),
+    ReasonCode.CPSAT_OPS_CAP: "экземпляр больше лабораторного предела CP-SAT",
 }
 
 
@@ -132,5 +135,8 @@ SUGGESTIONS: dict[str, str] = {
     ReasonCode.NERVOUSNESS_HIGH: "сузить окрестность перепланирования или поднять порог",
     ReasonCode.KERNEL_CALENDAR_UNSUPPORTED: (
         "считать этот экземпляр domain GREED/EDD или снять календарь ресурса, которого нет в ядре"
+    ),
+    ReasonCode.CPSAT_OPS_CAP: (
+        "считать экземпляр domain GREED/EDD/ATC; CP-SAT в этой сборке не вызывается выше 80 операций"
     ),
 }
