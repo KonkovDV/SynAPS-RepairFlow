@@ -36,7 +36,7 @@
 - The checker no longer invents a `crew_id`. A skilled assignment without one
   is `CREW_UNBOUND`. An explicit unknown crew stays `UNKNOWN_RESOURCE`, and an
   explicit unqualified crew stays `SKILL_MISMATCH`.
-- `docs/evidence-manifest.json` records main `a832d62` and CI run `36855570364`,
+- `docs/evidence-manifest.json` records main `ed66802` and CI run `36882275468`,
   including `test-slow`, against the pinned SynAPS commit.
 - Kernel and domain checkers agree on the hard decision for a compatible plan:
   clean stays `verified`; precedence, eligibility, work-centre calendar, auxiliary
