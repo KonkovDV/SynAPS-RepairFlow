@@ -39,6 +39,10 @@ those paths do not invoke kernel solving. The domain list scheduler and independ
 domain checker remain responsible for crew and auxiliary calendar enforcement in
 those modes. No upstream API extension is assumed here.
 
+Kernel test and demo fixtures that exercise CPSAT or another kernel solver must be
+calendar-free for crews and auxiliary resources. Domain GREED/EDD/FIFO fixtures may
+retain those calendars so the independent checker can validate their semantics.
+
 `cf10ca3e` was not swapped in. Moving the pin without recapturing the lab
 fixtures would break the three-way SHA lock (`pyproject.toml`,
 `requirements-lock.txt`, `versions.py`).
