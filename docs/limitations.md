@@ -19,7 +19,11 @@
 11. `optimal` does not mean “optimal repair plan” when the compiler changed the card.
     The report scope is the compiled chain/windows. More than one fixpoint iteration
     caps the claim at `verified`.
-12. CP-SAT is a lab capability boundary, not evidence that a real instance of
+12. A dependency lock is `locked` only when every recorded component already has
+    a wheel or sdist SHA-256. Editable installs stay `incomplete`. The lock does
+    not carry a signature: this build has no release key, and a signature status
+    other than `absent` is not produced.
+13. CP-SAT is a lab capability boundary, not evidence that a real instance of
     that size solves. `plan` and kernel repair refuse a request with more than
     `CPSAT_OPS_CAP` operations (80). The refusal is a recorded result: empty
     assignments, hard `CPSAT_OPS_CAP`, exit 2, not `verified` and not `optimal`.

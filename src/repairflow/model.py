@@ -32,6 +32,7 @@ from repairflow.limits import (
     MAX_SPARES,
     MAX_WORK_CENTERS,
 )
+from repairflow.scheduling_contract import held_minutes, is_unattended, open_minutes, policy_of
 
 SCHEMA_PROBLEM: Literal["repairflow.problem.v1"] = "repairflow.problem.v1"
 SCHEMA_RESULT: Literal["repairflow.result.v1"] = "repairflow.result.v1"
@@ -498,7 +499,128 @@ def _frozen_batch_issues(problem: RepairFlowProblem) -> list[str]:
             if earlier is not None and row.start < earlier.end:
                 issues.append(f"frozen {row.operation_id} starts before frozen predecessor {pred_id} ends")
         _frozen_calendar(problem, row, centers, crews, calendars, issues)
+        _frozen_duration(problem, row, operation, centers, crews, calendars, issues)
     issues.extend(_frozen_lane_issues(rows, centers, crews))
+    issues.extend(_frozen_aux_issues(rows, ops, {aux.id: aux for aux in problem.aux_resources}))
+    issues.extend(_frozen_setup_issues(problem, rows))
+    return issues
+
+
+def _frozen_duration(
+    problem: RepairFlowProblem,
+    row: FrozenAssignment,
+    operation: Operation,
+    centers: dict[str, WorkCenter],
+    crews: dict[str, Crew],
+    calendars: dict[str, Calendar],
+    issues: list[str],
+) -> None:
+    policy = policy_of(operation.domain_attributes)
+    held = held_minutes(row.start, row.end)
+    if policy == "invalid":
+        issues.append(f"frozen {row.operation_id} has an invalid duration_policy")
+        return
+    if policy == "min":
+        if held < operation.duration_min:
+            issues.append(
+                f"frozen {row.operation_id} holds {held} min, shorter than {operation.duration_min}"
+            )
+        return
+    if policy == "preemptive":
+        masks = _frozen_masks(row, operation, centers, crews, calendars, problem)
+        open_held = open_minutes(row.start, row.end, masks) if masks else held
+        if open_held != operation.duration_min:
+            issues.append(
+                f"frozen {row.operation_id} open minutes {open_held} "
+                f"are not duration_min {operation.duration_min}"
+            )
+        return
+    if held != operation.duration_min:
+        issues.append(f"frozen {row.operation_id} holds {held} min, duration_min is {operation.duration_min}")
+    _ = problem
+
+
+def _frozen_masks(
+    row: FrozenAssignment,
+    operation: Operation,
+    centers: dict[str, WorkCenter],
+    crews: dict[str, Crew],
+    calendars: dict[str, Calendar],
+    problem: RepairFlowProblem,
+) -> list[list[tuple[datetime, datetime]]]:
+    masks: list[list[tuple[datetime, datetime]]] = []
+
+    def add(calendar_id: str | None, attributes: dict[str, Any]) -> None:
+        if is_unattended(attributes) or not calendar_id:
+            return
+        calendar = calendars.get(calendar_id)
+        if calendar is None:
+            return
+        masks.append([(window.start, window.end) for window in calendar.windows])
+
+    center = centers.get(row.work_center_id)
+    if center is not None:
+        add(center.calendar_id, center.domain_attributes)
+    if row.crew_id is not None:
+        crew = crews.get(row.crew_id)
+        if crew is not None:
+            add(crew.calendar_id, crew.domain_attributes)
+    auxes = {aux.id: aux for aux in problem.aux_resources}
+    for aux_id in operation.required_aux_ids:
+        aux = auxes.get(aux_id)
+        if aux is not None:
+            add(aux.calendar_id, aux.domain_attributes)
+    return masks
+
+
+def _frozen_aux_issues(
+    rows: list[FrozenAssignment],
+    ops: dict[str, Operation],
+    auxes: dict[str, AuxResource],
+) -> list[str]:
+    grouped: dict[str, list[FrozenAssignment]] = defaultdict(list)
+    for row in rows:
+        operation = ops.get(row.operation_id)
+        if operation is None:
+            continue
+        for aux_id in operation.required_aux_ids:
+            grouped[aux_id].append(row)
+    issues: list[str] = []
+    for aux_id, group in grouped.items():
+        aux = auxes.get(aux_id)
+        lanes = aux.capacity if aux is not None else 1
+        issues.extend(_lane_clause(group, lanes, f"aux {aux_id}"))
+    return issues
+
+
+def _frozen_setup_issues(problem: RepairFlowProblem, rows: list[FrozenAssignment]) -> list[str]:
+    from repairflow.lane_setup import lane_setup_evidence
+
+    planned = [
+        PlannedAssignment(
+            operation_id=row.operation_id,
+            work_center_id=row.work_center_id,
+            start=row.start,
+            end=row.end,
+            crew_id=row.crew_id,
+            setup_minutes=row.setup_minutes,
+        )
+        for row in rows
+    ]
+    by_id = {item.operation_id: item for item in lane_setup_evidence(problem, planned)}
+    issues: list[str] = []
+    for row in rows:
+        placed = by_id.get(row.operation_id)
+        if placed is None:
+            continue
+        expected = placed.expected_setup_minutes
+        if expected is None:
+            if problem.policy.missing_setup == "zero" and row.setup_minutes == 0:
+                continue
+            issues.append(f"frozen {row.operation_id} has no setup cell")
+            continue
+        if int(row.setup_minutes) != int(expected):
+            issues.append(f"frozen {row.operation_id} setup {row.setup_minutes} min, matrix has {expected}")
     return issues
 
 

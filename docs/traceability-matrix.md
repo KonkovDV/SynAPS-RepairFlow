@@ -12,7 +12,7 @@
 | Crew calendars inside the kernel model | documented | kernel solve and kernel repair refuse `KERNEL_CALENDAR_UNSUPPORTED`; domain FIFO/GREED/EDD still enforce them |
 | CP-SAT on more than 80 operations | implemented | recorded `CPSAT_OPS_CAP` refusal; the exact solver is not called |
 | Full coverage as a verification condition | implemented | `allow_partial_plan` cannot yield exit 0 |
-| Checker independent of the adapter | implemented | `checker.py` imports `checker_primitives` only |
+| Checker independent of solver search | implemented | `checker.py` does not import planner search; the published verdict also reads the pinned SynAPS feasibility checker |
 | Blocking spares | implemented | checker spare tests |
 | Exchange pool as a stock ledger | implemented | `src/repairflow/ledger.py`, ADR-0004 |
 | Inspection that freezes issued work | implemented | `repairflow inspect`, ADR-0005 |
@@ -22,7 +22,8 @@
 | SynAPS commit pin | implemented | `tools/verify_lock.py` |
 | OR-Tools pin and direct SBOM | implemented | `ortools==9.15.6755`, `repairflow.sbom` |
 | Installed wheel or sdist identity, distinct from the file manifest | implemented | `repairflow.artifact_record`; signature stays `absent` |
-| Transitive lockfile and a signed artifact | blocked | `docs/sbom-and-provenance.md`; no lockfile, no signature |
+| Dependency lock of archive SHA-256 values | implemented | `repairflow.dependency_lock`; `locked` only when every hash is present |
+| Signed artifact | blocked | signature status stays `absent`; this build has no release key |
 | Offline / shadow boundary | documented | threat model, ADR-0003, pilot protocol |
 | Operator acceptance log | documented | JSONL contract; no writer |
 | `POST_DOWN`, `PART_DELAY`, route-variant catalogue | blocked | `docs/limitations.md` |

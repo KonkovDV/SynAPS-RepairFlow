@@ -27,14 +27,20 @@
   restarts at or after its old end. That lane's tail is rescheduled; the other
   lanes of the same post stay frozen with their own setup state.
 - A resource with no `calendar_id` is open for the whole horizon. A calendar with
-  zero windows means the resource is unavailable. A non-empty calendar is a hard
-  single-window container, including tooling (`AuxResource.calendar_id`).
+  zero windows means an attended resource is unavailable. The domain planner uses
+  that same closed reading. `domain_attributes.attendance = unattended` lets that
+  resource keep running while its staffed calendar is closed.
+- `domain_attributes.duration_policy` is `exact` when omitted: processing minutes
+  must equal `duration_min`. `min` allows a longer interval. `preemptive` may
+  cross closed gaps, and only the open minutes must equal `duration_min`.
+  A non-preemptive visit must sit inside one calendar window.
 - `due_date` is a soft tardiness signal (`DUE_MISSED`, severity kpi). `deadline`
   on the job is hard (`DEADLINE_MISSED`, exit 2).
 - `allow_partial_plan` does not produce exit 0. Missing operations are status
   `PARTIAL` and exit 2.
 - Frozen rows with `immutable=true` must already be mutually feasible at ingest
-  (overlap, calendar, precedence among frozen rows) and must survive replan.
+  (post, crew, and auxiliary overlap, calendar, duration policy, setup cell,
+  precedence among frozen rows) and must survive replan.
   `immutable=false` is a note: it is stored and not enforced.
 - Duplicate setup-matrix cells are rejected.
 - Heuristic solvers never inherit the word OPTIMAL.

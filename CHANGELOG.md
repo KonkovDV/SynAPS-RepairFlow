@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Duration defaults to `exact`. `min` and `preemptive` are explicit. An empty
+  calendar is closed for the planner and the checker. An unattended resource
+  may run while its staffed calendar is closed. Frozen ingest checks auxiliary
+  overlap, duration, and the setup cell.
+- A dependency lock is `locked` only when every component has an archive
+  SHA-256. The signature field stays `absent`.
 - A rotable spare is not counted as a consumable. Sequential reuse after return
   stays admissible; overlap during use or return lag stays `SPARE_UNAVAILABLE`.
 - An id map whose values are not unique is `INVALID_ID_MAP`, even when the

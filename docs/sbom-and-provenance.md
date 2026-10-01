@@ -6,6 +6,8 @@ The document now includes `runtime_binding` (`repairflow.runtime_binding.v1`). F
 
 This is an installed-distribution file manifest, not a wheel archive hash. It is not signed, it does not establish provenance of a downloaded artifact, and it does not replace license review or a complete transitive dependency inventory. Missing distributions are explicit as `absent`; distributions with no readable files are explicit as `empty` rather than silently treated as bound.
 
+`repairflow.dependency_lock.v1` is a separate lock over that record. It is `locked` only when every component archive status is `present` with a SHA-256. Otherwise it is `incomplete`. Its signature status is `absent`.
+
 `repairflow.artifact_record.v1` is a separate record. It identifies a local wheel or sdist by the SHA-256 of the archive bytes, and it reads a PEP 610 `direct_url.json` hash when one is already on disk. An editable checkout stays `editable` with no archive digest. A hash that is not `sha256` stays `unsupported_hash`. Every signature field is `absent`. `lockfile_status` is `absent`, and `closure_status` is `installed_environment_not_a_lock`: the installed environment is not a closed transitive lock. The record points at `repairflow.runtime_binding.v1` as the installed-file manifest and marks that role as neither a wheel hash nor a signature.
 
 Each plan result stores `input_hash`, `config_hash`, and `result_hash`. The config payload includes a runtime manifest (Python, platform, RepairFlow version, SynAPS commit, OR-Tools, Pydantic). `repairflow check --verify-hashes` recomputes those hashes and exits 1 on a mismatch.

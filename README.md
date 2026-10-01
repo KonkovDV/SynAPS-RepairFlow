@@ -75,7 +75,7 @@ formal instance → schema/domain validation → candidate planner
                → independent checker → evidence bundle → human decision
 ```
 
-Checker не импортирует solver search code. Он проверяет нормализованный кандидат против исходного domain contract. Сокращение makespan не считается улучшением, если потеряно покрытие или появился hard violation.
+Доменный checker не импортирует solver search code и проверяет нормализованный кандидат против исходного domain contract. Опубликованный вердикт дополнительно читает feasibility checker закреплённого SynAPS, поэтому независимость относится к поиску, а не ко всей экосистеме SynAPS. Сокращение makespan не считается улучшением, если потеряно покрытие или появился hard violation.
 
 ### Capacity oracle
 
