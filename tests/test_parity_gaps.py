@@ -91,11 +91,12 @@ def test_rotable_explanation_is_minimal_and_does_not_change_the_verdict() -> Non
     )
 
     assert witness == sorted(users)
-    assert deletion_minimal_operation_ids(
+    reversed_witness = deletion_minimal_operation_ids(
         loaded,
         list(reversed(assignments)),
         ReasonCode.SPARE_UNAVAILABLE,
-    ) == witness
+    )
+    assert reversed_witness == witness
     assert before.result.verified_feasible == after.result.verified_feasible is False
     assert before.result.claim_status == after.result.claim_status == "rejected"
     assert before.result.exit_code == after.result.exit_code == 2
