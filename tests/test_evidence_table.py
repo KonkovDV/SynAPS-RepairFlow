@@ -9,10 +9,7 @@ from repairflow.synthetic import synthesize
 
 def test_evidence_table_unifies_metrics_and_provenance() -> None:
     problem = synthesize("tiny", seed=1)
-    results = {
-        solver: plan(problem, solver_config=solver).result
-        for solver in ("FIFO", "GREED", "EDD")
-    }
+    results = {solver: plan(problem, solver_config=solver).result for solver in ("FIFO", "GREED", "EDD")}
 
     table = build_evidence_table(problem, results)
 
