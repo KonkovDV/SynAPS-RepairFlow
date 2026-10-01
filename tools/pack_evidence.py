@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 
 from repairflow.diff import diff_plans
+from repairflow.evidence_table import build_evidence_table
 from repairflow.planner import plan
 from repairflow.report import render_html, render_markdown
 from repairflow.synthetic import synthesize
@@ -21,11 +22,18 @@ def pack(out_dir: Path) -> dict:
     fifo = plan(problem, solver_config="FIFO")
     greed = plan(problem, solver_config="GREED")
     compare = diff_plans(problem, fifo.result, greed.result)
+    evidence_table = build_evidence_table(
+        problem,
+        {"FIFO": fifo.result, "GREED": greed.result},
+    )
     (out_dir / "repair-site-mvp.json").write_text(problem.model_dump_json(indent=2), encoding="utf-8")
     (out_dir / "fifo.json").write_text(fifo.result.model_dump_json(indent=2), encoding="utf-8")
     (out_dir / "greed.json").write_text(greed.result.model_dump_json(indent=2), encoding="utf-8")
     (out_dir / "compare.json").write_text(
         json.dumps(compare, indent=2, ensure_ascii=False, default=str), encoding="utf-8"
+    )
+    (out_dir / "evidence-table.json").write_text(
+        json.dumps(evidence_table, indent=2, ensure_ascii=False), encoding="utf-8"
     )
     (out_dir / "greed.md").write_text(render_markdown(problem, greed.result), encoding="utf-8")
     (out_dir / "greed.html").write_text(render_html(problem, greed.result), encoding="utf-8")
@@ -42,6 +50,7 @@ def pack(out_dir: Path) -> dict:
         "input_hash": greed.result.input_hash,
         "config_hash": greed.result.config_hash,
         "result_hash": greed.result.result_hash,
+        "evidence_table_hash": evidence_table["table_hash"],
         "claim_level": greed.result.claim_level,
         "data_provenance": greed.result.data_provenance,
     }

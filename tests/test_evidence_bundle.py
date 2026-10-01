@@ -28,6 +28,8 @@ def test_pack_evidence_writes_mvp_hashes(tmp_path) -> None:
     assert summary["operations"] == 52
     assert summary["fifo_exit_code"] == 2
     assert summary["greed_verified"] is True
+    assert len(summary["evidence_table_hash"]) == 64
     assert (tmp_path / "greed.html").is_file()
     assert (tmp_path / "hashes.json").is_file()
     assert (tmp_path / "checker.json").is_file()
+    assert (tmp_path / "evidence-table.json").is_file()
