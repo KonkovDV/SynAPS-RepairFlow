@@ -20,6 +20,7 @@ Read the contract, then the evidence, then the pilot boundary.
 - [`adr/0005-inspection-rewrites-the-card.md`](adr/0005-inspection-rewrites-the-card.md): inspection freezes issued slots.
 - [`SOTA_2026.md`](SOTA_2026.md): positioning and the benchmark agenda.
 - [`benchmark-protocol.md`](benchmark-protocol.md): reproducibility rules for synthetic comparisons.
+- [`atc-baseline-contract.md`](atc-baseline-contract.md): bounded local ATC ordering contract and integration boundary.
 - [`sbom-and-provenance.md`](sbom-and-provenance.md): what the SBOM covers, and what it does not.
 - [`threat-model.md`](threat-model.md): offline deployment boundary.
 - [`data-mapping-1c-toir.md`](data-mapping-1c-toir.md): mapping template, not an integration.
