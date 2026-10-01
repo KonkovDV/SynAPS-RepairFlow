@@ -99,6 +99,40 @@ def test_rotable_explanation_is_minimal_and_does_not_change_the_verdict() -> Non
     assert "optimal" not in witness
 
 
+def test_deletion_minimal_witness_is_stable_under_assignment_order() -> None:
+    problem = _kernel_compatible(synthesize("tiny", seed=1))
+    clean = plan(problem, solver_config="CPSAT-10")
+    users = [op.id for op in problem.operations if "SP-BEARING" in op.required_spare_ids][:2]
+    assert len(users) == 2
+    spares = [
+        row.model_copy(
+            update={"quantity": 1, "domain_attributes": {"kind": "rotable", "return_lag_min": 10_000}}
+        )
+        if row.id == "SP-BEARING"
+        else row
+        for row in problem.spares
+    ]
+    operations = [
+        op.model_copy(update={"required_spare_ids": ["SP-BEARING"]}) if op.id in users else op
+        for op in problem.operations
+    ]
+    loaded = problem.model_copy(update={"spares": spares, "operations": operations})
+    assignments = list(clean.result.assignments)
+    variants = [assignments, list(reversed(assignments))]
+    user_ids = set(users)
+    variants.append(
+        [row for row in assignments if row.operation_id in user_ids]
+        + [row for row in assignments if row.operation_id not in user_ids]
+    )
+
+    witnesses = {
+        tuple(deletion_minimal_operation_ids(loaded, rows, ReasonCode.SPARE_UNAVAILABLE))
+        for rows in variants
+    }
+
+    assert witnesses == {tuple(sorted(users))}
+
+
 def test_converged_dag_fixpoint_is_clean_for_both_verifiers_and_not_optimal() -> None:
     problem = _kernel_compatible(_diamond())
     compiled = compile_dag(problem)
