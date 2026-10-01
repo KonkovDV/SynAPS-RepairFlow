@@ -12,6 +12,10 @@ from repairflow.versions import REPAIRFLOW_VERSION, SYNAPS_COMMIT
 TABLE_SCHEMA = "repairflow.evidence_table.v1"
 
 
+def _optional_string(value: object) -> str | None:
+    return value if isinstance(value, str) else None
+
+
 def build_evidence_table(
     problem: RepairFlowProblem,
     results: dict[str, RepairFlowResult],
@@ -29,8 +33,7 @@ def build_evidence_table(
 
     rows: list[dict[str, Any]] = []
     for solver_name, result in sorted(results.items()):
-        raw_scope = result.metadata.get("optimality_scope")
-        scope: str | None = raw_scope if isinstance(raw_scope, str) else None
+        scope = _optional_string(result.metadata.get("optimality_scope"))
         rows.append(
             {
                 "solver": solver_name,
