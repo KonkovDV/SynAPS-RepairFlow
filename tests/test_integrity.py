@@ -21,18 +21,14 @@ def test_predecessor_audit_rejects_duplicate_and_forward_edges() -> None:
     predecessor = same_job[0]
     forward_target = same_job[0]
     forward_predecessor = same_job[1]
-    operations = [
-        row.model_copy(
-            update=(
-                {"predecessor_ids": [predecessor.id, predecessor.id]}
-                if row.id == target.id
-                else {"predecessor_ids": [forward_predecessor.id]}
-                if row.id == forward_target.id
-                else {}
-            )
-        )
-        for row in problem.operations
-    ]
+    operations = []
+    for row in problem.operations:
+        if row.id == target.id:
+            operations.append(row.model_copy(update={"predecessor_ids": [predecessor.id, predecessor.id]}))
+        elif row.id == forward_target.id:
+            operations.append(row.model_copy(update={"predecessor_ids": [forward_predecessor.id]}))
+        else:
+            operations.append(row.model_copy())
     malformed = problem.model_copy(update={"operations": operations})
 
     report = audit_predecessor_sequence(malformed)
