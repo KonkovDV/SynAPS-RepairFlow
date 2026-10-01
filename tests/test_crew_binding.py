@@ -1,5 +1,6 @@
 from repairflow.model import RepairFlowProblem
-from repairflow.planner import plan
+from repairflow.planner import plan, recheck
+from repairflow.reasons import ReasonCode
 from repairflow.synthetic import synthesize
 
 
@@ -32,3 +33,27 @@ def test_cpsat_assigns_a_named_crew_without_auxiliary_calendars() -> None:
 
 def test_rhc_assigns_a_named_crew_without_auxiliary_calendars() -> None:
     _skilled_ops_have_named_crews("RHC-GREEDY-COVER", kernel=True)
+
+
+def test_checker_rejects_unbound_skilled_candidate() -> None:
+    problem = synthesize("tiny", seed=1)
+    clean = plan(problem, solver_config="GREED")
+    operations = {op.id: op for op in problem.operations}
+    candidate = [
+        row.model_copy(update={"crew_id": None})
+        if operations[row.operation_id].required_skills
+        else row
+        for row in clean.result.assignments
+    ]
+
+    outcome = recheck(
+        problem,
+        assignments=candidate,
+        kernel_status="feasible",
+        solver_config="unbound-crew-adversarial",
+    )
+
+    assert outcome.result.verified_feasible is False
+    assert outcome.result.exit_code == 2
+    assert outcome.result.claim_status == "rejected"
+    assert any(row.code == ReasonCode.CREW_UNBOUND for row in outcome.result.violations)
