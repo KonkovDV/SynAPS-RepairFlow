@@ -1,5 +1,5 @@
 # synaps-repairflow 0.1.0 — pin lock, not a full hashed freeze of every transitive wheel.
 # The kernel SHA below must match src/repairflow/versions.py and pyproject.toml.
-synaps @ git+https://github.com/KonkovDV/SynAPS.git@6178c93b705ff58be21fa74a98651883a2da1169
+synaps @ git+https://github.com/KonkovDV/SynAPS.git@1f7d5e0ede2944d21579574edf84976fe5e78808
 pydantic>=2.9
 ortools==9.15.6755

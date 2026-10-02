@@ -1,11 +1,10 @@
 # Core compatibility
 
-Pinned commit: `6178c93b705ff58be21fa74a98651883a2da1169`.
+Pinned commit: `1f7d5e0ede2944d21579574edf84976fe5e78808`.
 
-The plan named `cf10ca3e8be39d9a46e5d983de75a8066f66ca39` as the preferred pin and
-`6178c93b…` as the fallback already used by GridPlan. This repository stays on the
-fallback. The installed package's `direct_url.json` records that same commit, and
-the chain rule the plan describes is present here.
+This pin is `cf10ca3e8be39d9a46e5d983de75a8066f66ca39` plus auxiliary-resource
+shift calendars. `6178c93b705ff58be21fa74a98651883a2da1169` remains the kernel
+named by the attested evidence manifest until a later docs-only attestation.
 
 Checked on this pin:
 
@@ -18,6 +17,7 @@ Checked on this pin:
 | `proven_hard_violations` | yes |
 | `pin_issued_plan` / `normalize_schedule_problem_data` | yes |
 | `SolveRegime` | `NOMINAL`, `RUSH_ORDER`, `BREAKDOWN`, `MATERIAL_SHORTAGE`, `INTERACTIVE`, `WHAT_IF` |
+| `AuxiliaryResource.calendar` | `list[ShiftInterval]`; empty means 24/7 |
 
 RepairFlow calls `FeasibilityChecker.check` with `exhaustive=True` and
 `strict_setup_matrix=True`.
@@ -33,15 +33,19 @@ reaches `optimal`. Domain list solvers are unaffected.
 ## Calendar capability boundary
 
 The domain model supports calendars on work centres, crews and auxiliary resources.
-The pinned SynAPS `AuxiliaryResource` contract has no calendar field. Consequently,
-auxiliary-resource and crew calendars cannot be compiled into the kernel without
-silently dropping constraints. They are represented by the stable compatibility
-reason `KERNEL_CALENDAR_UNSUPPORTED`. `plan()` calls
-`assert_kernel_calendar_compatibility` before `solve_schedule`, and kernel
-disruption repair calls it before `repair_schedule`. Domain FIFO, GREED and EDD
-do not: they keep enforcing those calendars in the list scheduler and the
-independent checker. No upstream API extension is assumed here.
+A non-empty attended calendar is compiled to `ShiftInterval`s on the kernel
+resource. CP-SAT and `FeasibilityChecker` keep occupancy `[start - setup, end]`
+inside one of those intervals.
 
-`cf10ca3e` was not swapped in. Moving the pin without recapturing the lab
-fixtures would break the three-way SHA lock (`pyproject.toml`,
-`requirements-lock.txt`, `versions.py`).
+`KERNEL_CALENDAR_UNSUPPORTED` remains for three cases the kernel still cannot
+represent without inverting the domain rule:
+
+- an attended calendar with zero windows (a kernel empty list would mean 24/7);
+- a fungible skill pool whose crews do not share one shift list;
+- a preemptive operation on a published crew or aux shift (the kernel requires
+  one window and does not count open minutes across a gap).
+
+`plan()` calls `assert_kernel_calendar_compatibility` before `solve_schedule`,
+and kernel disruption repair calls it before `repair_schedule`. Domain FIFO,
+GREED, EDD and ATC do not: they keep enforcing those calendars themselves.
+An unattended resource is compiled as open. A missing `calendar_id` stays open.

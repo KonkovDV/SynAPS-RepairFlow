@@ -1,7 +1,7 @@
 """CP-SAT above the lab cap is a recorded refusal, not a solve."""
 
 from repairflow.limits import CPSAT_OPS_CAP
-from repairflow.model import RepairFlowProblem, Violation
+from repairflow.model import Calendar, RepairFlowProblem, Violation
 from repairflow.planner import PlanOutcome, plan, replan_after_disruption
 from repairflow.reasons import ReasonCode
 from repairflow.synthetic import synthesize
@@ -59,7 +59,15 @@ def test_cpsat_above_cap_is_a_recorded_refusal() -> None:
 
 def test_cpsat_at_cap_is_not_routed_to_the_size_refusal() -> None:
     problem = _sized(CPSAT_OPS_CAP)
-    outcome = plan(problem, solver_config="CPSAT-10")
+    empty = Calendar(id="CAL-OFF", code="CAL-OFF", windows=[])
+    loaded = problem.model_copy(
+        update={
+            "calendars": [*problem.calendars, empty],
+            "crews": [row.model_copy(update={"calendar_id": "CAL-OFF"}) for row in problem.crews],
+        }
+    )
+    outcome = plan(loaded, solver_config="CPSAT-10")
+    assert outcome.result.assignments == []
     assert not any(row.code == ReasonCode.CPSAT_OPS_CAP for row in outcome.result.violations)
     assert any(row.code == ReasonCode.KERNEL_CALENDAR_UNSUPPORTED for row in outcome.result.violations)
 

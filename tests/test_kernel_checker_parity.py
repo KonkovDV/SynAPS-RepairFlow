@@ -9,7 +9,6 @@ from __future__ import annotations
 
 from datetime import timedelta
 
-from repairflow.kernel_compat import KERNEL_CALENDAR_UNSUPPORTED
 from repairflow.model import PlannedAssignment, RepairFlowProblem
 from repairflow.planner import PlanOutcome, kernel_hard_violations, plan, recheck
 from repairflow.reasons import ReasonCode
@@ -98,13 +97,24 @@ def test_setup_mismatch_is_rejected_by_both_verifiers() -> None:
     assert kernel_hard_violations(outcome.schedule_problem, outcome.schedule)
 
 
-def test_unsupported_calendar_remains_a_boundary_refusal_not_a_parity_case() -> None:
+def test_crew_calendar_window_is_rejected_by_both_verifiers() -> None:
     problem = synthesize("tiny", seed=1)
-    outcome = plan(problem, solver_config="CPSAT-10")
-
-    assert outcome.result.verified_feasible is False
-    assert any(row.code == KERNEL_CALENDAR_UNSUPPORTED for row in outcome.result.violations)
-    assert outcome.result.assignments == []
+    clean = plan(problem, solver_config="CPSAT-10")
+    current = clean.result.assignments[0]
+    start = problem.planning_horizon.start
+    rows = [
+        row.model_copy(update={"start": start, "end": start + (current.end - current.start)})
+        if row.operation_id == current.operation_id
+        else row
+        for row in clean.result.assignments
+    ]
+    outcome = recheck(
+        problem,
+        assignments=rows,
+        kernel_status="FEASIBLE",
+        solver_config="parity-crew-calendar",
+    )
+    _rejects(outcome, ReasonCode.CALENDAR_BROKEN)
 
 
 def test_precedence_break_is_rejected_by_both_verifiers() -> None:

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta
+from typing import Any
 from uuid import UUID, uuid5
 
 from synaps.model import (
@@ -37,6 +38,7 @@ __all__ = [
     "to_schedule_problem",
 ]
 from repairflow.dag_compiler import CompiledDag, compile_dag
+from repairflow.kernel_compat import kernel_calendar_windows
 from repairflow.model import (
     FrozenAssignment,
     PlannedAssignment,
@@ -194,6 +196,7 @@ def to_schedule_problem(
                 code=crew.code,
                 resource_type="crew",
                 pool_size=crew.max_parallel,
+                calendar=_shift_intervals(problem, crew.calendar_id, crew.domain_attributes),
                 domain_attributes={"repairflow_id": crew.id, "skills": list(crew.skills)},
             )
         )
@@ -206,6 +209,7 @@ def to_schedule_problem(
                 code=aux.code,
                 resource_type=aux.resource_type,
                 pool_size=aux.capacity,
+                calendar=_shift_intervals(problem, aux.calendar_id, aux.domain_attributes),
                 domain_attributes={"repairflow_id": aux.id},
             )
         )
@@ -220,6 +224,7 @@ def to_schedule_problem(
                 code=f"SKILL:{key or 'any'}",
                 resource_type="crew-pool",
                 pool_size=max(1, len(matching)),
+                calendar=_shared_pool_intervals(problem, matching),
                 domain_attributes={"skills": key.split("|") if key else []},
             )
         )
@@ -399,6 +404,35 @@ def extract_frozen_from_planned(
             )
         )
     return out
+
+
+def _shift_intervals(
+    problem: RepairFlowProblem,
+    calendar_id: str | None,
+    attributes: dict[str, Any],
+) -> list[ShiftInterval]:
+    """Kernel shifts. A closed domain calendar is not compiled as 24/7."""
+
+    windows = kernel_calendar_windows(problem, calendar_id, attributes)
+    if not windows:
+        return []
+    return [ShiftInterval(start=start, end=end) for start, end in windows]
+
+
+def _shared_pool_intervals(problem: RepairFlowProblem, crew_ids: list[str]) -> list[ShiftInterval]:
+    """One shift list when every crew in a fungible pool publishes the same one."""
+
+    crews = {crew.id: crew for crew in problem.crews}
+    encoded: list[tuple[tuple[datetime, datetime], ...]] = []
+    for crew_id in crew_ids:
+        crew = crews[crew_id]
+        windows = kernel_calendar_windows(problem, crew.calendar_id, crew.domain_attributes)
+        if windows is None:
+            return []
+        encoded.append(tuple(windows))
+    if len(set(encoded)) != 1:
+        return []
+    return [ShiftInterval(start=start, end=end) for start, end in encoded[0]]
 
 
 def _bound_crew(problem: RepairFlowProblem, operation: DomainOperation) -> str | None:

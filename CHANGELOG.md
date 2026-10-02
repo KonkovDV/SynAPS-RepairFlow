@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Crew and auxiliary calendars with published windows compile to
+  `AuxiliaryResource.calendar` on SynAPS `1f7d5e0`. The kernel checker and
+  CP-SAT keep occupancy inside one shift. An attended calendar with no windows,
+  a skill pool with mixed shifts, and a preemptive operation on a published
+  shift stay `KERNEL_CALENDAR_UNSUPPORTED`. The evidence manifest still attests
+  `dc3327d` / run `36905431831` and kernel `6178c93`.
 - `repairflow verify-plan` checks a shop CSV (заказ, операция, пост, бригада,
   оснастка, начало, конец) without calling the kernel. A clean plan is
   `domain_verified`, not `verified` and not `optimal`.

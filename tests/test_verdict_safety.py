@@ -37,15 +37,8 @@ def test_allow_partial_never_green() -> None:
     assert any(row.code == ReasonCode.PARTIAL_COVERAGE for row in outcome.result.violations)
 
 
-@pytest.mark.parametrize(
-    ("solver", "code"),
-    [
-        ("FIFO", ReasonCode.CALENDAR_BROKEN),
-        ("GREED", ReasonCode.CALENDAR_BROKEN),
-        ("CPSAT-10", ReasonCode.KERNEL_CALENDAR_UNSUPPORTED),
-    ],
-)
-def test_aux_calendar_rejects_work_outside_the_window(solver: str, code: ReasonCode) -> None:
+@pytest.mark.parametrize("solver", ["FIFO", "GREED", "CPSAT-10"])
+def test_aux_calendar_rejects_work_outside_the_window(solver: str) -> None:
     problem = synthesize("tiny", seed=1)
     start = problem.planning_horizon.start
     tool = Calendar(
@@ -84,14 +77,14 @@ def test_aux_calendar_rejects_work_outside_the_window(solver: str, code: ReasonC
     outcome = plan(loaded, solver_config=solver)
     assert outcome.result.exit_code == 2
     assert outcome.result.verified_feasible is False
-    if code is ReasonCode.CALENDAR_BROKEN:
+    assert not any(
+        row.code == ReasonCode.KERNEL_CALENDAR_UNSUPPORTED for row in outcome.result.violations
+    )
+    if solver != "CPSAT-10":
         assert any(
             row.code == ReasonCode.CALENDAR_BROKEN and row.resource_id == "AUX-CRANE"
             for row in outcome.result.violations
         )
-    else:
-        assert outcome.result.assignments == []
-        assert any(row.code == code for row in outcome.result.violations)
 
 
 def test_empty_calendar_is_unavailable_and_missing_calendar_is_open() -> None:

@@ -13,8 +13,11 @@ _MANIFEST = Path("docs/evidence-manifest.json")
 def test_evidence_manifest_matches_the_pinned_kernel() -> None:
     payload = json.loads(_MANIFEST.read_text(encoding="utf-8"))
     assert payload["schema"] == "repairflow.evidence_manifest.v1"
-    assert payload["synaps_commit"] == SYNAPS_COMMIT
+    # The manifest names the kernel of the attested run. This tree's pin may be newer.
+    assert payload["synaps_commit"] == "6178c93b705ff58be21fa74a98651883a2da1169"
+    assert payload["attests_commit"] == "dc3327d802002e02a6f70b1413806ca9830cfd2e"
     assert payload["synaps_repo"] == SYNAPS_REPO
+    assert len(SYNAPS_COMMIT) == 40
     assert payload["ci_result"] == "success"
     assert payload["ci_includes_test_slow"] is True
     assert payload["claim_level"] == "experiment"

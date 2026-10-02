@@ -33,3 +33,9 @@
 14. `repairflow verify-plan` checks a shop CSV without calling the kernel.
     A clean result is `claim_status=domain_verified` and `verified_feasible=false`.
     It is not `verified` and it is not `optimal`.
+15. A non-empty crew or auxiliary shift is compiled into the kernel. An attended
+    calendar with no windows, a skill pool whose crews do not share one shift,
+    and a preemptive operation on a published shift stay
+    `KERNEL_CALENDAR_UNSUPPORTED`. The kernel's empty calendar means 24/7, so
+    it is not used for a closed resource. List solvers that ignore an auxiliary
+    shift are still rejected by the checker.

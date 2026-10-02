@@ -51,11 +51,13 @@
   operations (`CPSAT_OPS_CAP`). The result records that route. It is not a
   fallback to GREED and not evidence that a real shop of that size is solvable.
   Domain FIFO, GREED, EDD and ATC do not use this cap.
-- Kernel CP-SAT and RHC refuse a crew or auxiliary calendar
-  (`KERNEL_CALENDAR_UNSUPPORTED`) instead of dropping it. Domain GREED remains
-  the verified closer on `repair-site-mvp` and on the synthetic site. A kernel
-  solve runs only when those calendars are absent. Named crews keep their shift
-  windows in the domain checker.
+- A non-empty crew or auxiliary calendar is compiled into
+  `AuxiliaryResource.calendar`. The kernel keeps occupancy inside one published
+  interval. `KERNEL_CALENDAR_UNSUPPORTED` remains when an attended calendar has
+  no windows, when crews in one skill pool do not share a shift list, or when
+  a preemptive operation would have to cross a published shift. Domain GREED
+  still enforces those cases. An empty kernel calendar means 24/7 and is not
+  used to encode a closed resource.
 - `ATC` is a local list-dispatch baseline with fixed lookahead `k = 2`. It is
   not a SynAPS solver. A clean ATC plan is checker-`verified` and is not
   `optimal`.

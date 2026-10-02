@@ -10,5 +10,5 @@ CLAIM_LEVEL: Literal["experiment"] = "experiment"
 
 # SynAPS commit this RepairFlow release is validated against.
 # Bump deliberately when upgrading the engine; never float on branch tips.
-SYNAPS_COMMIT = "6178c93b705ff58be21fa74a98651883a2da1169"
+SYNAPS_COMMIT = "1f7d5e0ede2944d21579574edf84976fe5e78808"
 SYNAPS_REPO = "https://github.com/KonkovDV/SynAPS"
