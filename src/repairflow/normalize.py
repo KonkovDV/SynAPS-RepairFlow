@@ -50,6 +50,7 @@ def problem_from_csv_bundle(path: Path) -> RepairFlowProblem:
         "policy": {"unknown_fields": "reject", "missing_setup": "reject", "unsupported_dag": "reject"},
     }
     payload = _split_list_fields(payload)
+    _parse_structured_fields(payload)
     return RepairFlowProblem.model_validate(payload)
 
 
@@ -145,6 +146,64 @@ def _split_list_fields(payload: dict[str, Any]) -> dict[str, Any]:
     return payload
 
 
+def _parse_structured_fields(payload: dict[str, Any]) -> None:
+    for row in payload.get("operations") or []:
+        if isinstance(row, dict):
+            row["predecessors"] = _parse_predecessors(row.get("predecessors"))
+            row["required_spares"] = _parse_needs(row.get("required_spares"))
+    for row in payload.get("spares") or []:
+        if isinstance(row, dict):
+            row["receipts"] = _parse_receipts(row.get("receipts"))
+    for row in payload.get("crews") or []:
+        if isinstance(row, dict):
+            row["skill_valid_until"] = _parse_skill_expiry(row.get("skill_valid_until"))
+
+
+def _parts(value: Any) -> list[str]:
+    if value is None or value == "":
+        return []
+    if not isinstance(value, str):
+        raise ValueError(f"structured CSV field must be text, got {value!r}")
+    return [part for part in value.split("|") if part]
+
+
+def _parse_predecessors(value: Any) -> list[dict[str, Any]]:
+    links: list[dict[str, Any]] = []
+    for part in _parts(value):
+        bits = part.split("@")
+        if len(bits) not in {2, 3}:
+            raise ValueError(f"predecessor link {part!r} must be id@min or id@min@max")
+        link: dict[str, Any] = {"id": bits[0], "min_lag_min": int(bits[1])}
+        if len(bits) == 3 and bits[2] != "":
+            link["max_lag_min"] = int(bits[2])
+        links.append(link)
+    return links
+
+
+def _parse_needs(value: Any) -> list[dict[str, Any]]:
+    needs: list[dict[str, Any]] = []
+    for part in _parts(value):
+        spare_id, qty = part.split("@", 1)
+        needs.append({"spare_id": spare_id, "qty": int(qty)})
+    return needs
+
+
+def _parse_receipts(value: Any) -> list[dict[str, Any]]:
+    receipts: list[dict[str, Any]] = []
+    for part in _parts(value):
+        moment, qty = part.split("@", 1)
+        receipts.append({"at": moment, "qty": int(qty)})
+    return receipts
+
+
+def _parse_skill_expiry(value: Any) -> dict[str, str]:
+    expiry: dict[str, str] = {}
+    for part in _parts(value):
+        skill, moment = part.split("=", 1)
+        expiry[skill] = moment
+    return expiry
+
+
 def write_csv_bundle(directory: Path, problem: RepairFlowProblem) -> None:
     directory.mkdir(parents=True, exist_ok=True)
     (directory / "horizon.json").write_text(
@@ -181,10 +240,12 @@ def write_csv_bundle(directory: Path, problem: RepairFlowProblem) -> None:
                 "sequence": op.sequence,
                 "duration_min": op.duration_min,
                 "predecessor_ids": _join(op.predecessor_ids),
+                "predecessors": _join_predecessors(op),
                 "eligible_work_center_ids": _join(op.eligible_work_center_ids),
                 "required_skills": _join(op.required_skills),
                 "required_aux_ids": _join(op.required_aux_ids),
                 "required_spare_ids": _join(op.required_spare_ids),
+                "required_spares": "|".join(f"{need.spare_id}@{need.qty}" for need in op.required_spares),
                 "setup_state": op.setup_state,
                 "earliest_start": _iso(op.earliest_start),
                 "latest_finish": _iso(op.latest_finish),
@@ -213,6 +274,9 @@ def write_csv_bundle(directory: Path, problem: RepairFlowProblem) -> None:
                 "id": crew.id,
                 "code": crew.code,
                 "skills": _join(crew.skills),
+                "skill_valid_until": "|".join(
+                    f"{skill}={moment.isoformat()}" for skill, moment in crew.skill_valid_until.items()
+                ),
                 "calendar_id": crew.calendar_id or "",
                 "max_parallel": crew.max_parallel,
             }
@@ -280,6 +344,7 @@ def write_csv_bundle(directory: Path, problem: RepairFlowProblem) -> None:
                 "code": spare.code,
                 "quantity": spare.quantity,
                 "available_from": _iso(spare.available_from),
+                "receipts": "|".join(f"{receipt.at.isoformat()}@{receipt.qty}" for receipt in spare.receipts),
             }
             for spare in problem.spares
         ],
@@ -322,6 +387,16 @@ def _write_table(path: Path, rows: list[dict[str, Any]]) -> None:
 
 def _join(values: list[str]) -> str:
     return "|".join(values)
+
+
+def _join_predecessors(op: Any) -> str:
+    parts: list[str] = []
+    for pred_id, min_lag, max_lag in op.predecessor_links():
+        if max_lag is None:
+            parts.append(f"{pred_id}@{min_lag}")
+        else:
+            parts.append(f"{pred_id}@{min_lag}@{max_lag}")
+    return "|".join(parts)
 
 
 def _iso(value: Any) -> str:

@@ -18,6 +18,7 @@ from repairflow.model import (
     Operation,
     PlannedAssignment,
     RepairFlowProblem,
+    Spare,
     Violation,
 )
 from repairflow.reasons import REASON_RU, SUGGESTIONS, ReasonCode
@@ -368,6 +369,23 @@ def _skills_and_eligibility(
                             suggested_relaxation=SUGGESTIONS[ReasonCode.SKILL_MISMATCH],
                         )
                     )
+                elif crew is not None:
+                    for skill in op.required_skills:
+                        until = crew.skill_valid_until.get(skill)
+                        if until is not None and asn.start >= until:
+                            out.append(
+                                _violation(
+                                    ReasonCode.SKILL_EXPIRED,
+                                    f"crew {crew.code} skill {skill} expires {until.isoformat()}",
+                                    operation_id=op.id,
+                                    job_id=op.job_id,
+                                    resource_id=crew.id,
+                                    start=asn.start,
+                                    end=asn.end,
+                                    suggested_relaxation=SUGGESTIONS[ReasonCode.SKILL_EXPIRED],
+                                    details={"skill": skill},
+                                )
+                            )
         required_aux = set(op.required_aux_ids)
         if required_aux and not required_aux <= set(asn.aux_ids):
             out.append(
@@ -395,8 +413,7 @@ def _precedence(
         current = by_op.get(op.id)
         if current is None:
             continue
-        preds = list(op.predecessor_ids)
-        for pred_id in preds:
+        for pred_id, min_lag, max_lag in op.predecessor_links():
             pred = by_op.get(pred_id)
             if pred is None:
                 if ignore_absent:
@@ -415,18 +432,33 @@ def _precedence(
                     )
                 )
                 continue
-            if current.start < pred.end:
+            ready = pred.end + timedelta(minutes=min_lag)
+            if current.start < ready:
                 out.append(
                     _violation(
                         ReasonCode.PRECEDENCE_BROKEN,
-                        f"{op.id} starts before predecessor {pred_id} finishes",
+                        f"{op.id} starts before predecessor {pred_id} plus lag {min_lag} min",
                         operation_id=op.id,
                         job_id=op.job_id,
                         resource_id=pred_id,
                         start=current.start,
                         end=current.end,
                         suggested_relaxation=SUGGESTIONS[ReasonCode.PRECEDENCE_BROKEN],
-                        details={"predecessor_end": pred.end.isoformat()},
+                        details={"predecessor_end": pred.end.isoformat(), "min_lag_min": min_lag},
+                    )
+                )
+            elif max_lag is not None and current.start > pred.end + timedelta(minutes=max_lag):
+                out.append(
+                    _violation(
+                        ReasonCode.PRECEDENCE_BROKEN,
+                        f"{op.id} starts after the max lag from predecessor {pred_id}",
+                        operation_id=op.id,
+                        job_id=op.job_id,
+                        resource_id=pred_id,
+                        start=current.start,
+                        end=current.end,
+                        suggested_relaxation=SUGGESTIONS[ReasonCode.PRECEDENCE_BROKEN],
+                        details={"max_lag_min": max_lag},
                     )
                 )
     return out
@@ -730,6 +762,50 @@ def _calendar_fit(
     ]
 
 
+def _spare_receipts(
+    problem: RepairFlowProblem,
+    assignments: list[PlannedAssignment],
+    spares: dict[str, Spare],
+) -> list[Violation]:
+    """Time-aware stock for a consumable that has a receipt schedule."""
+
+    ops = {op.id: op for op in problem.operations}
+    demand: dict[str, list[tuple[datetime, str, int]]] = defaultdict(list)
+    for asn in assignments:
+        op = ops.get(asn.operation_id)
+        if op is None:
+            continue
+        for spare_id, qty in op.spare_demand().items():
+            spare = spares.get(spare_id)
+            if spare is None or spare_is_rotable(spare) or not spare.receipts:
+                continue
+            demand[spare_id].append((asn.start, op.id, qty))
+    out: list[Violation] = []
+    for spare_id, uses in demand.items():
+        spare = spares[spare_id]
+        initial_at = spare.available_from or problem.planning_horizon.start
+        events: list[tuple[datetime, int, int, str]] = [(initial_at, 0, spare.quantity, "")]
+        events.extend((receipt.at, 0, receipt.qty, "") for receipt in spare.receipts)
+        events.extend((start, 1, -qty, op_id) for start, op_id, qty in uses)
+        stock = 0
+        reported: set[str] = set()
+        for moment, _order, delta, op_id in sorted(events, key=lambda item: (item[0], item[1], item[3])):
+            stock += delta
+            if stock < 0 and op_id and op_id not in reported:
+                reported.add(op_id)
+                out.append(
+                    _violation(
+                        ReasonCode.SPARE_UNAVAILABLE,
+                        f"spare {spare.code} stock is short at {moment.isoformat()}",
+                        operation_id=op_id,
+                        resource_id=spare.id,
+                        start=moment,
+                        suggested_relaxation=SUGGESTIONS[ReasonCode.SPARE_UNAVAILABLE],
+                    )
+                )
+    return out
+
+
 def _due_release_spares(
     problem: RepairFlowProblem,
     assignments: list[PlannedAssignment],
@@ -758,9 +834,9 @@ def _due_release_spares(
         current = by_job_end.get(job.id)
         if current is None or asn.end > current.end:
             by_job_end[job.id] = asn
-        for spare_id in op.required_spare_ids:
+        for spare_id, _qty in op.spare_demand().items():
             spare = spares.get(spare_id)
-            if spare is None:
+            if spare is None or spare_is_rotable(spare) or spare.receipts:
                 continue
             if spare.quantity <= 0:
                 out.append(
@@ -792,11 +868,11 @@ def _due_release_spares(
         op = ops.get(asn.operation_id)
         if op is None:
             continue
-        for spare_id in op.required_spare_ids:
+        for spare_id, qty in op.spare_demand().items():
             spare = spares.get(spare_id)
-            if spare is not None and spare_is_rotable(spare):
+            if spare is not None and (spare_is_rotable(spare) or spare.receipts):
                 continue
-            used[spare_id] += 1
+            used[spare_id] += qty
     for spare_id, count in used.items():
         spare = spares.get(spare_id)
         if spare is not None and count > spare.quantity:
@@ -807,6 +883,7 @@ def _due_release_spares(
                     resource_id=spare.id,
                 )
             )
+    out.extend(_spare_receipts(problem, assignments, spares))
     for job in problem.jobs:
         last = by_job_end.get(job.id)
         if job.due_date is not None and last is not None and last.end > job.due_date:

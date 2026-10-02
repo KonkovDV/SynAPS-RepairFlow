@@ -117,6 +117,14 @@
           "title": "Skills",
           "type": "array"
         },
+        "skill_valid_until": {
+          "additionalProperties": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "title": "Skill Valid Until",
+          "type": "object"
+        },
         "calendar_id": {
           "anyOf": [
             {
@@ -353,6 +361,13 @@
           "title": "Predecessor Ids",
           "type": "array"
         },
+        "predecessors": {
+          "items": {
+            "$ref": "#/$defs/PredecessorLink"
+          },
+          "title": "Predecessors",
+          "type": "array"
+        },
         "eligible_work_center_ids": {
           "items": {
             "type": "string"
@@ -379,6 +394,13 @@
             "type": "string"
           },
           "title": "Required Spare Ids",
+          "type": "array"
+        },
+        "required_spares": {
+          "items": {
+            "$ref": "#/$defs/SpareNeed"
+          },
+          "title": "Required Spares",
           "type": "array"
         },
         "setup_state": {
@@ -528,6 +550,40 @@
       "title": "PoolDemand",
       "type": "object"
     },
+    "PredecessorLink": {
+      "additionalProperties": false,
+      "description": "One predecessor. `predecessor_ids` remains lag 0 when this list is empty.",
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "min_lag_min": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Min Lag Min",
+          "type": "integer"
+        },
+        "max_lag_min": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Lag Min"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "title": "PredecessorLink",
+      "type": "object"
+    },
     "SetupEntry": {
       "additionalProperties": false,
       "properties": {
@@ -600,6 +656,13 @@
           "default": null,
           "title": "Available From"
         },
+        "receipts": {
+          "items": {
+            "$ref": "#/$defs/SpareReceipt"
+          },
+          "title": "Receipts",
+          "type": "array"
+        },
         "domain_attributes": {
           "additionalProperties": true,
           "title": "Domain Attributes",
@@ -611,6 +674,47 @@
         "code"
       ],
       "title": "Spare",
+      "type": "object"
+    },
+    "SpareNeed": {
+      "additionalProperties": false,
+      "properties": {
+        "spare_id": {
+          "title": "Spare Id",
+          "type": "string"
+        },
+        "qty": {
+          "minimum": 1,
+          "title": "Qty",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "spare_id",
+        "qty"
+      ],
+      "title": "SpareNeed",
+      "type": "object"
+    },
+    "SpareReceipt": {
+      "additionalProperties": false,
+      "properties": {
+        "at": {
+          "format": "date-time",
+          "title": "At",
+          "type": "string"
+        },
+        "qty": {
+          "minimum": 1,
+          "title": "Qty",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "at",
+        "qty"
+      ],
+      "title": "SpareReceipt",
       "type": "object"
     },
     "WorkCenter": {

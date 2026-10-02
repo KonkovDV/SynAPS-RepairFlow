@@ -40,6 +40,7 @@ REASON_CODES = (
     "AMBIGUOUS_CREW",
     "AUX_MISSING",
     "KERNEL_STATUS_NOT_FEASIBLE",
+    "SKILL_EXPIRED",
 )
 
 
@@ -79,6 +80,7 @@ class ReasonCode(StrEnum):
     AMBIGUOUS_CREW = "AMBIGUOUS_CREW"
     AUX_MISSING = "AUX_MISSING"
     KERNEL_STATUS_NOT_FEASIBLE = "KERNEL_STATUS_NOT_FEASIBLE"
+    SKILL_EXPIRED = "SKILL_EXPIRED"
 
 
 REASON_RU: dict[str, str] = {
@@ -119,6 +121,7 @@ REASON_RU: dict[str, str] = {
     ReasonCode.AMBIGUOUS_CREW: "в одном назначении указано больше одной бригады",
     ReasonCode.AUX_MISSING: "у операции нет обязательной оснастки",
     ReasonCode.KERNEL_STATUS_NOT_FEASIBLE: "статус ядра не допускает вердикт verified",
+    ReasonCode.SKILL_EXPIRED: "срок допуска бригады истёк к старту операции",
 }
 
 
@@ -153,4 +156,5 @@ SUGGESTIONS: dict[str, str] = {
     ReasonCode.KERNEL_STATUS_NOT_FEASIBLE: (
         "повторить расчёт до статуса feasible или optimal, либо передать domain_only"
     ),
+    ReasonCode.SKILL_EXPIRED: "назначить бригаду с действующим допуском или продлить skill_valid_until",
 }
