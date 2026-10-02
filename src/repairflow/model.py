@@ -159,16 +159,42 @@ class Job(RepairFlowModel):
     domain_attributes: dict[str, Any] = Field(default_factory=dict)
 
 
+class PredecessorLink(RepairFlowModel):
+    """One predecessor. `predecessor_ids` remains lag 0 when this list is empty."""
+
+    id: str
+    min_lag_min: int = Field(default=0, ge=0)
+    max_lag_min: int | None = Field(default=None, ge=0)
+
+    @model_validator(mode="after")
+    def _lag_order(self) -> Self:
+        if self.max_lag_min is not None and self.max_lag_min < self.min_lag_min:
+            raise ValueError(f"predecessor {self.id}: max_lag_min is below min_lag_min")
+        return self
+
+
+class SpareNeed(RepairFlowModel):
+    spare_id: str
+    qty: int = Field(ge=1)
+
+
+class SpareReceipt(RepairFlowModel):
+    at: UTCInstant
+    qty: int = Field(ge=1)
+
+
 class Operation(RepairFlowModel):
     id: str
     job_id: str
     sequence: int = Field(ge=1)
     duration_min: int = Field(ge=1)
     predecessor_ids: list[str] = Field(default_factory=list)
+    predecessors: list[PredecessorLink] = Field(default_factory=list)
     eligible_work_center_ids: list[str] = Field(default_factory=list)
     required_skills: list[str] = Field(default_factory=list)
     required_aux_ids: list[str] = Field(default_factory=list)
     required_spare_ids: list[str] = Field(default_factory=list)
+    required_spares: list[SpareNeed] = Field(default_factory=list)
     setup_state: str = ""
     earliest_start: UTCInstant | None = None
     latest_finish: UTCInstant | None = None
@@ -176,11 +202,39 @@ class Operation(RepairFlowModel):
 
     @model_validator(mode="after")
     def _pred_quota(self) -> Self:
+        link_ids = [row.id for row in self.predecessors]
+        if len(link_ids) != len(set(link_ids)):
+            raise ValueError(f"operation {self.id}: duplicate predecessor link")
+        if link_ids and self.predecessor_ids and set(link_ids) != set(self.predecessor_ids):
+            raise ValueError(f"operation {self.id}: predecessor_ids and predecessors disagree")
+        if link_ids and not self.predecessor_ids:
+            self.predecessor_ids = link_ids
         if len(self.predecessor_ids) > MAX_PRED_PER_OP:
             raise ValueError(f"operation {self.id}: too many predecessors")
         if self.id in self.predecessor_ids:
             raise ValueError(f"operation {self.id} cannot precede itself")
         return self
+
+    def predecessor_links(self) -> list[tuple[str, int, int | None]]:
+        """Return (predecessor id, min lag minutes, max lag minutes or None)."""
+
+        by_id = {row.id: row for row in self.predecessors}
+        links: list[tuple[str, int, int | None]] = []
+        for pred_id in self.predecessor_ids:
+            row = by_id.get(pred_id)
+            if row is None:
+                links.append((pred_id, 0, None))
+            else:
+                links.append((pred_id, row.min_lag_min, row.max_lag_min))
+        return links
+
+    def spare_demand(self) -> dict[str, int]:
+        """Consumable quantity by spare. An explicit need replaces the implicit 1."""
+
+        demand = {spare_id: 1 for spare_id in self.required_spare_ids}
+        for need in self.required_spares:
+            demand[need.spare_id] = need.qty
+        return demand
 
 
 class WorkCenter(RepairFlowModel):
@@ -197,9 +251,17 @@ class Crew(RepairFlowModel):
     id: str
     code: str
     skills: list[str] = Field(default_factory=list)
+    skill_valid_until: dict[str, UTCInstant] = Field(default_factory=dict)
     calendar_id: str | None = None
     max_parallel: int = Field(default=1, ge=1)
     domain_attributes: dict[str, Any] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def _known_skill_expiry(self) -> Self:
+        unknown = set(self.skill_valid_until) - set(self.skills)
+        if unknown:
+            raise ValueError(f"crew {self.id} expires skills it does not hold: {sorted(unknown)}")
+        return self
 
 
 class AuxResource(RepairFlowModel):
@@ -242,6 +304,7 @@ class Spare(RepairFlowModel):
     code: str
     quantity: int = Field(default=1, ge=0)
     available_from: UTCInstant | None = None
+    receipts: list[SpareReceipt] = Field(default_factory=list)
     domain_attributes: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -498,9 +561,12 @@ def _frozen_batch_issues(problem: RepairFlowProblem) -> list[str]:
         operation = ops.get(row.operation_id)
         if operation is None:
             continue
-        for pred_id in operation.predecessor_ids:
+        for pred_id, min_lag, _max_lag in operation.predecessor_links():
             earlier = by_op.get(pred_id)
-            if earlier is not None and row.start < earlier.end:
+            if earlier is None:
+                continue
+            ready = earlier.end + timedelta(minutes=min_lag)
+            if row.start < ready:
                 issues.append(f"frozen {row.operation_id} starts before frozen predecessor {pred_id} ends")
         _frozen_calendar(problem, row, centers, crews, calendars, issues)
         _frozen_duration(problem, row, operation, centers, crews, calendars, issues)

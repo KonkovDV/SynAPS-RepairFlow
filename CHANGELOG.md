@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Predecessor links carry `min_lag_min` and optional `max_lag_min`. A v1
+  `predecessor_ids` list stays lag 0. A consumable with `receipts` is a
+  reservoir over time. `skill_valid_until` yields `SKILL_EXPIRED`.
 - A kernel assignment with more than one crew is `AMBIGUOUS_CREW`. An aux kind
   other than crew or aux is `UNKNOWN_RESOURCE`. Missing required tooling is
   `AUX_MISSING`. `verified` accepts only kernel status `feasible`, `optimal`,
