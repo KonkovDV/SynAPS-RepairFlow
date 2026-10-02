@@ -140,7 +140,7 @@ repairflow/
 `repairflow` не копирует `synaps/` и не создаёт отдельный fork ядра. Зависимость фиксируется полным SHA. Для стартовой сборки можно использовать проверенный pin SynAPS:
 
 ```toml
-synaps = { git = "https://github.com/KonkovDV/SynAPS.git", rev = "6178c93b705ff58be21fa74a98651883a2da1169" }
+synaps = { git = "https://github.com/KonkovDV/SynAPS.git", rev = "f939727cd9369fd9b36438bfac7198f0c39c6d3b" }
 ```
 
 Перед каждым обновлением pin обязательны pin-regression, schema tests и recapture evidence. Ветка `main` в зависимости не допускается.

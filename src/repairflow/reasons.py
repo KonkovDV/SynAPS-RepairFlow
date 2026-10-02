@@ -117,7 +117,7 @@ REASON_RU: dict[str, str] = {
     ReasonCode.EXCHANGE_POOL_STOCKOUT: "обменный фонд ушёл в минус",
     ReasonCode.NERVOUSNESS_HIGH: "перепланирование сдвинуло слишком большую долю работ",
     ReasonCode.KERNEL_CALENDAR_UNSUPPORTED: (
-        "календарь бригады или оснастки нельзя передать в закреплённое ядро"
+        "пустой календарь, разные смены одного пула или прерывание через смену нельзя передать в ядро"
     ),
     ReasonCode.CPSAT_OPS_CAP: "экземпляр больше лабораторного предела CP-SAT",
     ReasonCode.AMBIGUOUS_CREW: "в одном назначении указано больше одной бригады",
@@ -149,10 +149,10 @@ SUGGESTIONS: dict[str, str] = {
     ReasonCode.EXCHANGE_POOL_STOCKOUT: "сдвинуть выдачу, пополнить фонд или снять hard",
     ReasonCode.NERVOUSNESS_HIGH: "сузить окрестность перепланирования или поднять порог",
     ReasonCode.KERNEL_CALENDAR_UNSUPPORTED: (
-        "считать этот экземпляр domain GREED/EDD или снять календарь ресурса, которого нет в ядре"
+        "считать этот экземпляр domain GREED/EDD или задать одну непустую смену, которую ядро хранит"
     ),
     ReasonCode.CPSAT_OPS_CAP: (
-        "считать экземпляр domain GREED/EDD/ATC; CP-SAT в этой сборке не вызывается выше 80 операций"
+        "считать экземпляр domain GREED/EDD/ATC; CP-SAT в этой сборке не вызывается выше 100 операций"
     ),
     ReasonCode.AMBIGUOUS_CREW: "оставить в назначении одну бригаду и проверить занятость каждой",
     ReasonCode.AUX_MISSING: "назначить каждую обязательную оснастку до проверки",

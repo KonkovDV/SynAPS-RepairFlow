@@ -7,8 +7,9 @@ def test_one_command_mvp_readiness(tmp_path, capsys) -> None:
     assert main(["demo", "--out", str(tmp_path)]) == 0
     out = capsys.readouterr().out
     assert "MVP readiness: PASS" in out
-    assert "CPSAT status=ERROR" in out
-    assert "code=KERNEL_CALENDAR_UNSUPPORTED" in out
+    assert "CPSAT status=" in out
+    assert "verified=True" in out
+    assert "code=KERNEL_CALENDAR_UNSUPPORTED" not in out
     assert (tmp_path / "greed.html").is_file()
     assert (tmp_path / "fifo.html").is_file()
     assert (tmp_path / "broken.html").is_file()

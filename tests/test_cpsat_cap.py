@@ -1,7 +1,9 @@
 """CP-SAT above the lab cap is a recorded refusal, not a solve."""
 
+from datetime import timedelta
+
 from repairflow.limits import CPSAT_OPS_CAP
-from repairflow.model import RepairFlowProblem, Violation
+from repairflow.model import Calendar, RepairFlowProblem, Violation
 from repairflow.planner import PlanOutcome, plan, replan_after_disruption
 from repairflow.reasons import ReasonCode
 from repairflow.synthetic import synthesize
@@ -59,9 +61,50 @@ def test_cpsat_above_cap_is_a_recorded_refusal() -> None:
 
 def test_cpsat_at_cap_is_not_routed_to_the_size_refusal() -> None:
     problem = _sized(CPSAT_OPS_CAP)
-    outcome = plan(problem, solver_config="CPSAT-10")
+    empty = Calendar(id="CAL-OFF", code="CAL-OFF", windows=[])
+    loaded = problem.model_copy(
+        update={
+            "calendars": [*problem.calendars, empty],
+            "crews": [row.model_copy(update={"calendar_id": "CAL-OFF"}) for row in problem.crews],
+        }
+    )
+    outcome = plan(loaded, solver_config="CPSAT-10")
+    assert outcome.result.assignments == []
     assert not any(row.code == ReasonCode.CPSAT_OPS_CAP for row in outcome.result.violations)
     assert any(row.code == ReasonCode.KERNEL_CALENDAR_UNSUPPORTED for row in outcome.result.violations)
+
+
+def _with_room_for(problem: RepairFlowProblem, count: int) -> RepairFlowProblem:
+    """Give the one-skill card enough open shifts to hold ``count`` visits."""
+
+    days = max(4, (count * 30) // (16 * 60) + 2)
+    start = problem.planning_horizon.start
+    end = start + timedelta(days=days)
+    horizon = problem.planning_horizon.model_copy(update={"end": end})
+    calendars = []
+    for calendar in problem.calendars:
+        windows = []
+        for day in range(days):
+            day0 = start + timedelta(days=day)
+            windows.append(
+                calendar.windows[0].model_copy(
+                    update={"start": day0 + timedelta(hours=6), "end": day0 + timedelta(hours=22)}
+                )
+            )
+        calendars.append(calendar.model_copy(update={"windows": windows}))
+    jobs = [job.model_copy(update={"due_date": end}) for job in problem.jobs]
+    return problem.model_copy(update={"planning_horizon": horizon, "calendars": calendars, "jobs": jobs})
+
+
+def test_cpsat_checks_the_cap_on_a_card_that_fits_its_shifts() -> None:
+    problem = _with_room_for(_sized(CPSAT_OPS_CAP), CPSAT_OPS_CAP)
+    outcome = plan(problem, solver_config="CPSAT-30")
+    assert not any(row.code == ReasonCode.CPSAT_OPS_CAP for row in outcome.result.violations)
+    assert not any(row.code == ReasonCode.KERNEL_CALENDAR_UNSUPPORTED for row in outcome.result.violations)
+    assert outcome.result.verified_feasible
+    assert outcome.result.exit_code == 0
+    assert outcome.result.claim_status in {"verified", "optimal"}
+    assert len(outcome.result.assignments) == CPSAT_OPS_CAP
 
 
 def test_domain_greed_is_not_subject_to_the_cpsat_cap() -> None:

@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- CP-SAT is invoked up to 100 operations. That is the last size at which
+  CPSAT-10 returned a checked plan on a synthetic one-skill card with published
+  shifts. One hundred and twenty operations on that card timed out empty.
+  Above 100 the recorded refusal `CPSAT_OPS_CAP` still does not call the solver.
+- Crew and auxiliary calendars with published windows compile to
+  `AuxiliaryResource.calendar` on SynAPS `f939727`. The kernel checker and
+  CP-SAT keep occupancy inside one shift. An attended calendar with no windows,
+  a skill pool with mixed shifts, and a preemptive operation on a published
+  shift stay `KERNEL_CALENDAR_UNSUPPORTED`. The evidence manifest still attests
+  `dc3327d` / run `36905431831` and kernel `6178c93`.
 - `repairflow verify-plan` checks a shop CSV (заказ, операция, пост, бригада,
   оснастка, начало, конец) without calling the kernel. A clean plan is
   `domain_verified`, not `verified` and not `optimal`.
@@ -25,7 +35,7 @@
   stays admissible; overlap during use or return lag stays `SPARE_UNAVAILABLE`.
 - An id map whose values are not unique is `INVALID_ID_MAP`, even when the
   operation and work-center keys match.
-- CP-SAT above 80 operations is a recorded capability refusal (`CPSAT_OPS_CAP`),
+- CP-SAT above `CPSAT_OPS_CAP` is a recorded capability refusal (`CPSAT_OPS_CAP`),
   not an exception and not a silent fallback. The exact solver is not called.
   The result is empty, exit 2, not `verified` and not `optimal`.
 - Exit 0 requires full coverage. `allow_partial_plan` no longer hides missing
