@@ -84,9 +84,17 @@
 - A `calendar_id` missing from `calendars` is `CALENDAR_BROKEN` inside the
   checker. A resource with no `calendar_id` stays open for the horizon.
 - `docs/fault-campaign.json` records 10000 guaranteed-invalid mutations of
-  synthetic tiny GREED with `false_accept` 0. `docs/benchmark-results.json`
+  synthetic tiny GREED with `false_accept` 0. `benchmark/results/benchmark.json`
   stores the synthetic FIFO/GREED rows with input, config, and result hashes.
-- `test-slow` runs on pull requests as well as on main.
+- `domain_only` is the `verify-plan` claim. A kernel recheck of that token is
+  not `verified` and not `optimal`.
+- A non-synthetic resource without `calendar_id` must set
+  `availability=always_open`. Synthetic fixtures may still omit the calendar.
+- The README evidence table is rendered from `docs/evidence-manifest.json`.
+  The manifest is `stale` while it does not name `HEAD`.
+- `benchmark/results/benchmark.json` and `SHA256SUMS` hold the synthetic
+  FIFO/GREED rows. `test-slow` runs on main, nightly, and pull requests
+  labeled `slow`.
 - Kernel and domain checkers agree on the hard decision for a compatible plan:
   clean stays `verified`; precedence, eligibility, work-centre calendar, auxiliary
   capacity, centre overlap and setup mismatch are rejected by both. Diagnostic

@@ -13,7 +13,14 @@ from tests.fault_campaign import run_fault_campaign
 from repairflow.adapter import to_schedule_problem
 from repairflow.checker import check_plan
 from repairflow.explanations import deletion_minimal_operation_ids
-from repairflow.model import Calendar, CalendarWindow, PlannedAssignment, Policy, RepairFlowProblem
+from repairflow.model import (
+    Calendar,
+    CalendarWindow,
+    PlannedAssignment,
+    Policy,
+    RepairFlowProblem,
+    ResultStatus,
+)
 from repairflow.planner import plan, recheck
 from repairflow.reasons import ReasonCode
 from repairflow.synthetic import synthesize
@@ -88,7 +95,7 @@ def test_missing_required_aux_is_aux_missing() -> None:
         ("optimal", 0),
         ("FEASIBLE", 0),
         ("OPTIMAL", 0),
-        ("domain_only", 0),
+        ("domain_only", 2),
         ("infeasible", 2),
         ("timeout", 2),
         ("error", 2),
@@ -109,7 +116,23 @@ def test_only_admissible_kernel_statuses_exit_zero(status: str, exit_code: int) 
     assert checked.result.exit_code == exit_code
     assert checked.result.verified_feasible is (exit_code == 0)
     if status.lower() == "domain_only":
-        assert checked.result.claim_status != "optimal"
+        assert checked.result.claim_status not in {"verified", "optimal"}
+        assert checked.result.verified_feasible is False
+        assert checked.result.status != ResultStatus.OPTIMAL
+
+
+def test_domain_only_cannot_become_optimal_under_cpsat() -> None:
+    problem = synthesize("tiny", seed=1)
+    planned = plan(problem, solver_config="GREED")
+    checked = recheck(
+        problem,
+        assignments=list(planned.result.assignments),
+        kernel_status="domain_only",
+        solver_config="CPSAT-10",
+    )
+    assert checked.result.verified_feasible is False
+    assert checked.result.claim_status not in {"verified", "optimal"}
+    assert checked.result.status != ResultStatus.OPTIMAL
 
 
 def test_precedence_explanation_keeps_both_operations() -> None:

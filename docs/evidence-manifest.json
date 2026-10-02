@@ -5,6 +5,8 @@
   "ci_run_url": "https://github.com/KonkovDV/SynAPS-RepairFlow/actions/runs/36987936535",
   "ci_result": "success",
   "ci_includes_test_slow": true,
+  "stale": true,
+  "sweep_line_commit": "a3621fd538019f4dcc0c681d5634c022260382e9",
   "synaps_commit": "f939727cd9369fd9b36438bfac7198f0c39c6d3b",
   "synaps_repo": "https://github.com/KonkovDV/SynAPS",
   "claim_level": "experiment",

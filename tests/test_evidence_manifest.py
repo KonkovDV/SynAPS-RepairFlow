@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
+import subprocess
 from pathlib import Path
 
+from repairflow.attestation import render_attestation_markdown
 from repairflow.planner import plan
 from repairflow.synthetic import synthesize
 from repairflow.versions import SYNAPS_COMMIT, SYNAPS_REPO
@@ -17,6 +20,17 @@ def test_evidence_manifest_matches_the_pinned_kernel() -> None:
     assert payload["schema"] == "repairflow.evidence_manifest.v1"
     assert payload["synaps_commit"] == SYNAPS_COMMIT
     assert payload["synaps_commit"] == "f939727cd9369fd9b36438bfac7198f0c39c6d3b"
+    lock = Path("requirements-lock.txt").read_text(encoding="utf-8")
+    project = Path("pyproject.toml").read_text(encoding="utf-8")
+    versions = Path("src/repairflow/versions.py").read_text(encoding="utf-8")
+    assert SYNAPS_COMMIT in lock
+    assert SYNAPS_COMMIT in project
+    assert SYNAPS_COMMIT in versions
+    head = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+    if payload["attests_commit"] == head:
+        assert payload["stale"] is False
+    else:
+        assert payload["stale"] is True
     assert payload["attests_commit"] == "9ea5a200ebc4e469fd59a35539781db7c5c16898"
     assert payload["ci_run_id"] == "36987936535"
     assert payload["synaps_repo"] == SYNAPS_REPO
@@ -46,8 +60,24 @@ def test_fault_campaign_denominator_is_committed() -> None:
     assert len(payload["input_hash"]) == 64
 
 
+def test_readme_evidence_table_is_generated() -> None:
+    manifest = json.loads(_MANIFEST.read_text(encoding="utf-8"))
+    benchmark_path = Path("benchmark/results/benchmark.json")
+    digest = hashlib.sha256(benchmark_path.read_bytes()).hexdigest()
+    sums = Path("benchmark/results/SHA256SUMS").read_text(encoding="utf-8")
+    assert sums.strip() == f"{digest}  benchmark.json"
+    campaign = json.loads(Path("docs/fault-campaign.json").read_text(encoding="utf-8"))
+    rendered = render_attestation_markdown(manifest, benchmark_sha256=digest, campaign=campaign)
+    readme = Path("README.md").read_text(encoding="utf-8")
+    begin = "<!-- evidence:begin -->"
+    end = "<!-- evidence:end -->"
+    assert begin in readme and end in readme
+    block = readme.split(begin, 1)[1].split(end, 1)[0].strip()
+    assert block == rendered.strip()
+
+
 def test_committed_benchmark_rows_carry_hashes() -> None:
-    payload = json.loads(Path("docs/benchmark-results.json").read_text(encoding="utf-8"))
+    payload = json.loads(Path("benchmark/results/benchmark.json").read_text(encoding="utf-8"))
     assert payload["synaps_commit"] == SYNAPS_COMMIT
     assert payload["claim_level"] == "experiment"
     assert payload["data_provenance"] == "synthetic"

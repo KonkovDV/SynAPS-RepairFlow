@@ -163,6 +163,46 @@ def test_expired_skill_is_not_verified() -> None:
     assert checked.result.verified_feasible is False
 
 
+def test_visit_crossing_noon_expires_a_permit_that_ends_at_noon() -> None:
+    problem = synthesize("tiny", seed=1)
+    outcome = plan(problem, solver_config="GREED")
+    row = outcome.result.assignments[0]
+    operation = next(op for op in problem.operations if op.id == row.operation_id)
+    assert row.crew_id is not None
+    skill = operation.required_skills[0]
+    start = problem.planning_horizon.start + timedelta(hours=11)
+    end = start + timedelta(hours=2)
+    until = problem.planning_horizon.start + timedelta(hours=12)
+    operations = [
+        op.model_copy(
+            update={
+                "duration_min": 120,
+                "predecessor_ids": [],
+                "required_aux_ids": [],
+            }
+        )
+        if op.id == operation.id
+        else op
+        for op in problem.operations
+    ]
+    crews = [
+        crew.model_copy(update={"skill_valid_until": {skill: until}}) if crew.id == row.crew_id else crew
+        for crew in problem.crews
+    ]
+    loaded = RepairFlowProblem.model_validate(
+        problem.model_copy(update={"operations": operations, "crews": crews}).model_dump(mode="python")
+    )
+    visit = row.model_copy(update={"start": start, "end": end, "setup_minutes": 0, "aux_ids": []})
+    checked = recheck(
+        loaded,
+        assignments=[visit],
+        kernel_status="feasible",
+        solver_config="recheck",
+    )
+    assert any(item.code == ReasonCode.SKILL_EXPIRED for item in checked.result.violations)
+    assert checked.result.verified_feasible is False
+
+
 def test_skill_expiring_during_the_visit_is_not_verified() -> None:
     problem = synthesize("tiny", seed=1)
     outcome = plan(problem, solver_config="GREED")

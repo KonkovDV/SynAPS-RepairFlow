@@ -157,7 +157,7 @@ SUGGESTIONS: dict[str, str] = {
     ReasonCode.AMBIGUOUS_CREW: "оставить в назначении одну бригаду и проверить занятость каждой",
     ReasonCode.AUX_MISSING: "назначить каждую обязательную оснастку до проверки",
     ReasonCode.KERNEL_STATUS_NOT_FEASIBLE: (
-        "повторить расчёт до статуса feasible или optimal, либо передать domain_only"
+        "повторить расчёт до статуса feasible или optimal; domain_only не является вердиктом ядра"
     ),
     ReasonCode.SKILL_EXPIRED: "назначить бригаду с действующим допуском или продлить skill_valid_until",
     ReasonCode.JOB_MISMATCH: "поставить в строке заказ, которому принадлежит операция",

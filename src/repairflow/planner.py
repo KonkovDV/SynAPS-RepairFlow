@@ -1551,7 +1551,7 @@ def _status_from_text(value: str | None) -> SolverStatus:
         return SolverStatus.ERROR
     token = value.strip().lower()
     if token == "domain_only":
-        return SolverStatus.FEASIBLE
+        return SolverStatus.ERROR
     try:
         return SolverStatus(token)
     except ValueError:

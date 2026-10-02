@@ -22,9 +22,15 @@ from repairflow.model import (
     Violation,
 )
 from repairflow.reasons import REASON_RU, SUGGESTIONS, ReasonCode
-from repairflow.scheduling_contract import held_minutes, is_unattended, open_minutes, policy_of
+from repairflow.scheduling_contract import (
+    declares_open_horizon,
+    held_minutes,
+    is_unattended,
+    open_minutes,
+    policy_of,
+)
 
-ADMISSIBLE_KERNEL_STATUSES = frozenset({"feasible", "optimal", "domain_only"})
+ADMISSIBLE_KERNEL_STATUSES = frozenset({"feasible", "optimal"})
 
 
 def check_plan(
@@ -64,10 +70,38 @@ def check_plan(
         violations.append(
             _violation(
                 ReasonCode.KERNEL_STATUS_NOT_FEASIBLE,
-                f"kernel_status {kernel_status!r} is not feasible, optimal, or domain_only",
+                f"kernel_status {kernel_status!r} is not feasible or optimal",
             )
         )
 
+    violations.extend(_constraint_violations(problem, mapped, subset_mode=subset_mode))
+    return _sorted(violations)
+
+
+def check_domain_assignments(
+    problem: RepairFlowProblem,
+    assignments: list[PlannedAssignment],
+) -> list[Violation]:
+    """Check a shop plan without a kernel status or a compiled schedule."""
+    try:
+        problem = RepairFlowProblem.model_validate(problem.model_dump(mode="python"))
+    except (ValueError, TypeError) as exc:
+        return [
+            _violation(
+                ReasonCode.INVALID_PROBLEM,
+                f"problem failed domain validation: {exc}",
+            )
+        ]
+    return _sorted(_constraint_violations(problem, list(assignments), subset_mode=False))
+
+
+def _constraint_violations(
+    problem: RepairFlowProblem,
+    mapped: list[PlannedAssignment],
+    *,
+    subset_mode: bool,
+) -> list[Violation]:
+    violations: list[Violation] = []
     violations.extend(_ref_and_duration(problem, mapped))
     if not subset_mode:
         violations.extend(_coverage(problem, mapped))
@@ -79,7 +113,7 @@ def check_plan(
     violations.extend(_setup(problem, mapped))
     violations.extend(_frozen(problem, mapped))
     violations.extend(exchange_pool_violations(problem, mapped))
-    return _sorted(violations)
+    return violations
 
 
 def binding_from_aux(
@@ -607,6 +641,8 @@ def _calendars_windows_horizon(
                     resource_id=center.id,
                     preemptive=preemptive,
                     unattended=is_unattended(center.domain_attributes),
+                    provenance=problem.data_provenance,
+                    attributes=center.domain_attributes,
                 )
             )
         if asn.crew_id:
@@ -621,6 +657,8 @@ def _calendars_windows_horizon(
                         resource_id=crew.id,
                         preemptive=preemptive,
                         unattended=is_unattended(crew.domain_attributes),
+                        provenance=problem.data_provenance,
+                        attributes=crew.domain_attributes,
                     )
                 )
         needed = set(asn.aux_ids)
@@ -639,6 +677,8 @@ def _calendars_windows_horizon(
                     resource_id=aux.id,
                     preemptive=preemptive,
                     unattended=is_unattended(aux.domain_attributes),
+                    provenance=problem.data_provenance,
+                    attributes=aux.domain_attributes,
                 )
             )
     return out
@@ -722,9 +762,22 @@ def _named_calendar_fit(
     resource_id: str,
     preemptive: bool,
     unattended: bool,
+    provenance: str,
+    attributes: dict[str, object],
 ) -> list[Violation]:
-    """A missing calendar_id is the open horizon. A dangling id is not 24/7."""
+    """Synthetic data may omit a calendar. Any other provenance must say always_open."""
     if not calendar_id:
+        if provenance != "synthetic" and not declares_open_horizon(attributes):
+            return [
+                _violation(
+                    ReasonCode.CALENDAR_BROKEN,
+                    "calendar is not declared; set calendar_id or availability=always_open",
+                    operation_id=assignment.operation_id,
+                    resource_id=resource_id,
+                    start=assignment.start,
+                    end=assignment.end,
+                )
+            ]
         return []
     calendar = calendars.get(calendar_id)
     if calendar is None:
