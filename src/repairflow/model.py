@@ -88,6 +88,7 @@ class ResultStatus(StrEnum):
     PARTIAL = "PARTIAL"
     INFEASIBLE = "INFEASIBLE"
     NOT_VERIFIED = "NOT_VERIFIED"
+    DOMAIN_VERIFIED = "DOMAIN_VERIFIED"
     MANUAL_REVIEW_REQUIRED = "MANUAL_REVIEW_REQUIRED"
     ERROR = "ERROR"
 
@@ -533,10 +534,11 @@ class RepairFlowResult(RepairFlowModel):
             "heuristic_feasible",
             "verified",
             "optimal",
+            "domain_verified",
         ]
         | None
     ) = None
-    solver_class: Literal["heuristic", "exact", "baseline", "recheck"] | None = None
+    solver_class: Literal["heuristic", "exact", "baseline", "recheck", "domain"] | None = None
     exit_code: int = 2
     assignments: list[PlannedAssignment] = Field(default_factory=list)
     rejected: list[dict[str, Any]] = Field(default_factory=list)

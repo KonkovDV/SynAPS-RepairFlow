@@ -69,6 +69,7 @@
         "PARTIAL",
         "INFEASIBLE",
         "NOT_VERIFIED",
+        "DOMAIN_VERIFIED",
         "MANUAL_REVIEW_REQUIRED",
         "ERROR"
       ],
@@ -279,7 +280,8 @@
             "rejected",
             "heuristic_feasible",
             "verified",
-            "optimal"
+            "optimal",
+            "domain_verified"
           ],
           "type": "string"
         },
@@ -297,7 +299,8 @@
             "heuristic",
             "exact",
             "baseline",
-            "recheck"
+            "recheck",
+            "domain"
           ],
           "type": "string"
         },

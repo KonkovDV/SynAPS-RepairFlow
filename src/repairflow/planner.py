@@ -58,6 +58,7 @@ ClaimStatus = Literal[
     "heuristic_feasible",
     "verified",
     "optimal",
+    "domain_verified",
 ]
 
 HEURISTIC_PREFIXES = ("FIFO", "EDD", "ATC", "GREED", "BEAM", "ALNS", "RHC", "repair:")

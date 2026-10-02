@@ -1,4 +1,4 @@
-"""CLI: version / synthesize / solve / check / compare / report / demo / disrupt / benchmark."""
+"""CLI: version / synthesize / solve / check / verify-plan / compare / report / demo / disrupt / benchmark."""
 
 from __future__ import annotations
 
@@ -10,13 +10,16 @@ from typing import Any
 
 from repairflow.benchmark import run_benchmark
 from repairflow.diff import diff_plans
+from repairflow.domain_verify import verify_domain_plan
 from repairflow.events import InspectionEvent
 from repairflow.evidence import verify_plan_hashes
 from repairflow.io import read_text_limited
 from repairflow.model import PlannedAssignment, RepairFlowResult
 from repairflow.normalize import load_problem
 from repairflow.planner import plan, recheck, replan_after_disruption, replan_after_inspection
+from repairflow.reasons import REASON_RU
 from repairflow.report import render_html, render_markdown
+from repairflow.shop_plan import load_shop_plan
 from repairflow.synthetic import PRESETS, corrupt_plan, synthesize
 from repairflow.versions import REPAIRFLOW_VERSION, SYNAPS_COMMIT
 
@@ -46,6 +49,14 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Refuse the plan when input, result, or config hashes do not match",
     )
+
+    p_shop = sub.add_parser(
+        "verify-plan",
+        help="Domain notary for a shop CSV plan; does not call the kernel",
+    )
+    p_shop.add_argument("--problem", type=Path, required=True)
+    p_shop.add_argument("--plan", type=Path, required=True)
+    p_shop.add_argument("--out", type=Path, default=None)
 
     p_cmp = sub.add_parser("compare", help="Diff two plans")
     p_cmp.add_argument("problem", type=Path)
@@ -124,6 +135,8 @@ def main(argv: list[str] | None = None) -> int:
             return _solve(args.input, args.out, args.solver)
         if args.command == "check":
             return _check(args.problem, args.plan, args.report, verify_hashes=args.verify_hashes)
+        if args.command == "verify-plan":
+            return _verify_plan(args.problem, args.plan, args.out)
         if args.command == "compare":
             return _compare(args.problem, args.baseline, args.candidate, args.out)
         if args.command == "report":
@@ -182,6 +195,23 @@ def _check(
     for violation in outcome.result.violations:
         sys.stdout.write(f"{violation.code}\t{violation.message}\n")
     return int(outcome.result.exit_code)
+
+
+def _verify_plan(problem_path: Path, plan_path: Path, output: Path | None) -> int:
+    problem = load_problem(problem_path)
+    assignments, extra = load_shop_plan(plan_path, problem)
+    result = verify_domain_plan(problem, assignments, extra_violations=extra)
+    if output is not None:
+        _write_json(output, result.model_dump(mode="json"))
+    if result.claim_status == "domain_verified":
+        sys.stdout.write("domain_verified\tдоменный план проверен без ядра; это не вердикт ядра\n")
+    for violation in result.violations:
+        if violation.severity == "kpi":
+            continue
+        text = REASON_RU.get(violation.code, violation.message)
+        where = violation.operation_id or violation.resource_id or ""
+        sys.stdout.write(f"{violation.code}\t{text}\t{where}\n")
+    return int(result.exit_code)
 
 
 def _compare(problem_path: Path, baseline_path: Path, candidate_path: Path, output: Path) -> int:

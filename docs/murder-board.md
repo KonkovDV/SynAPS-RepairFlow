@@ -11,6 +11,7 @@
 ## Technical
 
 - `claim_status=verified` means full operation coverage and an empty hard notary, including heuristic plans that pass `recheck`.
+- `claim_status=domain_verified` is the shop-CSV notary. The kernel is not called. `verified_feasible` stays false.
 - `optimal` means CP-SAT `OPTIMAL`, an empty hard notary, and one compiled pass. A later fixpoint iteration stays at `verified`.
 - An incomplete plan is `PARTIAL`, exit 2. `allow_partial_plan` does not grant exit 0.
 - A calendar with zero windows is unavailable (`CALENDAR_BROKEN`). A missing `calendar_id` means the resource is open across the horizon. A `calendar_id` that is not in `calendars` is an invalid instance.
