@@ -77,9 +77,7 @@ def test_aux_calendar_rejects_work_outside_the_window(solver: str) -> None:
     outcome = plan(loaded, solver_config=solver)
     assert outcome.result.exit_code == 2
     assert outcome.result.verified_feasible is False
-    assert not any(
-        row.code == ReasonCode.KERNEL_CALENDAR_UNSUPPORTED for row in outcome.result.violations
-    )
+    assert not any(row.code == ReasonCode.KERNEL_CALENDAR_UNSUPPORTED for row in outcome.result.violations)
     if solver != "CPSAT-10":
         assert any(
             row.code == ReasonCode.CALENDAR_BROKEN and row.resource_id == "AUX-CRANE"

@@ -5,7 +5,7 @@ RepairFlow itself is MIT. The solver stack is pulled in by the pinned SynAPS com
 | Component | Version pin | License |
 | --- | --- | --- |
 | synaps-repairflow | 0.1.0 | MIT |
-| synaps | git `9d6eafb8bda7de67a303764990fbb24b4e28340b` | MIT |
+| synaps | git `f939727cd9369fd9b36438bfac7198f0c39c6d3b` | MIT |
 | pydantic | `>=2.9` | MIT |
 | ortools | `==9.15.6755` | Apache-2.0 |
 

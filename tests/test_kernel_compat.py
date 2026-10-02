@@ -130,9 +130,7 @@ def test_mixed_skill_pool_calendars_are_rejected() -> None:
 def test_preemptive_published_calendar_is_rejected() -> None:
     problem = synthesize("tiny", seed=1)
     operations = [
-        problem.operations[0].model_copy(
-            update={"domain_attributes": {"duration_policy": "preemptive"}}
-        ),
+        problem.operations[0].model_copy(update={"domain_attributes": {"duration_policy": "preemptive"}}),
         *problem.operations[1:],
     ]
     loaded = problem.model_copy(update={"operations": operations})

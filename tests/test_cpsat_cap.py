@@ -93,18 +93,14 @@ def _with_room_for(problem: RepairFlowProblem, count: int) -> RepairFlowProblem:
             )
         calendars.append(calendar.model_copy(update={"windows": windows}))
     jobs = [job.model_copy(update={"due_date": end}) for job in problem.jobs]
-    return problem.model_copy(
-        update={"planning_horizon": horizon, "calendars": calendars, "jobs": jobs}
-    )
+    return problem.model_copy(update={"planning_horizon": horizon, "calendars": calendars, "jobs": jobs})
 
 
 def test_cpsat_checks_the_cap_on_a_card_that_fits_its_shifts() -> None:
     problem = _with_room_for(_sized(CPSAT_OPS_CAP), CPSAT_OPS_CAP)
     outcome = plan(problem, solver_config="CPSAT-30")
     assert not any(row.code == ReasonCode.CPSAT_OPS_CAP for row in outcome.result.violations)
-    assert not any(
-        row.code == ReasonCode.KERNEL_CALENDAR_UNSUPPORTED for row in outcome.result.violations
-    )
+    assert not any(row.code == ReasonCode.KERNEL_CALENDAR_UNSUPPORTED for row in outcome.result.violations)
     assert outcome.result.verified_feasible
     assert outcome.result.exit_code == 0
     assert outcome.result.claim_status in {"verified", "optimal"}

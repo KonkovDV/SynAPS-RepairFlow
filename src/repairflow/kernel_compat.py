@@ -98,9 +98,7 @@ def _preemptive_published_calendar(
     aux_by_id = {aux.id: aux for aux in problem.aux_resources}
     for aux_id in operation.required_aux_ids:
         aux = aux_by_id.get(aux_id)
-        if aux is not None and kernel_calendar_windows(
-            problem, aux.calendar_id, aux.domain_attributes
-        ):
+        if aux is not None and kernel_calendar_windows(problem, aux.calendar_id, aux.domain_attributes):
             return True
     return False
 
