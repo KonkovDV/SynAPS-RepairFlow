@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- A kernel assignment with more than one crew is `AMBIGUOUS_CREW`. An aux kind
+  other than crew or aux is `UNKNOWN_RESOURCE`. Missing required tooling is
+  `AUX_MISSING`. `verified` accepts only kernel status `feasible`, `optimal`,
+  or explicit `domain_only`. A deletion witness for precedence keeps both
+  operations. Preemptive setup must lie inside an open window.
+- `Policy.unsupported_dag` is deprecated and ignored. `dag_strategy` compiles
+  the card. The slow CI job no longer treats an empty selection as a pass.
 - Duration defaults to `exact`. `min` and `preemptive` are explicit. An empty
   calendar is closed for the planner and the checker. An unattended resource
   may run while its staffed calendar is closed. Frozen ingest checks auxiliary

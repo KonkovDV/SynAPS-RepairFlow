@@ -95,13 +95,17 @@ class ResultStatus(StrEnum):
 class Policy(RepairFlowModel):
     """Scheduling policy.
 
-    `unsupported_dag` is kept so existing v1 documents still parse. Branching
-    cards are compiled (ADR-0002); the flag no longer rejects a DAG.
+    `dag_strategy` decides how a branching card is compiled. `unsupported_dag`
+    is deprecated and ignored so existing v1 documents still parse.
     """
 
     unknown_fields: Literal["reject"] = "reject"
     missing_setup: Literal["reject", "zero"] = "reject"
-    unsupported_dag: Literal["reject"] = "reject"
+    unsupported_dag: Literal["reject"] = Field(
+        default="reject",
+        description="Deprecated and ignored. dag_strategy compiles a branching card.",
+        json_schema_extra={"deprecated": True},
+    )
     allow_partial_plan: bool = False
     dag_strategy: Literal["split_release_fixpoint", "serialize"] = "split_release_fixpoint"
     max_fixpoint_iter: int = Field(default=8, ge=1, le=32)

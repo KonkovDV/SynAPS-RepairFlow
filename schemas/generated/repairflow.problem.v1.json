@@ -450,7 +450,7 @@
     },
     "Policy": {
       "additionalProperties": false,
-      "description": "Scheduling policy.\n\n`unsupported_dag` is kept so existing v1 documents still parse. Branching\ncards are compiled (ADR-0002); the flag no longer rejects a DAG.",
+      "description": "Scheduling policy.\n\n`dag_strategy` decides how a branching card is compiled. `unsupported_dag`\nis deprecated and ignored so existing v1 documents still parse.",
       "properties": {
         "unknown_fields": {
           "const": "reject",
@@ -470,6 +470,8 @@
         "unsupported_dag": {
           "const": "reject",
           "default": "reject",
+          "deprecated": true,
+          "description": "Deprecated and ignored. dag_strategy compiles a branching card.",
           "title": "Unsupported Dag",
           "type": "string"
         },

@@ -231,18 +231,28 @@ def test_immutable_frozen_overlap_rejected_and_mutable_rows_are_notes() -> None:
     assert loaded.frozen_assignments[0].immutable is False
 
 
-def test_checker_does_not_import_adapter_or_planner() -> None:
-    source = (Path(__file__).resolve().parents[1] / "src" / "repairflow" / "checker.py").read_text(
-        encoding="utf-8"
+def test_checker_modules_do_not_import_search_or_solver() -> None:
+    root = Path(__file__).resolve().parents[1] / "src" / "repairflow"
+    banned = {"repairflow.adapter", "repairflow.planner", "synaps.solvers"}
+    modules = (
+        "checker.py",
+        "checker_primitives.py",
+        "capacity.py",
+        "lane_setup.py",
+        "ledger.py",
     )
-    tree = ast.parse(source)
-    banned = {"repairflow.adapter", "repairflow.planner"}
-    for node in ast.walk(tree):
-        if isinstance(node, ast.ImportFrom) and node.module in banned:
-            raise AssertionError(node.module)
-        if isinstance(node, ast.Import):
-            for alias in node.names:
-                assert alias.name not in banned
+    for name in modules:
+        tree = ast.parse((root / name).read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            modules_found: list[str] = []
+            if isinstance(node, ast.ImportFrom) and node.module:
+                modules_found.append(node.module)
+            if isinstance(node, ast.Import):
+                modules_found.extend(alias.name for alias in node.names)
+            for module in modules_found:
+                assert not any(module == item or module.startswith(f"{item}.") for item in banned), (
+                    f"{name} imports {module}"
+                )
 
 
 def test_adapter_setup_mutation_is_caught(monkeypatch: pytest.MonkeyPatch) -> None:

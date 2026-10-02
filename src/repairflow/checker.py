@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from typing import Any, Literal
 from uuid import UUID
 
-from synaps.model import Assignment, ScheduleProblem, ScheduleResult
+from synaps.model import Assignment, ScheduleProblem
 
 from repairflow.capacity import Occupancy, excess_arrivals
 from repairflow.checker_primitives import reverse_ids
@@ -23,6 +23,8 @@ from repairflow.model import (
 from repairflow.reasons import REASON_RU, SUGGESTIONS, ReasonCode
 from repairflow.scheduling_contract import held_minutes, is_unattended, open_minutes, policy_of
 
+ADMISSIBLE_KERNEL_STATUSES = frozenset({"feasible", "optimal", "domain_only"})
+
 
 def check_plan(
     problem: RepairFlowProblem,
@@ -31,6 +33,7 @@ def check_plan(
     assignments: list[Assignment] | list[PlannedAssignment],
     id_map: dict[str, UUID],
     kernel_status: str | None,
+    subset_mode: bool = False,
 ) -> list[Violation]:
     try:
         problem = RepairFlowProblem.model_validate(problem.model_dump(mode="python"))
@@ -42,24 +45,33 @@ def check_plan(
             )
         ]
 
-    mapped = _normalize_assignments(assignments, id_map)
+    mapped, binding_issues = _normalize_assignments(assignments, id_map)
     issues = _id_map_issues(problem, schedule_problem, id_map)
     if issues:
-        return issues
+        return _sorted([*issues, *binding_issues])
 
-    violations: list[Violation] = []
-    if not kernel_status:
+    violations: list[Violation] = list(binding_issues)
+    status_token = kernel_status.strip().lower() if kernel_status else ""
+    if not status_token:
         violations.append(
             _violation(
                 ReasonCode.KERNEL_STATUS_MISSING,
                 "result has no kernel_status; refusing to treat the plan as verified",
             )
         )
+    elif status_token not in ADMISSIBLE_KERNEL_STATUSES:
+        violations.append(
+            _violation(
+                ReasonCode.KERNEL_STATUS_NOT_FEASIBLE,
+                f"kernel_status {kernel_status!r} is not feasible, optimal, or domain_only",
+            )
+        )
 
     violations.extend(_ref_and_duration(problem, mapped))
-    violations.extend(_coverage(problem, mapped))
+    if not subset_mode:
+        violations.extend(_coverage(problem, mapped))
     violations.extend(_skills_and_eligibility(problem, mapped))
-    violations.extend(_precedence(problem, mapped))
+    violations.extend(_precedence(problem, mapped, ignore_absent=subset_mode))
     violations.extend(_resource_overlaps(problem, mapped))
     violations.extend(_calendars_windows_horizon(problem, mapped))
     violations.extend(_due_release_spares(problem, mapped))
@@ -69,29 +81,75 @@ def check_plan(
     return _sorted(violations)
 
 
+def binding_from_aux(
+    aux_resource_ids: list[UUID],
+    reversed_map: dict[UUID, tuple[str, str]],
+    *,
+    operation_id: str,
+) -> tuple[str | None, list[str], list[Violation]]:
+    """Read crew and tooling off a kernel assignment.
+
+    More than one crew is a hard ambiguity. A kind other than crew or aux is a
+    hard unknown resource. Neither case keeps a guessed binding.
+    """
+
+    crews: list[str] = []
+    aux_ids: list[str] = []
+    issues: list[Violation] = []
+    for aux in aux_resource_ids:
+        kind, ident = reversed_map.get(aux, ("unknown", str(aux)))
+        if kind == "crew":
+            crews.append(ident)
+        elif kind == "aux":
+            aux_ids.append(ident)
+        else:
+            issues.append(
+                _violation(
+                    ReasonCode.UNKNOWN_RESOURCE,
+                    f"assignment aux {aux} has kind {kind}, expected crew or aux",
+                    operation_id=operation_id,
+                    resource_id=ident,
+                    details={"kind": kind},
+                )
+            )
+    crew_id: str | None = None
+    if len(crews) > 1:
+        issues.append(
+            _violation(
+                ReasonCode.AMBIGUOUS_CREW,
+                f"operation {operation_id} lists crews {crews}",
+                operation_id=operation_id,
+                details={"crew_ids": crews},
+            )
+        )
+    elif crews:
+        crew_id = crews[0]
+    return crew_id, aux_ids, issues
+
+
 def _normalize_assignments(
     assignments: list[Assignment] | list[PlannedAssignment],
     id_map: dict[str, UUID],
-) -> list[PlannedAssignment]:
+) -> tuple[list[PlannedAssignment], list[Violation]]:
     reversed_map = reverse_ids(id_map)
     out: list[PlannedAssignment] = []
+    issues: list[Violation] = []
     for row in assignments:
         if isinstance(row, PlannedAssignment):
             out.append(row)
             continue
         wc_kind, wc_id = reversed_map.get(row.work_center_id, ("wc", str(row.work_center_id)))
         op_kind, op_id = reversed_map.get(row.operation_id, ("op", str(row.operation_id)))
-        crew_id = None
-        aux_ids: list[str] = []
-        for aux in row.aux_resource_ids:
-            kind, ident = reversed_map.get(aux, ("aux", str(aux)))
-            if kind == "crew":
-                crew_id = ident
-            elif kind == "aux":
-                aux_ids.append(ident)
+        operation_id = op_id if op_kind == "op" else str(row.operation_id)
+        crew_id, aux_ids, binding_issues = binding_from_aux(
+            list(row.aux_resource_ids),
+            reversed_map,
+            operation_id=operation_id,
+        )
+        issues.extend(binding_issues)
         out.append(
             PlannedAssignment(
-                operation_id=op_id if op_kind == "op" else str(row.operation_id),
+                operation_id=operation_id,
                 work_center_id=wc_id if wc_kind == "wc" else str(row.work_center_id),
                 crew_id=crew_id,
                 aux_ids=aux_ids,
@@ -100,7 +158,7 @@ def _normalize_assignments(
                 setup_minutes=int(row.setup_minutes or 0),
             )
         )
-    return out
+    return out, issues
 
 
 def _id_map_issues(
@@ -314,7 +372,7 @@ def _skills_and_eligibility(
         if required_aux and not required_aux <= set(asn.aux_ids):
             out.append(
                 _violation(
-                    ReasonCode.UNKNOWN_RESOURCE,
+                    ReasonCode.AUX_MISSING,
                     f"operation {op.id} is missing required aux {sorted(required_aux - set(asn.aux_ids))}",
                     operation_id=op.id,
                     job_id=op.job_id,
@@ -325,7 +383,12 @@ def _skills_and_eligibility(
     return out
 
 
-def _precedence(problem: RepairFlowProblem, assignments: list[PlannedAssignment]) -> list[Violation]:
+def _precedence(
+    problem: RepairFlowProblem,
+    assignments: list[PlannedAssignment],
+    *,
+    ignore_absent: bool = False,
+) -> list[Violation]:
     by_op = {asn.operation_id: asn for asn in assignments}
     out: list[Violation] = []
     for op in problem.operations:
@@ -336,6 +399,8 @@ def _precedence(problem: RepairFlowProblem, assignments: list[PlannedAssignment]
         for pred_id in preds:
             pred = by_op.get(pred_id)
             if pred is None:
+                if ignore_absent:
+                    continue
                 out.append(
                     _violation(
                         ReasonCode.PRECEDENCE_BROKEN,
@@ -634,7 +699,21 @@ def _calendar_fit(
             )
         ]
     if preemptive:
-        return []
+        if assignment.start <= occ_start:
+            return []
+        for window in calendar.windows:
+            if occ_start >= window.start and assignment.start <= window.end:
+                return []
+        return [
+            _violation(
+                ReasonCode.CALENDAR_BROKEN,
+                "setup is not contained in a single calendar window",
+                operation_id=assignment.operation_id,
+                resource_id=resource_id,
+                start=occ_start,
+                end=assignment.start,
+            )
+        ]
     for window in calendar.windows:
         if occ_start >= window.start and assignment.end <= window.end:
             return []
@@ -905,29 +984,3 @@ def _violation(
         suggested_relaxation=suggested_relaxation or SUGGESTIONS.get(text),
         details=details or {},
     )
-
-
-def kernel_hard_violations(schedule_problem: ScheduleProblem, result: ScheduleResult) -> list[dict[str, Any]]:
-    """Read the pinned SynAPS feasibility checker.
-
-    The domain checker does not import solver search. This function does use
-    the same SynAPS package, so a published verdict is independent of search
-    and is not independent of the SynAPS ecosystem.
-    """
-
-    from synaps.solvers.feasibility_checker import FeasibilityChecker, proven_hard_violations
-
-    raw = FeasibilityChecker().check(
-        schedule_problem,
-        list(result.assignments),
-        exhaustive=True,
-        strict_setup_matrix=True,
-    )
-    hard = proven_hard_violations(raw)
-    out: list[dict[str, Any]] = []
-    for item in hard:
-        if hasattr(item, "model_dump"):
-            out.append(item.model_dump(mode="json"))
-        else:
-            out.append({"kind": getattr(item, "kind", "KERNEL"), "message": str(item)})
-    return out

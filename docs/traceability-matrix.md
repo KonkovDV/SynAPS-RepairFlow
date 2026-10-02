@@ -12,7 +12,9 @@
 | Crew calendars inside the kernel model | documented | kernel solve and kernel repair refuse `KERNEL_CALENDAR_UNSUPPORTED`; domain FIFO/GREED/EDD still enforce them |
 | CP-SAT on more than 80 operations | implemented | recorded `CPSAT_OPS_CAP` refusal; the exact solver is not called |
 | Full coverage as a verification condition | implemented | `allow_partial_plan` cannot yield exit 0 |
-| Checker independent of solver search | implemented | `checker.py` does not import planner search; the published verdict also reads the pinned SynAPS feasibility checker |
+| Checker independent of solver search | implemented | `checker.py` does not import planner search or `synaps.solvers`; the published verdict also reads the pinned SynAPS feasibility checker |
+| One crew and a known aux kind on a kernel assignment | implemented | `AMBIGUOUS_CREW`, `UNKNOWN_RESOURCE`, `tests/test_red_team_notary.py` |
+| Verified only for an admissible kernel status | implemented | `feasible`, `optimal`, or explicit `domain_only` |
 | Blocking spares | implemented | checker spare tests |
 | Exchange pool as a stock ledger | implemented | `src/repairflow/ledger.py`, ADR-0004 |
 | Inspection that freezes issued work | implemented | `repairflow inspect`, ADR-0005 |
