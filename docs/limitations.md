@@ -30,3 +30,6 @@
     The exact solver is not called, and a domain list solver is not substituted.
     FIFO, GREED, EDD and ATC are outside this cap. Eighty is the last accepted
     count, not a claim that an 80-operation instance is solvable.
+14. `repairflow verify-plan` checks a shop CSV without calling the kernel.
+    A clean result is `claim_status=domain_verified` and `verified_feasible=false`.
+    It is not `verified` and it is not `optimal`.

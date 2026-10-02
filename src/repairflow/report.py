@@ -20,7 +20,12 @@ KIND_COLOR = {
 
 
 def render_markdown(problem: RepairFlowProblem, result: RepairFlowResult) -> str:
-    banner = "проверен, exit 0" if result.verified_feasible else f"не выпускать, exit {result.exit_code}"
+    if result.claim_status == "domain_verified":
+        banner = "домен проверен без ядра, exit 0"
+    elif result.verified_feasible:
+        banner = "проверен, exit 0"
+    else:
+        banner = f"не выпускать, exit {result.exit_code}"
     lines = [
         f"# RepairFlow {problem.instance_id}",
         "",
@@ -90,15 +95,20 @@ def render_markdown(problem: RepairFlowProblem, result: RepairFlowResult) -> str
 
 
 def render_html(problem: RepairFlowProblem, result: RepairFlowResult) -> str:
-    dirty = not result.verified_feasible
-    banner = (
-        f'<div class="banner fail">exit {result.exit_code} — план записан, выпускать нельзя</div>'
-        if dirty
-        else (
+    domain = result.claim_status == "domain_verified"
+    dirty = not result.verified_feasible and not domain
+    if domain:
+        banner = (
+            f'<div class="banner ok">exit {result.exit_code} — домен проверен без ядра; '
+            "это не вердикт солвера</div>"
+        )
+    elif dirty:
+        banner = f'<div class="banner fail">exit {result.exit_code} — план записан, выпускать нельзя</div>'
+    else:
+        banner = (
             f'<div class="banner ok">exit {result.exit_code} '
             f"{escape(result.claim_status or result.status.value)}</div>"
         )
-    )
     return _page(
         title=f"RepairFlow {problem.instance_id}",
         dirty=dirty,

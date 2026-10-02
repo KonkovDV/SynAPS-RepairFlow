@@ -75,7 +75,7 @@ formal instance → schema/domain validation → candidate planner
                → independent checker → evidence bundle → human decision
 ```
 
-Доменный checker не импортирует solver search code и проверяет нормализованный кандидат против исходного domain contract. Опубликованный вердикт дополнительно читает feasibility checker закреплённого SynAPS, поэтому независимость относится к поиску, а не ко всей экосистеме SynAPS. Сокращение makespan не считается улучшением, если потеряно покрытие или появился hard violation.
+Доменный checker не импортирует solver search code и проверяет нормализованный кандидат против исходного domain contract. Опубликованный вердикт дополнительно читает feasibility checker закреплённого SynAPS, поэтому независимость относится к поиску, а не ко всей экосистеме SynAPS. `repairflow verify-plan` этот контур не вызывает: чистый цеховой CSV получает claim `domain_verified`, а не `verified`. Сокращение makespan не считается улучшением, если потеряно покрытие или появился hard violation.
 
 ### Capacity oracle
 
@@ -170,7 +170,7 @@ formal instance → schema/domain validation → candidate planner
                → independent checker → evidence bundle → human decision
 ```
 
-The checker does not import solver search code. A shorter makespan is not an improvement when coverage is incomplete or a hard violation is introduced.
+The checker does not import solver search code. `repairflow verify-plan` does not call the kernel: a clean shop CSV is claim `domain_verified`, not `verified`. A shorter makespan is not an improvement when coverage is incomplete or a hard violation is introduced.
 
 A resource with capacity `K` has `K` interchangeable lanes. Occupancy is half-open, `[start, end)`, so touching endpoints do not overlap. Setup extends occupancy backwards. The same sweep-line oracle is used for ordinary and frozen assignments. This avoids the anchor-based pairwise error that rejects staggered visits as simultaneous.
 

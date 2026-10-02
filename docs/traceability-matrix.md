@@ -16,6 +16,7 @@
 | One crew and a known aux kind on a kernel assignment | implemented | `AMBIGUOUS_CREW`, `UNKNOWN_RESOURCE`, `tests/test_red_team_notary.py` |
 | Verified only for an admissible kernel status | implemented | `feasible`, `optimal`, or explicit `domain_only` |
 | Predecessor lag, consumable receipts, skill expiry | implemented | `tests/test_domain_semantics.py`; v1 `predecessor_ids` stays lag 0 |
+| Shop plan checked without the kernel | implemented | `repairflow verify-plan`; claim `domain_verified`; `tests/test_shop_plan.py` |
 | Blocking spares | implemented | checker spare tests |
 | Exchange pool as a stock ledger | implemented | `src/repairflow/ledger.py`, ADR-0004 |
 | Inspection that freezes issued work | implemented | `repairflow inspect`, ADR-0005 |

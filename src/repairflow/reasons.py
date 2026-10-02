@@ -41,6 +41,7 @@ REASON_CODES = (
     "AUX_MISSING",
     "KERNEL_STATUS_NOT_FEASIBLE",
     "SKILL_EXPIRED",
+    "JOB_MISMATCH",
 )
 
 
@@ -81,6 +82,7 @@ class ReasonCode(StrEnum):
     AUX_MISSING = "AUX_MISSING"
     KERNEL_STATUS_NOT_FEASIBLE = "KERNEL_STATUS_NOT_FEASIBLE"
     SKILL_EXPIRED = "SKILL_EXPIRED"
+    JOB_MISMATCH = "JOB_MISMATCH"
 
 
 REASON_RU: dict[str, str] = {
@@ -122,6 +124,7 @@ REASON_RU: dict[str, str] = {
     ReasonCode.AUX_MISSING: "у операции нет обязательной оснастки",
     ReasonCode.KERNEL_STATUS_NOT_FEASIBLE: "статус ядра не допускает вердикт verified",
     ReasonCode.SKILL_EXPIRED: "срок допуска бригады истёк к старту операции",
+    ReasonCode.JOB_MISMATCH: "заказ в строке плана не совпадает с операцией",
 }
 
 
@@ -157,4 +160,5 @@ SUGGESTIONS: dict[str, str] = {
         "повторить расчёт до статуса feasible или optimal, либо передать domain_only"
     ),
     ReasonCode.SKILL_EXPIRED: "назначить бригаду с действующим допуском или продлить skill_valid_until",
+    ReasonCode.JOB_MISMATCH: "поставить в строке заказ, которому принадлежит операция",
 }
