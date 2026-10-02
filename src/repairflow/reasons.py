@@ -37,6 +37,9 @@ REASON_CODES = (
     "NERVOUSNESS_HIGH",
     "KERNEL_CALENDAR_UNSUPPORTED",
     "CPSAT_OPS_CAP",
+    "AMBIGUOUS_CREW",
+    "AUX_MISSING",
+    "KERNEL_STATUS_NOT_FEASIBLE",
 )
 
 
@@ -73,6 +76,9 @@ class ReasonCode(StrEnum):
     NERVOUSNESS_HIGH = "NERVOUSNESS_HIGH"
     KERNEL_CALENDAR_UNSUPPORTED = "KERNEL_CALENDAR_UNSUPPORTED"
     CPSAT_OPS_CAP = "CPSAT_OPS_CAP"
+    AMBIGUOUS_CREW = "AMBIGUOUS_CREW"
+    AUX_MISSING = "AUX_MISSING"
+    KERNEL_STATUS_NOT_FEASIBLE = "KERNEL_STATUS_NOT_FEASIBLE"
 
 
 REASON_RU: dict[str, str] = {
@@ -110,6 +116,9 @@ REASON_RU: dict[str, str] = {
         "календарь бригады или оснастки нельзя передать в закреплённое ядро"
     ),
     ReasonCode.CPSAT_OPS_CAP: "экземпляр больше лабораторного предела CP-SAT",
+    ReasonCode.AMBIGUOUS_CREW: "в одном назначении указано больше одной бригады",
+    ReasonCode.AUX_MISSING: "у операции нет обязательной оснастки",
+    ReasonCode.KERNEL_STATUS_NOT_FEASIBLE: "статус ядра не допускает вердикт verified",
 }
 
 
@@ -138,5 +147,10 @@ SUGGESTIONS: dict[str, str] = {
     ),
     ReasonCode.CPSAT_OPS_CAP: (
         "считать экземпляр domain GREED/EDD/ATC; CP-SAT в этой сборке не вызывается выше 80 операций"
+    ),
+    ReasonCode.AMBIGUOUS_CREW: "оставить в назначении одну бригаду и проверить занятость каждой",
+    ReasonCode.AUX_MISSING: "назначить каждую обязательную оснастку до проверки",
+    ReasonCode.KERNEL_STATUS_NOT_FEASIBLE: (
+        "повторить расчёт до статуса feasible или optimal, либо передать domain_only"
     ),
 }

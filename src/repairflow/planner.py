@@ -22,7 +22,7 @@ from repairflow.adapter import (
     reverse_ids,
     to_schedule_problem,
 )
-from repairflow.checker import check_plan, kernel_hard_violations
+from repairflow.checker import binding_from_aux, check_plan
 from repairflow.dag_compiler import CompiledDag, compile_dag, propagate_windows
 from repairflow.events import InspectionEvent, apply_inspection
 from repairflow.evidence import evidence_stamp, fingerprint_payload, runtime_manifest, to_canonical
@@ -31,6 +31,7 @@ from repairflow.kernel_compat import (
     assert_kernel_calendar_compatibility,
     unsupported_auxiliary_calendars,
 )
+from repairflow.kernel_report import kernel_hard_violations
 from repairflow.lane_setup import LanePlacement, lane_local_setup_placements
 from repairflow.limits import CPSAT_OPS_CAP
 from repairflow.metrics import compute_metrics
@@ -463,10 +464,11 @@ def wrap(
     kernel_status = result.status.value if result.status is not None else None
     if kernel_status_override is not ...:
         kernel_status = kernel_status_override  # type: ignore[assignment]
+    binding_issues: list[Violation] = []
     if domain_assignments is not None:
         planned = list(domain_assignments)
     else:
-        planned = _planned_from_kernel(problem, result.assignments, id_map)
+        planned, binding_issues = _planned_from_kernel(problem, result.assignments, id_map)
     if bind_crews:
         planned = bind_concrete_crews(problem, planned)
     domain_violations = check_plan(
@@ -476,8 +478,10 @@ def wrap(
         id_map=id_map,
         kernel_status=kernel_status,
     )
-    if extra_violations:
-        domain_violations.extend(extra_violations)
+    if binding_issues or extra_violations:
+        domain_violations.extend(binding_issues)
+        if extra_violations:
+            domain_violations.extend(extra_violations)
         domain_violations.sort(
             key=lambda row: (row.code, row.operation_id or "", row.resource_id or "", row.message)
         )
@@ -1483,21 +1487,20 @@ def _planned_from_kernel(
     problem: RepairFlowProblem,
     assignments: list[Assignment],
     id_map: dict[str, UUID],
-) -> list[PlannedAssignment]:
+) -> tuple[list[PlannedAssignment], list[Violation]]:
     reversed_map = reverse_ids(id_map)
     ops = {op.id: op for op in problem.operations}
     out: list[PlannedAssignment] = []
+    issues: list[Violation] = []
     for row in sorted(assignments, key=lambda item: (item.start_time, str(item.operation_id))):
         op_id = reversed_map.get(row.operation_id, ("op", str(row.operation_id)))[1]
         wc_id = reversed_map.get(row.work_center_id, ("wc", str(row.work_center_id)))[1]
-        crew_id = None
-        aux_ids: list[str] = []
-        for aux in row.aux_resource_ids:
-            kind, ident = reversed_map.get(aux, ("aux", str(aux)))
-            if kind == "crew":
-                crew_id = ident
-            elif kind == "aux":
-                aux_ids.append(ident)
+        crew_id, aux_ids, binding_issues = binding_from_aux(
+            list(row.aux_resource_ids),
+            reversed_map,
+            operation_id=op_id,
+        )
+        issues.extend(binding_issues)
         operation = ops.get(op_id)
         reason = "kernel assignment"
         if operation is not None:
@@ -1514,7 +1517,7 @@ def _planned_from_kernel(
                 reason=reason,
             )
         )
-    return out
+    return out, issues
 
 
 def _as_kernel_assignments(
@@ -1545,7 +1548,10 @@ def _as_kernel_assignments(
 def _status_from_text(value: str | None) -> SolverStatus:
     if not value:
         return SolverStatus.ERROR
+    token = value.strip().lower()
+    if token == "domain_only":
+        return SolverStatus.FEASIBLE
     try:
-        return SolverStatus(value)
+        return SolverStatus(token)
     except ValueError:
         return SolverStatus.ERROR
