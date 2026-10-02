@@ -27,7 +27,7 @@ classifiers = [
   "Typing :: Typed",
 ]
 dependencies = [
-  "synaps @ git+https://github.com/KonkovDV/SynAPS.git@1f7d5e0ede2944d21579574edf84976fe5e78808",
+  "synaps @ git+https://github.com/KonkovDV/SynAPS.git@9d6eafb8bda7de67a303764990fbb24b4e28340b",
   "pydantic>=2.9",
   "ortools==9.15.6755",
 ]

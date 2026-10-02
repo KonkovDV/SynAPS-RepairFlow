@@ -1,6 +1,6 @@
 # Core compatibility
 
-Pinned commit: `1f7d5e0ede2944d21579574edf84976fe5e78808`.
+Pinned commit: `9d6eafb8bda7de67a303764990fbb24b4e28340b`.
 
 This pin is `cf10ca3e8be39d9a46e5d983de75a8066f66ca39` plus auxiliary-resource
 shift calendars. `6178c93b705ff58be21fa74a98651883a2da1169` remains the kernel

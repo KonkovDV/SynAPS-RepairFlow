@@ -3,7 +3,7 @@
 ## Unreleased
 
 - Crew and auxiliary calendars with published windows compile to
-  `AuxiliaryResource.calendar` on SynAPS `1f7d5e0`. The kernel checker and
+  `AuxiliaryResource.calendar` on SynAPS `9d6eafb`. The kernel checker and
   CP-SAT keep occupancy inside one shift. An attended calendar with no windows,
   a skill pool with mixed shifts, and a preemptive operation on a published
   shift stay `KERNEL_CALENDAR_UNSUPPORTED`. The evidence manifest still attests
