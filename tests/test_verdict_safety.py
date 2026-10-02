@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+from repairflow.checker import _calendars_windows_horizon
 from repairflow.checker_primitives import lookup_setup_minutes
 from repairflow.cli import main
 from repairflow.model import Calendar, CalendarWindow, FrozenAssignment, RepairFlowProblem, ResultStatus
@@ -128,6 +129,29 @@ def test_empty_calendar_is_unavailable_and_missing_calendar_is_open() -> None:
     )
     assert accepted.result.verified_feasible
     assert not any(row.code == ReasonCode.CALENDAR_BROKEN for row in accepted.result.violations)
+
+
+def test_unknown_calendar_id_is_not_a_verified_plan() -> None:
+    problem = synthesize("tiny", seed=1)
+    payload = problem.model_dump(mode="python")
+    payload["crews"][0]["calendar_id"] = "CAL-MISSING"
+    with pytest.raises(ValueError, match="unknown calendar"):
+        RepairFlowProblem.model_validate(payload)
+
+
+def test_dangling_calendar_id_is_not_treated_as_open() -> None:
+    problem = synthesize("tiny", seed=1)
+    greed = plan(problem, solver_config="GREED")
+    broken = problem.model_copy(
+        update={
+            "crews": [
+                row.model_copy(update={"calendar_id": "CAL-MISSING"}) if row.calendar_id is not None else row
+                for row in problem.crews
+            ]
+        }
+    )
+    violations = _calendars_windows_horizon(broken, list(greed.result.assignments))
+    assert any(row.code == ReasonCode.CALENDAR_BROKEN and "CAL-MISSING" in row.message for row in violations)
 
 
 def test_deadline_is_hard_and_due_date_stays_soft() -> None:

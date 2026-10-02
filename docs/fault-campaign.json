@@ -1,0 +1,19 @@
+{
+  "schema": "repairflow.fault_campaign.v1",
+  "checked": 10000,
+  "false_accept": 0,
+  "preset": "tiny",
+  "seed": 1,
+  "solver_config": "GREED",
+  "mutations": [
+    "shift_out",
+    "drop",
+    "wrong_crew",
+    "same_slot",
+    "bad_duration"
+  ],
+  "input_hash": "ad52954ea11c7a111e188de7d4ae8d045f12e1b3a09e6c918f8421712d961459",
+  "synaps_commit": "f939727cd9369fd9b36438bfac7198f0c39c6d3b",
+  "claim_level": "experiment",
+  "data_provenance": "synthetic"
+}

@@ -163,6 +163,57 @@ def test_expired_skill_is_not_verified() -> None:
     assert checked.result.verified_feasible is False
 
 
+def test_skill_expiring_during_the_visit_is_not_verified() -> None:
+    problem = synthesize("tiny", seed=1)
+    outcome = plan(problem, solver_config="GREED")
+    row = outcome.result.assignments[0]
+    operation = next(op for op in problem.operations if op.id == row.operation_id)
+    assert row.crew_id is not None
+    assert row.end > row.start + timedelta(minutes=1)
+    skill = operation.required_skills[0]
+    until = row.start + timedelta(minutes=1)
+    crews = [
+        crew.model_copy(update={"skill_valid_until": {skill: until}}) if crew.id == row.crew_id else crew
+        for crew in problem.crews
+    ]
+    loaded = RepairFlowProblem.model_validate(
+        problem.model_copy(update={"crews": crews}).model_dump(mode="python")
+    )
+    checked = recheck(
+        loaded,
+        assignments=list(outcome.result.assignments),
+        kernel_status="feasible",
+        solver_config="recheck",
+    )
+    assert any(item.code == ReasonCode.SKILL_EXPIRED for item in checked.result.violations)
+    assert checked.result.verified_feasible is False
+
+
+def test_skill_valid_through_the_visit_end_stays_accepted() -> None:
+    problem = synthesize("tiny", seed=1)
+    outcome = plan(problem, solver_config="GREED")
+    row = outcome.result.assignments[0]
+    operation = next(op for op in problem.operations if op.id == row.operation_id)
+    assert row.crew_id is not None
+    skill = operation.required_skills[0]
+    crew_end = max(item.end for item in outcome.result.assignments if item.crew_id == row.crew_id)
+    crews = [
+        crew.model_copy(update={"skill_valid_until": {skill: crew_end}}) if crew.id == row.crew_id else crew
+        for crew in problem.crews
+    ]
+    loaded = RepairFlowProblem.model_validate(
+        problem.model_copy(update={"crews": crews}).model_dump(mode="python")
+    )
+    checked = recheck(
+        loaded,
+        assignments=list(outcome.result.assignments),
+        kernel_status="feasible",
+        solver_config="recheck",
+    )
+    assert not any(item.code == ReasonCode.SKILL_EXPIRED for item in checked.result.violations)
+    assert checked.result.verified_feasible is True
+
+
 def test_structured_fields_round_trip_through_csv(tmp_path) -> None:
     problem = synthesize("tiny", seed=1)
     successor = next(op for op in problem.operations if op.predecessor_ids)

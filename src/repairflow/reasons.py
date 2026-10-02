@@ -123,7 +123,7 @@ REASON_RU: dict[str, str] = {
     ReasonCode.AMBIGUOUS_CREW: "в одном назначении указано больше одной бригады",
     ReasonCode.AUX_MISSING: "у операции нет обязательной оснастки",
     ReasonCode.KERNEL_STATUS_NOT_FEASIBLE: "статус ядра не допускает вердикт verified",
-    ReasonCode.SKILL_EXPIRED: "срок допуска бригады истёк к старту операции",
+    ReasonCode.SKILL_EXPIRED: "срок допуска бригады истекает до конца операции",
     ReasonCode.JOB_MISMATCH: "заказ в строке плана не совпадает с операцией",
 }
 

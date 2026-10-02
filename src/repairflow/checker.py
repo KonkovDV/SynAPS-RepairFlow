@@ -372,7 +372,9 @@ def _skills_and_eligibility(
                 elif crew is not None:
                     for skill in op.required_skills:
                         until = crew.skill_valid_until.get(skill)
-                        if until is not None and asn.start >= until:
+                        # The permit must cover the whole visit. A start one
+                        # minute before expiry still fails when the visit ends later.
+                        if until is not None and asn.end > until:
                             out.append(
                                 _violation(
                                     ReasonCode.SKILL_EXPIRED,
@@ -597,8 +599,9 @@ def _calendars_windows_horizon(
         center = centers.get(asn.work_center_id)
         if center is not None:
             out.extend(
-                _calendar_fit(
-                    calendars.get(center.calendar_id or ""),
+                _named_calendar_fit(
+                    calendars,
+                    center.calendar_id,
                     asn,
                     occ_start,
                     resource_id=center.id,
@@ -608,10 +611,11 @@ def _calendars_windows_horizon(
             )
         if asn.crew_id:
             crew = crews.get(asn.crew_id)
-            if crew is not None and crew.calendar_id is not None:
+            if crew is not None:
                 out.extend(
-                    _calendar_fit(
-                        calendars.get(crew.calendar_id),
+                    _named_calendar_fit(
+                        calendars,
+                        crew.calendar_id,
                         asn,
                         occ_start,
                         resource_id=crew.id,
@@ -624,11 +628,12 @@ def _calendars_windows_horizon(
             needed.update(op.required_aux_ids)
         for aux_id in sorted(needed):
             aux = auxes.get(aux_id)
-            if aux is None or aux.calendar_id is None:
+            if aux is None:
                 continue
             out.extend(
-                _calendar_fit(
-                    calendars.get(aux.calendar_id),
+                _named_calendar_fit(
+                    calendars,
+                    aux.calendar_id,
                     asn,
                     occ_start,
                     resource_id=aux.id,
@@ -706,6 +711,41 @@ def _attended_masks(
         if aux.id in aux_ids:
             add(aux.calendar_id, aux.domain_attributes)
     return masks
+
+
+def _named_calendar_fit(
+    calendars: dict[str, Calendar],
+    calendar_id: str | None,
+    assignment: PlannedAssignment,
+    occ_start: datetime,
+    *,
+    resource_id: str,
+    preemptive: bool,
+    unattended: bool,
+) -> list[Violation]:
+    """A missing calendar_id is the open horizon. A dangling id is not 24/7."""
+    if not calendar_id:
+        return []
+    calendar = calendars.get(calendar_id)
+    if calendar is None:
+        return [
+            _violation(
+                ReasonCode.CALENDAR_BROKEN,
+                f"calendar {calendar_id} is not in the instance",
+                operation_id=assignment.operation_id,
+                resource_id=resource_id,
+                start=assignment.start,
+                end=assignment.end,
+            )
+        ]
+    return _calendar_fit(
+        calendar,
+        assignment,
+        occ_start,
+        resource_id=resource_id,
+        preemptive=preemptive,
+        unattended=unattended,
+    )
 
 
 def _calendar_fit(

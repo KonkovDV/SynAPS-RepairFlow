@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import json
 from datetime import timedelta
+from pathlib import Path
 
 import pytest
 from synaps.model import Assignment
+from tests.fault_campaign import run_fault_campaign
 
 from repairflow.adapter import to_schedule_problem
 from repairflow.checker import check_plan
@@ -14,6 +17,7 @@ from repairflow.model import Calendar, CalendarWindow, PlannedAssignment, Policy
 from repairflow.planner import plan, recheck
 from repairflow.reasons import ReasonCode
 from repairflow.synthetic import synthesize
+from repairflow.versions import SYNAPS_COMMIT
 
 
 def _kernel_row(
@@ -242,25 +246,13 @@ def test_unsupported_dag_is_marked_deprecated() -> None:
 
 @pytest.mark.slow
 def test_bad_mutations_are_not_accepted() -> None:
-    problem = synthesize("tiny", seed=1)
-    outcome = plan(problem, solver_config="GREED")
-    rows = list(outcome.result.assignments)
-    false_accept = 0
-    checked = 0
-    for row in rows:
-        shifted = row.model_copy(
-            update={"start": row.start - timedelta(days=30), "end": row.end - timedelta(days=30)}
-        )
-        mutated = [shifted if item.operation_id == row.operation_id else item for item in rows]
-        result = recheck(problem, assignments=mutated, kernel_status="feasible", solver_config="recheck")
-        checked += 1
-        if result.result.verified_feasible:
-            false_accept += 1
-        dropped = [item for item in rows if item.operation_id != row.operation_id]
-        if dropped:
-            result = recheck(problem, assignments=dropped, kernel_status="feasible", solver_config="recheck")
-            checked += 1
-            if result.result.verified_feasible:
-                false_accept += 1
-    assert checked > 0
-    assert false_accept == 0
+    report = json.loads(Path("docs/fault-campaign.json").read_text(encoding="utf-8"))
+    live = run_fault_campaign(checks=int(report["checked"]))
+    assert live["checked"] >= 10_000
+    assert live["false_accept"] == 0
+    assert report["false_accept"] == 0
+    assert report["checked"] == live["checked"]
+    assert report["input_hash"] == live["input_hash"]
+    assert report["synaps_commit"] == SYNAPS_COMMIT
+    assert report["claim_level"] == "experiment"
+    assert report["data_provenance"] == "synthetic"
