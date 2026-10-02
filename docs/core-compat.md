@@ -3,8 +3,8 @@
 Pinned commit: `f939727cd9369fd9b36438bfac7198f0c39c6d3b`.
 
 This pin is `cf10ca3e8be39d9a46e5d983de75a8066f66ca39` plus auxiliary-resource
-shift calendars. `6178c93b705ff58be21fa74a98651883a2da1169` remains the kernel
-named by the attested evidence manifest until a later docs-only attestation.
+shift calendars. The evidence manifest attests RepairFlow `9ea5a20`, whose
+post-merge CI used this same pin.
 
 Checked on this pin:
 

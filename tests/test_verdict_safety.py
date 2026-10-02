@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+from repairflow.checker import _calendars_windows_horizon
 from repairflow.checker_primitives import lookup_setup_minutes
 from repairflow.cli import main
 from repairflow.model import Calendar, CalendarWindow, FrozenAssignment, RepairFlowProblem, ResultStatus
@@ -130,6 +131,51 @@ def test_empty_calendar_is_unavailable_and_missing_calendar_is_open() -> None:
     assert not any(row.code == ReasonCode.CALENDAR_BROKEN for row in accepted.result.violations)
 
 
+def _with_explicit_open_horizon(row: dict[str, object]) -> dict[str, object]:
+    if row.get("calendar_id"):
+        return row
+    attributes = dict(row.get("domain_attributes") or {})
+    attributes["availability"] = "always_open"
+    return {**row, "domain_attributes": attributes}
+
+
+def test_non_synthetic_resource_without_a_calendar_is_invalid() -> None:
+    problem = synthesize("tiny", seed=1)
+    payload = problem.model_dump(mode="python")
+    payload["data_provenance"] = "open_data"
+    payload["work_centers"] = [_with_explicit_open_horizon(row) for row in payload["work_centers"]]
+    payload["aux_resources"] = [_with_explicit_open_horizon(row) for row in payload["aux_resources"]]
+    payload["crews"] = [{**crew, "calendar_id": None, "domain_attributes": {}} for crew in payload["crews"]]
+    with pytest.raises(ValueError, match="availability=always_open"):
+        RepairFlowProblem.model_validate(payload)
+    payload["crews"] = [_with_explicit_open_horizon(row) for row in payload["crews"]]
+    loaded = RepairFlowProblem.model_validate(payload)
+    assert loaded.crews[0].domain_attributes["availability"] == "always_open"
+
+
+def test_unknown_calendar_id_is_not_a_verified_plan() -> None:
+    problem = synthesize("tiny", seed=1)
+    payload = problem.model_dump(mode="python")
+    payload["crews"][0]["calendar_id"] = "CAL-MISSING"
+    with pytest.raises(ValueError, match="unknown calendar"):
+        RepairFlowProblem.model_validate(payload)
+
+
+def test_dangling_calendar_id_is_not_treated_as_open() -> None:
+    problem = synthesize("tiny", seed=1)
+    greed = plan(problem, solver_config="GREED")
+    broken = problem.model_copy(
+        update={
+            "crews": [
+                row.model_copy(update={"calendar_id": "CAL-MISSING"}) if row.calendar_id is not None else row
+                for row in problem.crews
+            ]
+        }
+    )
+    violations = _calendars_windows_horizon(broken, list(greed.result.assignments))
+    assert any(row.code == ReasonCode.CALENDAR_BROKEN and "CAL-MISSING" in row.message for row in violations)
+
+
 def test_deadline_is_hard_and_due_date_stays_soft() -> None:
     problem = synthesize("tiny", seed=1)
     greed = plan(problem, solver_config="GREED")
@@ -231,6 +277,7 @@ def test_checker_modules_do_not_import_search_or_solver() -> None:
         "capacity.py",
         "lane_setup.py",
         "ledger.py",
+        "domain_verify.py",
     )
     for name in modules:
         tree = ast.parse((root / name).read_text(encoding="utf-8"))

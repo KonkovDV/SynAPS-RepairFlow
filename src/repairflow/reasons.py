@@ -123,7 +123,7 @@ REASON_RU: dict[str, str] = {
     ReasonCode.AMBIGUOUS_CREW: "в одном назначении указано больше одной бригады",
     ReasonCode.AUX_MISSING: "у операции нет обязательной оснастки",
     ReasonCode.KERNEL_STATUS_NOT_FEASIBLE: "статус ядра не допускает вердикт verified",
-    ReasonCode.SKILL_EXPIRED: "срок допуска бригады истёк к старту операции",
+    ReasonCode.SKILL_EXPIRED: "срок допуска бригады истекает до конца операции",
     ReasonCode.JOB_MISMATCH: "заказ в строке плана не совпадает с операцией",
 }
 
@@ -157,7 +157,7 @@ SUGGESTIONS: dict[str, str] = {
     ReasonCode.AMBIGUOUS_CREW: "оставить в назначении одну бригаду и проверить занятость каждой",
     ReasonCode.AUX_MISSING: "назначить каждую обязательную оснастку до проверки",
     ReasonCode.KERNEL_STATUS_NOT_FEASIBLE: (
-        "повторить расчёт до статуса feasible или optimal, либо передать domain_only"
+        "повторить расчёт до статуса feasible или optimal; domain_only не является вердиктом ядра"
     ),
     ReasonCode.SKILL_EXPIRED: "назначить бригаду с действующим допуском или продлить skill_valid_until",
     ReasonCode.JOB_MISMATCH: "поставить в строке заказ, которому принадлежит операция",

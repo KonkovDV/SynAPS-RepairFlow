@@ -28,6 +28,11 @@ def is_unattended(attributes: Mapping[str, Any]) -> bool:
     return str(attributes.get("attendance", "attended")).lower() == "unattended"
 
 
+def declares_open_horizon(attributes: Mapping[str, Any]) -> bool:
+    """24/7 is allowed only when the resource says so."""
+    return str(attributes.get("availability", "")).lower() == "always_open"
+
+
 def held_minutes(start: datetime, end: datetime) -> int:
     return int((end - start).total_seconds() // 60)
 

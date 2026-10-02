@@ -32,7 +32,13 @@ from repairflow.limits import (
     MAX_SPARES,
     MAX_WORK_CENTERS,
 )
-from repairflow.scheduling_contract import held_minutes, is_unattended, open_minutes, policy_of
+from repairflow.scheduling_contract import (
+    declares_open_horizon,
+    held_minutes,
+    is_unattended,
+    open_minutes,
+    policy_of,
+)
 
 SCHEMA_PROBLEM: Literal["repairflow.problem.v1"] = "repairflow.problem.v1"
 SCHEMA_RESULT: Literal["repairflow.result.v1"] = "repairflow.result.v1"
@@ -449,6 +455,16 @@ class RepairFlowProblem(RepairFlowModel):
         for aux in self.aux_resources:
             if aux.calendar_id is not None and aux.calendar_id not in cal_set:
                 issues.append(f"aux {aux.id} references unknown calendar")
+
+        if self.data_provenance != "synthetic":
+            for label, rows in (
+                ("work center", self.work_centers),
+                ("crew", self.crews),
+                ("aux", self.aux_resources),
+            ):
+                for row in rows:
+                    if row.calendar_id is None and not declares_open_horizon(row.domain_attributes):
+                        issues.append(f"{label} {row.id} needs a calendar_id or availability=always_open")
 
         for entry in self.setup_matrix:
             if entry.work_center_id is not None and entry.work_center_id not in wc_set:

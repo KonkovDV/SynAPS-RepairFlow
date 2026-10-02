@@ -9,8 +9,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from repairflow.adapter import to_schedule_problem
-from repairflow.checker import check_plan
+from repairflow.checker import check_domain_assignments
 from repairflow.evidence import evidence_stamp, fingerprint_payload, runtime_manifest
 from repairflow.metrics import compute_metrics
 from repairflow.model import PlannedAssignment, RepairFlowProblem, RepairFlowResult, ResultStatus, Violation
@@ -25,14 +24,7 @@ def verify_domain_plan(
 ) -> RepairFlowResult:
     """Check a shop plan against the domain contract. The kernel is not called."""
 
-    schedule_problem, id_map = to_schedule_problem(problem)
-    violations = check_plan(
-        problem,
-        schedule_problem=schedule_problem,
-        assignments=assignments,
-        id_map=id_map,
-        kernel_status="domain_only",
-    )
+    violations = check_domain_assignments(problem, assignments)
     if extra_violations:
         violations.extend(extra_violations)
         violations.sort(

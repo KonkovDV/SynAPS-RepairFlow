@@ -4,6 +4,10 @@ on:
   push:
     branches: [main]
   pull_request:
+    types: [opened, synchronize, reopened, labeled]
+  schedule:
+    - cron: "17 2 * * *"
+  workflow_dispatch:
 
 jobs:
   lint:
@@ -79,7 +83,11 @@ jobs:
           path: bench/
 
   test-slow:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: >-
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'slow'))
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

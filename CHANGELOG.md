@@ -10,14 +10,16 @@
   `AuxiliaryResource.calendar` on SynAPS `f939727`. The kernel checker and
   CP-SAT keep occupancy inside one shift. An attended calendar with no windows,
   a skill pool with mixed shifts, and a preemptive operation on a published
-  shift stay `KERNEL_CALENDAR_UNSUPPORTED`. The evidence manifest still attests
-  `dc3327d` / run `36905431831` and kernel `6178c93`.
+  shift stay `KERNEL_CALENDAR_UNSUPPORTED`. The evidence manifest attests
+  `9ea5a20` / run `36987936535` and kernel `f939727`. That commit is the
+  checked main; this note does not attest itself.
 - `repairflow verify-plan` checks a shop CSV (заказ, операция, пост, бригада,
   оснастка, начало, конец) without calling the kernel. A clean plan is
   `domain_verified`, not `verified` and not `optimal`.
 - Predecessor links carry `min_lag_min` and optional `max_lag_min`. A v1
   `predecessor_ids` list stays lag 0. A consumable with `receipts` is a
-  reservoir over time. `skill_valid_until` yields `SKILL_EXPIRED`.
+  reservoir over time. `skill_valid_until` yields `SKILL_EXPIRED` when the
+  visit ends after the permit, not only when it starts after the permit.
 - A kernel assignment with more than one crew is `AMBIGUOUS_CREW`. An aux kind
   other than crew or aux is `UNKNOWN_RESOURCE`. Missing required tooling is
   `AUX_MISSING`. `verified` accepts only kernel status `feasible`, `optimal`,
@@ -77,8 +79,22 @@
 - `repairflow.artifact_record.v1` records a local wheel or sdist digest, or a
   PEP 610 archive hash already on disk. It is not the installed-file manifest
   and it does not claim a signature or a transitive lockfile.
-- `docs/evidence-manifest.json` records main `dc3327d` and CI run `36905431831`,
-  including `test-slow`, against the pinned SynAPS commit.
+- `docs/evidence-manifest.json` records checked main `9ea5a20` and CI run
+  `36987936535`, including `test-slow`, against SynAPS `f939727`.
+- A `calendar_id` missing from `calendars` is `CALENDAR_BROKEN` inside the
+  checker. A resource with no `calendar_id` stays open for the horizon.
+- `docs/fault-campaign.json` records 10000 guaranteed-invalid mutations of
+  synthetic tiny GREED with `false_accept` 0. `benchmark/results/benchmark.json`
+  stores the synthetic FIFO/GREED rows with input, config, and result hashes.
+- `domain_only` is the `verify-plan` claim. A kernel recheck of that token is
+  not `verified` and not `optimal`.
+- A non-synthetic resource without `calendar_id` must set
+  `availability=always_open`. Synthetic fixtures may still omit the calendar.
+- The README evidence table is rendered from `docs/evidence-manifest.json`.
+  The manifest is `stale` while it does not name `HEAD`.
+- `benchmark/results/benchmark.json` and `SHA256SUMS` hold the synthetic
+  FIFO/GREED rows. `test-slow` runs on main, nightly, and pull requests
+  labeled `slow`.
 - Kernel and domain checkers agree on the hard decision for a compatible plan:
   clean stays `verified`; precedence, eligibility, work-centre calendar, auxiliary
   capacity, centre overlap and setup mismatch are rejected by both. Diagnostic
