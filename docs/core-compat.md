@@ -24,11 +24,13 @@ RepairFlow calls `FeasibilityChecker.check` with `exhaustive=True` and
 
 ## CP-SAT size boundary
 
-`CPSAT_OPS_CAP` is 80 operations on the submitted instance. A CP-SAT `plan` or
+`CPSAT_OPS_CAP` is 100 operations on the submitted instance. A CP-SAT `plan` or
 kernel repair above that count returns a recorded refusal (`CPSAT_OPS_CAP`)
-and does not call `solve_schedule` or `repair_schedule`. The cap is not a
-measured limit of a real shop and not a claim that an instance of 80 operations
-reaches `optimal`. Domain list solvers are unaffected.
+and does not call `solve_schedule` or `repair_schedule`. On a synthetic
+one-skill card with published shifts, CPSAT-10 returned a checked plan at 100
+operations and timed out with an empty plan at 120. The cap is that checked
+count. It is not a measured limit of a real shop and not a claim that an
+instance of 100 operations reaches `optimal`. Domain list solvers are unaffected.
 
 ## Calendar capability boundary
 

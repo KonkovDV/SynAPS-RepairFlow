@@ -25,11 +25,14 @@
     other than `absent` is not produced.
 13. CP-SAT is a lab capability boundary, not evidence that a real instance of
     that size solves. `plan` and kernel repair refuse a request with more than
-    `CPSAT_OPS_CAP` operations (80). The refusal is a recorded result: empty
+    `CPSAT_OPS_CAP` operations (100). The refusal is a recorded result: empty
     assignments, hard `CPSAT_OPS_CAP`, exit 2, not `verified` and not `optimal`.
     The exact solver is not called, and a domain list solver is not substituted.
-    FIFO, GREED, EDD and ATC are outside this cap. Eighty is the last accepted
-    count, not a claim that an 80-operation instance is solvable.
+    FIFO, GREED, EDD and ATC are outside this cap. One hundred is the last size
+    at which CPSAT-10 returned a checked plan on a synthetic one-skill card
+    with published shifts. One hundred and twenty operations on that card
+    timed out with an empty plan. This is not a claim that a shop of 100
+    operations reaches `optimal`.
 14. `repairflow verify-plan` checks a shop CSV without calling the kernel.
     A clean result is `claim_status=domain_verified` and `verified_feasible=false`.
     It is not `verified` and it is not `optimal`.

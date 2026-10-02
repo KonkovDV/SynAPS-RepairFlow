@@ -15,6 +15,9 @@ MAX_FROZEN = 20_000
 MAX_SPARES = 20_000
 MAX_POOLS = 500
 MAX_PRED_PER_OP = 8
-# Solver capability, not a DoS quota and not evidence that an 80-op instance solves.
-CPSAT_OPS_CAP = 80
+# Last size at which CPSAT-10 returned a checked plan on the synthetic one-skill
+# card with published shifts: 100 operations, feasible, about 7s. The same card
+# at 120 operations timed out with an empty plan. This is an invocation ceiling,
+# not evidence that every 100-operation instance solves.
+CPSAT_OPS_CAP = 100
 MVP_TARGET_OPS = (20, 100)

@@ -152,7 +152,7 @@ SUGGESTIONS: dict[str, str] = {
         "считать этот экземпляр domain GREED/EDD или задать одну непустую смену, которую ядро хранит"
     ),
     ReasonCode.CPSAT_OPS_CAP: (
-        "считать экземпляр domain GREED/EDD/ATC; CP-SAT в этой сборке не вызывается выше 80 операций"
+        "считать экземпляр domain GREED/EDD/ATC; CP-SAT в этой сборке не вызывается выше 100 операций"
     ),
     ReasonCode.AMBIGUOUS_CREW: "оставить в назначении одну бригаду и проверить занятость каждой",
     ReasonCode.AUX_MISSING: "назначить каждую обязательную оснастку до проверки",

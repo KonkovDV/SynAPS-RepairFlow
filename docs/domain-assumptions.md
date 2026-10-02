@@ -47,9 +47,11 @@
 - Missing `idle → first_state` setup cells are a hard contract error. Under
   `missing_setup=reject` the instance is refused; a plan that still uses a missing
   cell is fail-closed as `MISSING_SETUP` (exit 2).
-- CP-SAT is refused, and not invoked, when the instance has more than 80
+- CP-SAT is refused, and not invoked, when the instance has more than 100
   operations (`CPSAT_OPS_CAP`). The result records that route. It is not a
-  fallback to GREED and not evidence that a real shop of that size is solvable.
+  fallback to GREED. One hundred is the last synthetic one-skill card, with
+  published shifts, on which CPSAT-10 returned a checked plan. It is not
+  evidence that a real shop of that size is solvable.
   Domain FIFO, GREED, EDD and ATC do not use this cap.
 - A non-empty crew or auxiliary calendar is compiled into
   `AuxiliaryResource.calendar`. The kernel keeps occupancy inside one published
