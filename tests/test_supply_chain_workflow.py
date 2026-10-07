@@ -29,6 +29,12 @@ def test_actions_are_the_reviewed_tags() -> None:
     assert "publish_results: false" in SCORECARD
 
 
+def test_the_wheel_config_does_not_include_the_package_twice() -> None:
+    project = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    assert 'packages = ["src/repairflow"]' in project
+    assert "force-include" not in project
+
+
 def test_install_uses_hashes_and_the_demo_stays_offline() -> None:
     assert CI.count("--require-hashes") >= 2
     assert "--no-index" in CI
