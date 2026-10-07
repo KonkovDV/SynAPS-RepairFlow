@@ -54,6 +54,25 @@ def test_clean_shop_plan_is_domain_verified_and_not_kernel_verified(tmp_path) ->
     assert '"solver_class": "domain"' in result_text
 
 
+def test_committed_five_error_sheet_exits_2(capsys) -> None:
+    root = Path("schemas/templates/five-errors")
+    exit_code = main(
+        ["verify-plan", "--problem", str(root / "problem.json"), "--plan", str(root / "shop-plan.csv")]
+    )
+    captured = capsys.readouterr().out
+    expected = {
+        ReasonCode.PARTIAL_COVERAGE,
+        ReasonCode.PRECEDENCE_BROKEN,
+        ReasonCode.UNKNOWN_RESOURCE,
+        ReasonCode.AUX_MISSING,
+        ReasonCode.CREW_OVERLAP,
+    }
+    for code in expected:
+        assert code in captured
+        assert REASON_RU[code] in captured
+    assert exit_code == 2
+
+
 def test_five_shop_errors_print_five_russian_reasons(tmp_path, capsys) -> None:
     problem = synthesize("tiny", seed=1)
     aux_id = problem.aux_resources[0].id

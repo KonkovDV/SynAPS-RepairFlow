@@ -23,6 +23,23 @@ Regression tests: `tests/test_verdict_safety.py`, `tests/test_dag_compiler.py`, 
 
 `claim_status=verified` means full coverage and an empty hard notary. It does not mean optimality, a safety certificate, legal compliance, deployment, or a customer effect.
 
+## CSV ingest (2026-10-08)
+
+| Attack | Result |
+| --- | --- |
+| Guess CP1251, or relabel a bundle `synthetic` after deleting the manifest | refused before a decode; `manifest.json` is required for every CSV bundle |
+| Night row 22:00 then 06:00 on the same local date | one window ending the next date; Moscow 22:00 is 19:00 UTC |
+| Next morning already dated | not rolled a second day |
+| Unknown timezone, empty salt, or two numbers that share one crew code | `ValueError` |
+| Salt or personnel number copied into the problem or printed by `solve` | not copied and not printed; the source CSV is left as the customer wrote it |
+| Shop time with no offset and no manifest | still rejected |
+| Shop time with a sibling manifest | converted from `source_tz` |
+| `data_provenance=production_verified` in the manifest | stored as the extract's label; it does not set a plan claim |
+| Sibling `jobs.json` | still preferred over the CSV tables; that path is not this extract |
+| Eight hex characters | the published width; a collision is an error, not a merged crew |
+| Offline image, Astra, RED OS | not run; the hashed wheelhouse is on `ci/supply-chain` |
+| Who holds the salt | still owner decision O4; the code only accepts the salt as an argument |
+
 ## Banned-phrase gate (2026-10-08)
 
 `tests/test_banned_claims.py` reads `docs/BANNED_CLAIMS.txt` and scans `README.md`, `APPLICATION.md`, and `docs/**/*.md`. Owner decision O1 followed the plan's recommendation: rename the two literature pages. Narrowing the rule to "a result claim" was rejected because a test cannot judge that.

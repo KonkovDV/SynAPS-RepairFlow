@@ -42,3 +42,12 @@
     `KERNEL_CALENDAR_UNSUPPORTED`. The kernel's empty calendar means 24/7, so
     it is not used for a closed resource. List solvers that ignore an auxiliary
     shift are still rejected by the checker.
+16. A CSV bundle loads only with `manifest.json`: encoding `utf-8`,
+    `utf-8-sig`, or `cp1251`, a delimiter, `source_tz`, `data_provenance`,
+    and an export version. A local clock with no offset uses that zone.
+    A shift whose local end is not after its start is one window ending the
+    next day. A personnel number becomes `crew-` plus eight hex characters
+    of HMAC-SHA256. The salt is an argument and is not written. The source
+    file is not scrubbed. `data_provenance` is the extract's own label, not
+    a plan claim. There is no offline image and no Astra or RED OS run:
+    the hashed wheelhouse is on another branch, and no such image was here.

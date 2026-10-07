@@ -3,3 +3,4 @@
 synaps @ git+https://github.com/KonkovDV/SynAPS.git@f939727cd9369fd9b36438bfac7198f0c39c6d3b
 pydantic>=2.9
 ortools==9.15.6755
+tzdata==2026.3

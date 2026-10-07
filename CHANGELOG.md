@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- A CSV bundle requires `manifest.json` (encoding, delimiter, source timezone,
+  provenance, export version). A 22:00–06:00 local shift is one window on the
+  next date. A personnel number becomes an eight-hex crew code; the salt is
+  not stored. The same CP1251 extract without the manifest is refused.
+  There is no offline image and no Astra run.
 - Public claim pages are scanned against `docs/BANNED_CLAIMS.txt`.
   The two literature pages were renamed so a banned word is not a file name
   or a heading. A negation is an exact line in

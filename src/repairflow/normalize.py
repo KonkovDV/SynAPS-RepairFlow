@@ -8,45 +8,56 @@ from io import StringIO
 from pathlib import Path
 from typing import Any
 
+from repairflow.ingest import IngestManifest, calendar_window, load_manifest, pseudonymize_crew, read_csv_text
 from repairflow.io import read_text_limited
 from repairflow.model import RepairFlowProblem
 
 
-def load_problem(path: Path) -> RepairFlowProblem:
+def load_problem(path: Path, *, crew_salt: str | None = None) -> RepairFlowProblem:
     suffix = path.suffix.lower()
     if path.is_dir() or suffix == ".csv":
-        return problem_from_csv_bundle(path)
+        return problem_from_csv_bundle(path, crew_salt=crew_salt)
     if suffix == ".json":
         return RepairFlowProblem.model_validate(json.loads(read_text_limited(path)))
     raise ValueError(f"unsupported problem format: {path.suffix}")
 
 
-def problem_from_csv_bundle(path: Path) -> RepairFlowProblem:
+def problem_from_csv_bundle(path: Path, *, crew_salt: str | None = None) -> RepairFlowProblem:
     """Load a directory of CSV tables or a single jobs-style CSV with JSON sidecar.
 
     Expected sibling files: jobs.csv, operations.csv, work_centers.csv, crews.csv.
     A JSON file with the same stem is preferred when present.
+    A CSV bundle without manifest.json is refused. The manifest names the
+    encoding, the delimiter, the source timezone, and the provenance.
     """
 
     sidecar = path.with_suffix(".json")
     if sidecar.is_file():
         return RepairFlowProblem.model_validate_json(read_text_limited(sidecar))
     directory = path if path.is_dir() else path.parent
+    manifest = _require_manifest(directory)
     payload: dict[str, Any] = {
         "schema_version": "repairflow.problem.v1",
         "instance_id": path.name if path.is_dir() else path.stem,
-        "data_provenance": "synthetic",
+        "data_provenance": manifest.data_provenance,
         "planning_horizon": _require_horizon(directory),
-        "jobs": _read_csv(directory / "jobs.csv"),
-        "operations": _read_csv(directory / "operations.csv"),
-        "work_centers": _read_csv(directory / "work_centers.csv"),
-        "crews": _read_csv(directory / "crews.csv"),
-        "aux_resources": _read_csv(directory / "aux_resources.csv", optional=True),
-        "setup_matrix": _read_csv(directory / "setup_matrix.csv", optional=True),
-        "calendars": _read_calendars(directory / "calendars.csv"),
-        "frozen_assignments": _read_csv(directory / "frozen_assignments.csv", optional=True),
-        "spares": _read_csv(directory / "spares.csv", optional=True),
-        "exchange_pools": _read_exchange_pools(directory / "exchange_pools.csv"),
+        "jobs": _read_csv(directory / "jobs.csv", manifest=manifest),
+        "operations": _read_csv(directory / "operations.csv", manifest=manifest),
+        "work_centers": _read_csv(directory / "work_centers.csv", manifest=manifest),
+        "crews": _pseudonymize_crews(
+            _read_csv(directory / "crews.csv", manifest=manifest),
+            salt=crew_salt,
+        ),
+        "aux_resources": _read_csv(directory / "aux_resources.csv", manifest=manifest, optional=True),
+        "setup_matrix": _read_csv(directory / "setup_matrix.csv", manifest=manifest, optional=True),
+        "calendars": _read_calendars(directory / "calendars.csv", manifest=manifest),
+        "frozen_assignments": _read_csv(
+            directory / "frozen_assignments.csv",
+            manifest=manifest,
+            optional=True,
+        ),
+        "spares": _read_csv(directory / "spares.csv", manifest=manifest, optional=True),
+        "exchange_pools": _read_exchange_pools(directory / "exchange_pools.csv", manifest=manifest),
         "policy": {"unknown_fields": "reject", "missing_setup": "reject", "unsupported_dag": "reject"},
     }
     payload = _split_list_fields(payload)
@@ -54,35 +65,86 @@ def problem_from_csv_bundle(path: Path) -> RepairFlowProblem:
     return RepairFlowProblem.model_validate(payload)
 
 
-def _read_csv(path: Path, *, optional: bool = False) -> list[dict[str, Any]]:
+_TEXT_COLUMNS = frozenset({"personnel_number", "табельный"})
+
+
+def _require_manifest(directory: Path) -> IngestManifest:
+    path = directory / "manifest.json"
+    if not path.is_file():
+        raise ValueError(
+            f"{directory} CSV bundle needs manifest.json; refusing to guess encoding or provenance"
+        )
+    return load_manifest(path)
+
+
+def _read_csv(
+    path: Path,
+    *,
+    manifest: IngestManifest,
+    optional: bool = False,
+) -> list[dict[str, Any]]:
     if not path.is_file():
         if optional:
             return []
         raise ValueError(f"missing required CSV table {path}")
-    text = read_text_limited(path)
-    reader = csv.DictReader(StringIO(text))
+    text = read_csv_text(path, manifest)
+    reader = csv.DictReader(StringIO(text), delimiter=manifest.separator())
     rows: list[dict[str, Any]] = []
     for raw in reader:
-        row = {key: _coerce(value) for key, value in raw.items() if key}
+        row: dict[str, Any] = {}
+        for key, value in raw.items():
+            if not key:
+                continue
+            name = key.strip()
+            if name in _TEXT_COLUMNS:
+                row[name] = (value or "").strip()
+            else:
+                row[name] = _coerce(value or "")
         rows.append(row)
     return rows
 
 
-def _read_calendars(path: Path) -> list[dict[str, Any]]:
+def _pseudonymize_crews(rows: list[dict[str, Any]], *, salt: str | None) -> list[dict[str, Any]]:
+    seen: set[str] = set()
+    for row in rows:
+        number = row.get("personnel_number") or row.get("табельный")
+        if number in (None, ""):
+            row.pop("personnel_number", None)
+            row.pop("табельный", None)
+            continue
+        if not isinstance(number, str):
+            number = str(number)
+        if salt is None or salt.strip() == "":
+            raise ValueError("crews.csv names a personnel number but no crew salt was provided")
+        code = pseudonymize_crew(number, salt)
+        if code in seen:
+            raise ValueError("two personnel numbers collapsed to one crew id")
+        seen.add(code)
+        if row.get("code") in (None, "", number):
+            row["code"] = code
+        row["id"] = code
+        row.pop("personnel_number", None)
+        row.pop("табельный", None)
+    return rows
+
+
+def _read_calendars(path: Path, *, manifest: IngestManifest) -> list[dict[str, Any]]:
     if not path.is_file():
         return []
+    zone = manifest.zone()
     grouped: dict[str, dict[str, Any]] = {}
-    for row in _read_csv(path, optional=True):
+    for row in _read_csv(path, manifest=manifest, optional=True):
         cal_id = str(row.get("id") or row.get("calendar_id"))
         grouped.setdefault(cal_id, {"id": cal_id, "code": row.get("code", cal_id), "windows": []})
-        grouped[cal_id]["windows"].append({"start": row["start"], "end": row["end"]})
+        start, end = calendar_window(str(row["start"]), str(row["end"]), zone)
+        grouped[cal_id]["windows"].append({"start": start, "end": end})
     return list(grouped.values())
 
 
-def _read_exchange_pools(path: Path) -> list[dict[str, Any]]:
+def _read_exchange_pools(path: Path, *, manifest: IngestManifest) -> list[dict[str, Any]]:
     grouped: dict[str, dict[str, Any]] = {}
     order: list[str] = []
-    for row in _read_csv(path, optional=True):
+    for row in _read_csv(path, manifest=manifest, optional=True):
         unit_type = row.get("unit_type")
         if not isinstance(unit_type, str) or not unit_type:
             raise ValueError(f"{path} exchange pool row needs unit_type")
@@ -206,6 +268,20 @@ def _parse_skill_expiry(value: Any) -> dict[str, str]:
 
 def write_csv_bundle(directory: Path, problem: RepairFlowProblem) -> None:
     directory.mkdir(parents=True, exist_ok=True)
+    manifest = IngestManifest.model_validate(
+        {
+            "schema": "repairflow.ingest_manifest.v1",
+            "encoding": "utf-8",
+            "delimiter": ",",
+            "source_tz": "UTC",
+            "data_provenance": problem.data_provenance,
+            "export_version": "repairflow-csv",
+        }
+    )
+    (directory / "manifest.json").write_text(
+        json.dumps(manifest.model_dump(mode="json", by_alias=True), ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
     (directory / "horizon.json").write_text(
         json.dumps(
             {

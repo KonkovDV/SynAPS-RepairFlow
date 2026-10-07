@@ -19,6 +19,7 @@
 | Dangling calendar id is not an open horizon | implemented | checker `CALENDAR_BROKEN`. Non-synthetic data must set `calendar_id` or `availability=always_open`. Synthetic data may omit the calendar |
 | Fault campaign of at least 10 000 bad plans | implemented | `tests/fault_campaign.py`, `docs/fault-campaign.json`; synthetic only |
 | Shop plan checked without the kernel | implemented | `repairflow verify-plan`; claim `domain_verified`; `tests/test_shop_plan.py` |
+| CSV ingest manifest, night shift, crew pseudonym | implemented | `src/repairflow/ingest.py`, `tests/test_ingest_manifest.py`; no Astra image |
 | Blocking spares | implemented | checker spare tests |
 | Exchange pool as a stock ledger | implemented | `src/repairflow/ledger.py`, ADR-0004 |
 | Inspection that freezes issued work | implemented | `repairflow inspect`, ADR-0005 |
