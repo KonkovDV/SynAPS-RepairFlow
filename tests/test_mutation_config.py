@@ -16,7 +16,12 @@ _TARGETS = (
 def test_mutmut_targets_are_the_notary_modules() -> None:
     payload = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
     mutmut = payload["tool"]["mutmut"]
-    assert mutmut["source_paths"] == list(_TARGETS)
+    assert mutmut["source_paths"] == ["src/repairflow"]
+    assert mutmut["only_mutate"] == list(_TARGETS)
+    assert "src" not in mutmut["also_copy"]
+    assert "src/repairflow" not in mutmut["also_copy"]
+    assert "tools" in mutmut["also_copy"]
+    assert "docs" in mutmut["also_copy"]
     assert mutmut["pytest_add_cli_args_test_selection"] == ["-m", "not slow", "tests"]
     for path in _TARGETS:
         text = Path(path).read_text(encoding="utf-8")
