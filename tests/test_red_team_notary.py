@@ -2,18 +2,29 @@
 
 from __future__ import annotations
 
+import json
 from datetime import timedelta
+from pathlib import Path
 
 import pytest
 from synaps.model import Assignment
+from tests.fault_campaign import run_fault_campaign
 
 from repairflow.adapter import to_schedule_problem
 from repairflow.checker import check_plan
 from repairflow.explanations import deletion_minimal_operation_ids
-from repairflow.model import Calendar, CalendarWindow, PlannedAssignment, Policy, RepairFlowProblem
+from repairflow.model import (
+    Calendar,
+    CalendarWindow,
+    PlannedAssignment,
+    Policy,
+    RepairFlowProblem,
+    ResultStatus,
+)
 from repairflow.planner import plan, recheck
 from repairflow.reasons import ReasonCode
 from repairflow.synthetic import synthesize
+from repairflow.versions import SYNAPS_COMMIT
 
 
 def _kernel_row(
@@ -84,7 +95,7 @@ def test_missing_required_aux_is_aux_missing() -> None:
         ("optimal", 0),
         ("FEASIBLE", 0),
         ("OPTIMAL", 0),
-        ("domain_only", 0),
+        ("domain_only", 2),
         ("infeasible", 2),
         ("timeout", 2),
         ("error", 2),
@@ -105,7 +116,23 @@ def test_only_admissible_kernel_statuses_exit_zero(status: str, exit_code: int) 
     assert checked.result.exit_code == exit_code
     assert checked.result.verified_feasible is (exit_code == 0)
     if status.lower() == "domain_only":
-        assert checked.result.claim_status != "optimal"
+        assert checked.result.claim_status not in {"verified", "optimal"}
+        assert checked.result.verified_feasible is False
+        assert checked.result.status != ResultStatus.OPTIMAL
+
+
+def test_domain_only_cannot_become_optimal_under_cpsat() -> None:
+    problem = synthesize("tiny", seed=1)
+    planned = plan(problem, solver_config="GREED")
+    checked = recheck(
+        problem,
+        assignments=list(planned.result.assignments),
+        kernel_status="domain_only",
+        solver_config="CPSAT-10",
+    )
+    assert checked.result.verified_feasible is False
+    assert checked.result.claim_status not in {"verified", "optimal"}
+    assert checked.result.status != ResultStatus.OPTIMAL
 
 
 def test_precedence_explanation_keeps_both_operations() -> None:
@@ -242,25 +269,13 @@ def test_unsupported_dag_is_marked_deprecated() -> None:
 
 @pytest.mark.slow
 def test_bad_mutations_are_not_accepted() -> None:
-    problem = synthesize("tiny", seed=1)
-    outcome = plan(problem, solver_config="GREED")
-    rows = list(outcome.result.assignments)
-    false_accept = 0
-    checked = 0
-    for row in rows:
-        shifted = row.model_copy(
-            update={"start": row.start - timedelta(days=30), "end": row.end - timedelta(days=30)}
-        )
-        mutated = [shifted if item.operation_id == row.operation_id else item for item in rows]
-        result = recheck(problem, assignments=mutated, kernel_status="feasible", solver_config="recheck")
-        checked += 1
-        if result.result.verified_feasible:
-            false_accept += 1
-        dropped = [item for item in rows if item.operation_id != row.operation_id]
-        if dropped:
-            result = recheck(problem, assignments=dropped, kernel_status="feasible", solver_config="recheck")
-            checked += 1
-            if result.result.verified_feasible:
-                false_accept += 1
-    assert checked > 0
-    assert false_accept == 0
+    report = json.loads(Path("docs/fault-campaign.json").read_text(encoding="utf-8"))
+    live = run_fault_campaign(checks=int(report["checked"]))
+    assert live["checked"] >= 10_000
+    assert live["false_accept"] == 0
+    assert report["false_accept"] == 0
+    assert report["checked"] == live["checked"]
+    assert report["input_hash"] == live["input_hash"]
+    assert report["synaps_commit"] == SYNAPS_COMMIT
+    assert report["claim_level"] == "experiment"
+    assert report["data_provenance"] == "synthetic"

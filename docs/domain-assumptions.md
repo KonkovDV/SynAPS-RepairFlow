@@ -26,8 +26,12 @@
   already at `max_parallel` is an explicit capacity failure. A broken visit
   restarts at or after its old end. That lane's tail is rescheduled; the other
   lanes of the same post stay frozen with their own setup state.
-- A resource with no `calendar_id` is open for the whole horizon. A calendar with
-  zero windows means an attended resource is unavailable. The domain planner uses
+- Synthetic data may omit `calendar_id`; that resource is open for the horizon.
+  Any other provenance must set `calendar_id` or `domain_attributes.availability =
+  always_open`. A calendar with
+  zero windows means an attended resource is unavailable. A `calendar_id` that is
+  not in `calendars` is an invalid instance; the checker reports `CALENDAR_BROKEN`
+  rather than treating the missing object as open. The domain planner uses
   that same closed reading. `domain_attributes.attendance = unattended` lets that
   resource keep running while its staffed calendar is closed.
 - `domain_attributes.duration_policy` is `exact` when omitted: processing minutes
