@@ -50,7 +50,7 @@ Accepted limits, not a pass:
 - The exchange-pool ledger is still not judged.
 - 10080 is a prefix. A count of the same mutators on this matrix, before the identity filter, was 109665. The nightly script keeps every applicable mutation and fails unless checked is at least 100000 and false_accept is 0. That run has not completed. A cap of 100000 was rejected because it would drop later operations.
 - `false_reject` 0 is this matrix only. The `may_pass` rows are slack moves, so a checker rule those moves never touch is unmeasured.
-- `mutmut` has not run.
+- `mutmut` has not produced a score. Version 3.8.0 needs `os.fork`. This Windows host cannot run it, and the local Ubuntu WSL has Python 3.14 rather than 3.12. The `mutation` CI job is the run. No `# pragma: no mutate` and no mypy pre-filter were added. See `docs/mutation-survivors.md`.
 
 ## Banned-phrase gate (2026-10-08)
 

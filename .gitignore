@@ -14,3 +14,5 @@ dist/
 build/
 .coverage
 htmlcov/
+mutants/
+mutmut-results.txt

@@ -102,3 +102,13 @@ mypy_path = "src"
 [[tool.mypy.overrides]]
 module = ["synaps", "synaps.*"]
 ignore_missing_imports = true
+
+[tool.mutmut]
+source_paths = [
+  "src/repairflow/checker.py",
+  "src/repairflow/capacity.py",
+  "src/repairflow/ledger.py",
+  "src/repairflow/lane_setup.py",
+]
+pytest_add_cli_args_test_selection = ["-m", "not slow", "tests"]
+pytest_add_cli_args = ["-q", "--tb=line"]

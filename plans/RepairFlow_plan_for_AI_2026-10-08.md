@@ -113,7 +113,7 @@ python tools/verify_schema.py, python tools/export_schemas.py, python tools/veri
 - **Acceptance:** гейт зелёный, allowlist короткий и с причиной у каждой строки, ни одного числа без источника.
 
 ### Фаза 1. Сильная fault-кампания (2–3 дня) — главный аргумент «нотариуса»
-Статус: отчёт v2 записан (checked 10080, false_accept 0, false_reject 0, must_reject 9321, may_pass 759). Nightly-скрипт гоняет всю матрицу без отсечения хвоста; прогон ≥ 100 000 ещё не выполнен. mutmut не начат. Фазу не закрывать. Оракул под checker не подгонять.
+Статус: отчёт v2 записан (checked 10080, false_accept 0, false_reject 0, must_reject 9321, may_pass 759). Nightly-скрипт гоняет всю матрицу без отсечения хвоста; прогон ≥ 100 000 ещё не выполнен. mutmut 3.8.0 настроен на четыре модуля нотариуса и запускается в CI на Linux: на Windows нет fork, в WSL только Python 3.14. Очков мутаций нет, пока job не завершился. Фазу не закрывать. Оракул под checker не подгонять.
 Ветка `test/fault-campaign-v2`.
 1. Оракул `tests/oracle_minutes.py`: поминутная проверка на малых инстансах (горизонт ≤ 3 суток). Импортирует только stdlib и `repairflow.model`, не `checker`. Проверяет покрытие, precedence с лагами, ёмкость постов, бригад и оснастки (`max_parallel`, setup в occupancy), календари (закрытый = закрыт), допуски по концу визита, окна, жёсткие дедлайны, frozen, расход ЗИП и ротаблов.
 2. Мутаторы в `tests/fault_campaign.py`: сдвиг на ±k минут (k ∈ {1, 5, 30, 240}), смена поста, смена бригады, удаление оснастки, дубль строки, перерасход ЗИП/ротабла, выход из окна, нарушение precedence/lag, истёкший допуск, сдвиг frozen, setup = 0, выход за горизонт.
@@ -224,6 +224,6 @@ python tools/verify_schema.py, python tools/export_schemas.py, python tools/veri
 
 ## 8. Что не проверено на этом срезе
 - Release notes actions v7 и совместимость с текущими шагами.
-- Скорость кампании на 100 000 и поведение `mutmut` на Windows (может понадобиться WSL или CI).
+- Скорость кампании на 100 000. `mutmut` 3 на Windows не запускается: нужен `os.fork`. WSL Ubuntu здесь с Python 3.14, не 3.12, поэтому первый прогон — job `mutation` в CI.
 - Сборка Docker-образа под Astra/РЕД ОС.
 - `planner.py`, `adapter.py`, `normalize.py` целиком на этом срезе не перечитывались: пункты [ПРОВЕРИТЬ] подтверждать тестом до правки.

@@ -6,6 +6,9 @@
   `repairflow.model`, refuses a horizon over eight days or a timestamp off the
   minute, and is checked on hand-built plans. It does not judge the exchange-pool
   ledger.
+- `mutmut` 3.8.0 is configured for the four notary modules. It needs
+  `os.fork`, so the run is a Linux CI job, not a Windows score. No mutation
+  score is claimed until that job finishes.
 - Fault campaign v2 labels each mutation with that oracle. The committed
   matrix checks 10080 plans across `tiny` and `repair-site-mvp`, seeds 1–30,
   and GREED, EDD, ATC. `false_accept` is 0 and `false_reject` is 0. 9321 are
