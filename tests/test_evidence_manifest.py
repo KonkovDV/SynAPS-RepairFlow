@@ -47,9 +47,23 @@ def test_evidence_manifest_matches_the_pinned_kernel() -> None:
 
 def test_fault_campaign_denominator_is_committed() -> None:
     payload = json.loads(Path("docs/fault-campaign.json").read_text(encoding="utf-8"))
-    assert payload["schema"] == "repairflow.fault_campaign.v1"
+    assert payload["schema"] == "repairflow.fault_campaign.v2"
     assert payload["checked"] >= 10_000
     assert payload["false_accept"] == 0
+    assert payload["must_reject"] + payload["may_pass"] == payload["checked"]
+    assert isinstance(payload["false_reject"], int)
+    assert payload["false_reject_reason"]
+    assert payload["oracle"] == "tests.oracle_minutes"
+    assert payload["per_baseline"] == 56
+    assert payload["seeds"] == list(range(1, 31))
+    assert payload["presets"] == ["tiny", "repair-site-mvp"]
+    assert payload["solvers"] == ["GREED", "EDD", "ATC"]
+    assert {"duplicate", "spare_overuse", "rotable_clash", "shift_frozen", "setup_zero"} <= set(
+        payload["by_mutator"]
+    )
+    for counts in payload["by_mutator"].values():
+        assert counts["false_accept"] == 0
+        assert counts["checked"] >= 1
     assert payload["synaps_commit"] == SYNAPS_COMMIT
     assert payload["claim_level"] == "experiment"
     assert payload["data_provenance"] == "synthetic"

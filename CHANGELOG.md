@@ -5,7 +5,13 @@
 - `tests/oracle_minutes.py` is an independent minute oracle. It imports only
   `repairflow.model`, refuses a horizon over eight days or a timestamp off the
   minute, and is checked on hand-built plans. It does not judge the exchange-pool
-  ledger. The fault-campaign report is still v1.
+  ledger.
+- Fault campaign v2 labels each mutation with that oracle. The committed
+  matrix checks 10080 plans across `tiny` and `repair-site-mvp`, seeds 1–30,
+  and GREED, EDD, ATC. `false_accept` is 0 and `false_reject` is 0. 9321 are
+  `must_reject` and 759 are `may_pass` (a later shift or another post that
+  both sides still accept). The nightly path keeps every applicable mutation.
+  That uncapped run is not in this commit. `mutmut` is not run.
 - Public claim pages are scanned against `docs/BANNED_CLAIMS.txt`.
   The two literature pages were renamed so a banned word is not a file name
   or a heading. A negation is an exact line in

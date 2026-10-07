@@ -1,19 +1,223 @@
 {
-  "schema": "repairflow.fault_campaign.v1",
-  "checked": 10000,
+  "schema": "repairflow.fault_campaign.v2",
+  "checked": 10080,
   "false_accept": 0,
-  "preset": "tiny",
-  "seed": 1,
-  "solver_config": "GREED",
-  "mutations": [
-    "shift_out",
-    "drop",
-    "wrong_crew",
-    "same_slot",
-    "bad_duration"
+  "false_reject": 0,
+  "must_reject": 9321,
+  "may_pass": 759,
+  "false_reject_reason": "The checker rejected no plan that the oracle accepted in this matrix.",
+  "presets": [
+    "tiny",
+    "repair-site-mvp"
   ],
-  "input_hash": "ad52954ea11c7a111e188de7d4ae8d045f12e1b3a09e6c918f8421712d961459",
+  "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30
+  ],
+  "solvers": [
+    "GREED",
+    "EDD",
+    "ATC"
+  ],
+  "per_baseline": 56,
+  "mutations": [
+    "shift+1",
+    "shift-1",
+    "shift+5",
+    "shift-5",
+    "shift+30",
+    "shift-30",
+    "shift+240",
+    "shift-240",
+    "change_post",
+    "change_crew",
+    "drop_aux",
+    "duplicate",
+    "spare_overuse",
+    "rotable_clash",
+    "exit_window",
+    "precedence",
+    "expire_permit",
+    "shift_frozen",
+    "setup_zero",
+    "exit_horizon"
+  ],
+  "by_mutator": {
+    "change_crew": {
+      "checked": 540,
+      "must_reject": 540,
+      "false_accept": 0,
+      "false_reject": 0
+    },
+    "change_post": {
+      "checked": 540,
+      "must_reject": 474,
+      "false_accept": 0,
+      "false_reject": 0,
+      "may_pass": 66
+    },
+    "drop_aux": {
+      "checked": 336,
+      "must_reject": 336,
+      "false_accept": 0,
+      "false_reject": 0
+    },
+    "duplicate": {
+      "checked": 540,
+      "must_reject": 540,
+      "false_accept": 0,
+      "false_reject": 0
+    },
+    "exit_horizon": {
+      "checked": 540,
+      "must_reject": 540,
+      "false_accept": 0,
+      "false_reject": 0
+    },
+    "exit_window": {
+      "checked": 540,
+      "must_reject": 540,
+      "false_accept": 0,
+      "false_reject": 0
+    },
+    "expire_permit": {
+      "checked": 540,
+      "must_reject": 540,
+      "false_accept": 0,
+      "false_reject": 0
+    },
+    "precedence": {
+      "checked": 540,
+      "must_reject": 540,
+      "false_accept": 0,
+      "false_reject": 0
+    },
+    "rotable_clash": {
+      "checked": 180,
+      "must_reject": 180,
+      "false_accept": 0,
+      "false_reject": 0
+    },
+    "setup_zero": {
+      "checked": 540,
+      "must_reject": 540,
+      "false_accept": 0,
+      "false_reject": 0
+    },
+    "shift+1": {
+      "checked": 720,
+      "must_reject": 474,
+      "false_accept": 0,
+      "false_reject": 0,
+      "may_pass": 246
+    },
+    "shift+240": {
+      "checked": 540,
+      "must_reject": 408,
+      "false_accept": 0,
+      "false_reject": 0,
+      "may_pass": 132
+    },
+    "shift+30": {
+      "checked": 630,
+      "must_reject": 495,
+      "false_accept": 0,
+      "false_reject": 0,
+      "may_pass": 135
+    },
+    "shift+5": {
+      "checked": 630,
+      "must_reject": 450,
+      "false_accept": 0,
+      "false_reject": 0,
+      "may_pass": 180
+    },
+    "shift-1": {
+      "checked": 720,
+      "must_reject": 720,
+      "false_accept": 0,
+      "false_reject": 0
+    },
+    "shift-240": {
+      "checked": 540,
+      "must_reject": 540,
+      "false_accept": 0,
+      "false_reject": 0
+    },
+    "shift-30": {
+      "checked": 564,
+      "must_reject": 564,
+      "false_accept": 0,
+      "false_reject": 0
+    },
+    "shift-5": {
+      "checked": 630,
+      "must_reject": 630,
+      "false_accept": 0,
+      "false_reject": 0
+    },
+    "shift_frozen": {
+      "checked": 90,
+      "must_reject": 90,
+      "false_accept": 0,
+      "false_reject": 0
+    },
+    "spare_overuse": {
+      "checked": 180,
+      "must_reject": 180,
+      "false_accept": 0,
+      "false_reject": 0
+    }
+  },
+  "by_preset": {
+    "repair-site-mvp": {
+      "checked": 5040,
+      "must_reject": 4506,
+      "false_accept": 0,
+      "false_reject": 0,
+      "may_pass": 534
+    },
+    "tiny": {
+      "checked": 5040,
+      "must_reject": 4815,
+      "false_accept": 0,
+      "false_reject": 0,
+      "may_pass": 225
+    }
+  },
+  "false_accept_examples": [],
+  "false_reject_examples": [],
+  "input_hash": "5908eeda569fde0dc8322e43862c19786bd6380e42acb8b503f4a2cfd2656e5b",
   "synaps_commit": "f939727cd9369fd9b36438bfac7198f0c39c6d3b",
   "claim_level": "experiment",
-  "data_provenance": "synthetic"
+  "data_provenance": "synthetic",
+  "oracle": "tests.oracle_minutes"
 }

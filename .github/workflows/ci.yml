@@ -97,3 +97,11 @@ jobs:
       - run: python -m pip install -U pip
       - run: python -m pip install -e ".[dev]"
       - run: python -m pytest -q -m slow
+      - name: Nightly fault campaign
+        if: github.event_name == 'schedule' && always()
+        run: python -c "from pathlib import Path; from tests.fault_campaign import write_nightly; write_nightly(Path('out/fault-campaign-nightly.json'))"
+      - uses: actions/upload-artifact@v4
+        if: github.event_name == 'schedule' && always()
+        with:
+          name: fault-campaign-nightly
+          path: out/fault-campaign-nightly.json

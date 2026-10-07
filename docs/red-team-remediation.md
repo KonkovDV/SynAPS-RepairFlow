@@ -29,7 +29,28 @@ Regression tests: `tests/test_verdict_safety.py`, `tests/test_dag_compiler.py`, 
 
 Closed on those hand cases: one-minute overlap versus a shared endpoint, setup time inside occupancy, skill expiry at the visit end, hard deadline versus soft due date, a closed calendar, precedence lags, frozen position, setup cell, consumable receipts, rotable return lag, a preemptive gap, two lanes versus a third, and refusal of an eight-day-plus horizon or a sub-minute timestamp.
 
-Accepted limit: the exchange-pool ledger is not judged. The campaign file is still v1, so this oracle is not yet a false-accept measurement.
+Accepted limit: the exchange-pool ledger is not judged.
+
+## Fault campaign v2 (2026-10-08)
+
+The oracle labels each mutation. `false_accept` means the checker verified a plan the oracle rejected. `false_reject` means the checker rejected a plan the oracle accepted. An unchanged plan is not counted. The oracle module was not edited to match the checker.
+
+Committed matrix in `docs/fault-campaign.json`: `tiny` and `repair-site-mvp`, seeds 1–30, GREED, EDD and ATC, 56 mutations per verified baseline. checked 10080, false_accept 0, false_reject 0, must_reject 9321, may_pass 759. The reason string in that file is the false_reject explanation: the checker rejected no oracle-accepted plan in this matrix.
+
+The 759 `may_pass` rows are real agreements, not invalid plans. They are later shifts (`shift+1`, `shift+5`, `shift+30`, `shift+240`) and some post changes. On these left-packed baselines every negative shift was a hard violation for both sides. That does not prove every shift is invalid.
+
+Sampling: mutator families are round-robin, so the 56-prefix contains every family that applies on that baseline. A one-variant family appears once (`spare_overuse` 180, `rotable_clash` 180, `shift_frozen` 90 because only the repair-site preset freezes a row). `drop_aux` is 336 because `tiny` has no aux. Before this order, a prefix of 56 would have been the first operations' shifts and would have dropped spare, rotable and frozen.
+
+A full pass of `tiny` seed 1 (GREED, EDD, ATC) and of `repair-site-mvp` seed 1 (GREED) also disagreed nowhere. That probe is not part of the committed denominator.
+
+`exit_horizon` sets the visit end to one minute past the planning horizon. The problem horizon stays two or seven days, so the oracle's eight-day refusal does not apply. A mutation that raised `OracleLimit` would have aborted the run. None did.
+
+Accepted limits, not a pass:
+
+- The exchange-pool ledger is still not judged.
+- 10080 is a prefix. A count of the same mutators on this matrix, before the identity filter, was 109665. The nightly script keeps every applicable mutation and fails unless checked is at least 100000 and false_accept is 0. That run has not completed. A cap of 100000 was rejected because it would drop later operations.
+- `false_reject` 0 is this matrix only. The `may_pass` rows are slack moves, so a checker rule those moves never touch is unmeasured.
+- `mutmut` has not run.
 
 ## Banned-phrase gate (2026-10-08)
 
