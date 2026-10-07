@@ -1,0 +1,3 @@
+benchmark/results/** text eol=lf
+docs/evidence-manifest.json text eol=lf
+docs/fault-campaign.json text eol=lf

@@ -60,10 +60,16 @@ def test_fault_campaign_denominator_is_committed() -> None:
     assert len(payload["input_hash"]) == 64
 
 
+def _lf_sha256(path: Path) -> str:
+    """Hash the LF form. Git stores these evidence files with LF endings."""
+    data = path.read_bytes().replace(b"\r\n", b"\n")
+    return hashlib.sha256(data).hexdigest()
+
+
 def test_readme_evidence_table_is_generated() -> None:
     manifest = json.loads(_MANIFEST.read_text(encoding="utf-8"))
     benchmark_path = Path("benchmark/results/benchmark.json")
-    digest = hashlib.sha256(benchmark_path.read_bytes()).hexdigest()
+    digest = _lf_sha256(benchmark_path)
     sums = Path("benchmark/results/SHA256SUMS").read_text(encoding="utf-8")
     assert sums.strip() == f"{digest}  benchmark.json"
     campaign = json.loads(Path("docs/fault-campaign.json").read_text(encoding="utf-8"))
@@ -91,6 +97,14 @@ def test_committed_benchmark_rows_carry_hashes() -> None:
         row for row in rows if row["preset"] == "tiny" and row["seed"] == 1 and row["solver"] == "GREED"
     )
     fresh = plan(synthesize("tiny", seed=1), solver_config="GREED")
+    # result_hash includes runtime_manifest, so it identifies the snapshot
+    # machine. The schedule itself is what must match on every runner.
+    objective = fresh.result.objective
     assert fresh.result.input_hash == tiny["input_hash"]
-    assert fresh.result.result_hash == tiny["result_hash"]
+    assert fresh.result.status.value == tiny["status"]
+    assert fresh.result.exit_code == tiny["exit_code"]
     assert fresh.result.verified_feasible is True
+    assert fresh.result.verified_feasible == tiny["verified"]
+    assert len(fresh.result.violations) == tiny["violations"]
+    assert float(objective["makespan_minutes"]) == tiny["makespan_min"]
+    assert float(objective["coverage"]) == tiny["coverage"]

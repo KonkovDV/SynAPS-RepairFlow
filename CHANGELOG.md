@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- `benchmark/results/SHA256SUMS` is the LF git blob of `benchmark.json`.
+  A fresh GREED row is checked by input hash, status, coverage and makespan.
+  `result_hash` stays in the snapshot and includes the machine runtime.
 - CP-SAT is invoked up to 100 operations. That is the last size at which
   CPSAT-10 returned a checked plan on a synthetic one-skill card with published
   shifts. One hundred and twenty operations on that card timed out empty.
