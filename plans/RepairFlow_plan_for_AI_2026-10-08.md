@@ -141,7 +141,7 @@ python tools/verify_schema.py, python tools/export_schemas.py, python tools/veri
 - **Acceptance:** лабораторная часть `docs/release-checklist.md` отмечена со ссылками на прогоны. Офлайн-demo зелёный.
 
 ### Фаза 4. Журнал оператора v2 (2–3 дня)
-Статус: цепочка, lock, fsync, `repairflow decide` и `repairflow log verify|stats` записаны. Журнал не подписан. Обёртка `tools/append_decision.py` не сверяет файл результата.
+Статус: цепочка, lock, fsync, `repairflow decide` и `repairflow log verify|stats` записаны. Linux dispatch `37701431554` на `9cd4ce0` зелёный. Журнал не подписан. Обёртка `tools/append_decision.py` не сверяет файл результата.
 Ветка `feat/decision-log-chain`.
 1. Падающие тесты: подмена строки в середине ловится; перестановка двух строк ловится; обрезанный хвост ловится, если известен якорь (хэш головы в evidence-бандле); два параллельных писателя не перемешивают строки.
 2. `DecisionEvent` v2: `prev_hash` (первая запись — 64 нуля) и `event_hash` = SHA-256 канонического JSON без `event_hash`. Журнал v1 без цепочки читается только как `legacy`. Смесь v1 и v2 — ошибка.
