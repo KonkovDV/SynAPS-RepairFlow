@@ -7,6 +7,9 @@ def test_one_command_mvp_readiness(tmp_path, capsys) -> None:
     assert main(["demo", "--out", str(tmp_path)]) == 0
     out = capsys.readouterr().out
     assert "MVP readiness: PASS" in out
+    assert "post_down old=['CALENDAR_BROKEN']" in out
+    assert "replan_verified=True" in out
+    assert (tmp_path / "post-down.json").is_file()
     assert "CPSAT status=" in out
     assert "verified=True" in out
     assert "code=KERNEL_CALENDAR_UNSUPPORTED" not in out

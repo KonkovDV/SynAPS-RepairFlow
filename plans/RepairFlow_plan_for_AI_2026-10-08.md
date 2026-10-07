@@ -151,6 +151,7 @@ python tools/verify_schema.py, python tools/export_schemas.py, python tools/veri
 - **Acceptance:** все атаки из п. 1 ловятся. `docs/operator-decision-log.md` обновлён. Псевдонимизация `operator_code` не ослаблена.
 
 ### Фаза 5. Типизированные сбои (1–2 недели)
+Статус: пять событий в `events.py`, частный календарь вместо закрытия общего `CAL-DAY`, окно 8 часов, демо «пост сломался» на позднем визите. Кампания tiny, 5×30, `false_accept` 0, отчёт `docs/disruption-campaign.json`. Ранняя дыра на плотной дорожке MVP отпускает хвост, и списочный ремонт может вернуть `PARTIAL`. Каталога вариантов маршрута нет. Это не аттестация main.
 Ветка `feat/disruption-events`.
 1. `DisruptionEvent` (дискриминированное объединение) в `events.py`: `POST_DOWN(work_center_id, start, end)`, `PART_DELAY(spare_id, available_at)`, `CREW_ABSENT(crew_id, start, end)`, `DURATION_OVERRUN(operation_id, new_duration_min)`, `URGENT_JOB(job, operations)`.
 2. `apply_disruption(problem, event) -> RepairFlowProblem` и затронутые операции → `replan_after_disruption` с frozen. Неизвестные id — ошибка, не пропуск.

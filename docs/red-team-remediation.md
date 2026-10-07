@@ -16,12 +16,28 @@ Regression tests: `tests/test_verdict_safety.py`, `tests/test_dag_compiler.py`, 
 ## Still outside this repository
 
 1. A writer for the operator decision log.
-2. MUS/MCS explanations, `POST_DOWN`, `PART_DELAY`, and a route-variant catalogue.
+2. MUS/MCS explanations and a route-variant catalogue.
 3. A hash lock of every transitive wheel, and a signed release artifact.
 4. A kernel encoding of a closed calendar, a mixed skill-pool shift, or preemptive open-minute counting. Non-empty shifts are compiled. The domain checker still enforces the rest.
 5. A named business owner, a legal entity and IP basis, and a signed data agreement for any real pilot.
 
 `claim_status=verified` means full coverage and an empty hard notary. It does not mean optimality, a safety certificate, legal compliance, deployment, or a customer effect.
+
+## Typed disruptions (2026-10-08)
+
+| Attack | Result |
+| --- | --- |
+| Close a shared calendar so every post and crew stops | private calendar `DISRUPT-{id}`; the shared windows stay |
+| Unknown post, crew, spare, operation, or predecessor | `ValueError`; nothing is skipped |
+| Same duration, or a duplicate urgent job or operation id | `ValueError` |
+| Receipt dated before `PART_DELAY.available_at` | that receipt is dropped, so it cannot bypass `available_from` |
+| Issued plan kept after the event | recheck; the five types fail with the codes in `tests/test_disruption_events.py` |
+| Move a visit that starts inside the next 8 hours when the event missed it | it stays; a direct hit is still released |
+| Move an unrelated frozen slot | it stays |
+| Count a no-op event as a success | the campaign raises if the expected code is absent |
+| 5 types × tiny seeds 1–30 | `false_accept` 0, 150 replanned (`docs/disruption-campaign.json`) |
+| First visit of a packed MVP lane | the tail is released and list repair can return `PARTIAL`; the demo uses the latest visit |
+| Route-variant catalogue | not modeled |
 
 ## Banned-phrase gate (2026-10-08)
 

@@ -12,10 +12,17 @@
 9. A soft `due_date` miss is the KPI `DUE_MISSED`. A hard finish is
    `Job.deadline` (`DEADLINE_MISSED`) or `Operation.latest_finish`
    (`WINDOW_BROKEN`).
-10. Spares remain a blocking availability check. The exchange pool is a separate
-    stock ledger (`EXCHANGE_POOL_STOCKOUT`, hard only when `pool.hard` is true).
-    `repairflow inspect` inserts one revealed branch and keeps every already issued slot.
-    It does not yet model `POST_DOWN`, `PART_DELAY`, or a catalogue of route variants.
+10. Typed disruptions are `POST_DOWN`, `PART_DELAY`, `CREW_ABSENT`,
+    `DURATION_OVERRUN`, and `URGENT_JOB`. An unknown id is an error.
+    The issued plan is rechecked on the changed card. `replan_disruption`
+    freezes visits the event did not hit. A rolling window of 8 hours keeps
+    earlier visits unless the event hits them. On the tiny preset, five types
+    and seeds 1–30 gave `false_accept` 0 (`docs/disruption-campaign.json`).
+    Taking down the first visit of a packed lane releases the tail, and list
+    repair can then return `PARTIAL`. The demo uses the latest visit, where
+    that tail is one operation. The exchange pool stays a separate ledger.
+    There is no catalogue of route variants. `repairflow inspect` still
+    inserts one revealed branch and keeps every already issued slot.
 11. `optimal` does not mean “optimal repair plan” when the compiler changed the card.
     The report scope is the compiled chain/windows. More than one fixpoint iteration
     caps the claim at `verified`.

@@ -24,7 +24,13 @@ from repairflow.adapter import (
 )
 from repairflow.checker import binding_from_aux, check_plan
 from repairflow.dag_compiler import CompiledDag, compile_dag, propagate_windows
-from repairflow.events import InspectionEvent, apply_inspection
+from repairflow.events import (
+    DisruptionEvent,
+    InspectionEvent,
+    affected_operation_ids,
+    apply_disruption,
+    apply_inspection,
+)
 from repairflow.evidence import evidence_stamp, fingerprint_payload, runtime_manifest, to_canonical
 from repairflow.kernel_compat import (
     KERNEL_CALENDAR_UNSUPPORTED,
@@ -142,12 +148,76 @@ def plan(
     )
 
 
+PROTECTED_WINDOW_HOURS = 8
+
+
+def protected_operation_ids(
+    assignments: list[PlannedAssignment],
+    *,
+    now: datetime,
+    hours: int = PROTECTED_WINDOW_HOURS,
+) -> list[str]:
+    """Visits that start inside the rolling window stay put unless the event hits them."""
+
+    if hours < 0:
+        raise ValueError("protected window cannot be negative")
+    limit = now + timedelta(hours=hours)
+    return [row.operation_id for row in assignments if row.start < limit]
+
+
+def replan_disruption(
+    problem: RepairFlowProblem,
+    *,
+    base: PlanOutcome,
+    event: DisruptionEvent,
+    solver_config: str = "GREED",
+    now: datetime | None = None,
+) -> PlanOutcome:
+    """Apply one typed disruption, freeze the rest, and record nervousness."""
+
+    revised = apply_disruption(problem, event)
+    affected = affected_operation_ids(problem, event, list(base.result.assignments))
+    protect: list[str] = []
+    if now is not None:
+        hit = set(affected)
+        protect = [
+            op_id
+            for op_id in protected_operation_ids(list(base.result.assignments), now=now)
+            if op_id not in hit
+        ]
+    outcome = replan_after_disruption(
+        revised,
+        base=base,
+        disrupted_operation_ids=affected,
+        solver_config=solver_config,
+        protect_operation_ids=protect,
+    )
+    diff = compare_nervousness(
+        base.result,
+        outcome.result,
+        frozen_operation_ids=set(protect),
+    )
+    notes: list[Violation] = []
+    if diff.ratio > revised.policy.nervousness_warn_ratio:
+        notes.append(
+            Violation(
+                code=ReasonCode.NERVOUSNESS_HIGH,
+                message=REASON_RU[ReasonCode.NERVOUSNESS_HIGH],
+                severity="kpi",
+                suggested_relaxation=SUGGESTIONS[ReasonCode.NERVOUSNESS_HIGH],
+                details={"ratio": diff.ratio, "moved": len(diff.moved)},
+            )
+        )
+    return _attach_replan_notes(outcome, notes, diff.as_dict())
+
+
 def replan_after_disruption(
     problem: RepairFlowProblem,
     *,
     base: PlanOutcome,
     disrupted_operation_ids: list[str],
     solver_config: str = "GREED",
+    protect_operation_ids: list[str] | None = None,
 ) -> PlanOutcome:
     known = {op.id for op in problem.operations}
     unknown = [op_id for op_id in disrupted_operation_ids if op_id not in known]
@@ -163,6 +233,7 @@ def replan_after_disruption(
             base=base,
             disrupted_operation_ids=list(disrupted_operation_ids),
             solver_config=solver_config.upper(),
+            protect_operation_ids=list(protect_operation_ids or []),
         )
     refused = _kernel_calendar_refusal(problem, solver_config=f"repair:{solver_config}")
     if refused is not None:
@@ -222,6 +293,7 @@ def _replan_lane_local(
     base: PlanOutcome,
     disrupted_operation_ids: list[str],
     solver_config: str,
+    protect_operation_ids: list[str] | None = None,
 ) -> PlanOutcome:
     """Reschedule a broken visit without borrowing another lane's setup state.
 
@@ -233,6 +305,8 @@ def _replan_lane_local(
 
     disrupted = set(disrupted_operation_ids)
     release = _lane_disruption_release(problem, base.result.assignments, disrupted)
+    protected = set(protect_operation_ids or []) - disrupted
+    release -= protected
     locked = extract_frozen_from_planned(
         assignments=list(base.result.assignments),
         skip_operation_ids=release,

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- `POST_DOWN`, `PART_DELAY`, `CREW_ABSENT`, `DURATION_OVERRUN`, and `URGENT_JOB`
+  change the card and recheck the issued plan. `replan_disruption` freezes
+  visits the event missed, including those that start inside the next 8 hours.
+  On tiny seeds 1–30 the five types gave `false_accept` 0. A packed lane can
+  still return `PARTIAL` when the hole is early; the demo takes the latest visit.
 - Public claim pages are scanned against `docs/BANNED_CLAIMS.txt`.
   The two literature pages were renamed so a banned word is not a file name
   or a heading. A negation is an exact line in

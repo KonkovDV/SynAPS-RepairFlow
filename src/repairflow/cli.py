@@ -11,12 +11,18 @@ from typing import Any
 from repairflow.benchmark import run_benchmark
 from repairflow.diff import diff_plans
 from repairflow.domain_verify import verify_domain_plan
-from repairflow.events import InspectionEvent
+from repairflow.events import InspectionEvent, PostDown, apply_disruption
 from repairflow.evidence import verify_plan_hashes
 from repairflow.io import read_text_limited
 from repairflow.model import PlannedAssignment, RepairFlowResult
 from repairflow.normalize import load_problem
-from repairflow.planner import plan, recheck, replan_after_disruption, replan_after_inspection
+from repairflow.planner import (
+    plan,
+    recheck,
+    replan_after_disruption,
+    replan_after_inspection,
+    replan_disruption,
+)
 from repairflow.reasons import REASON_RU
 from repairflow.report import render_html, render_markdown
 from repairflow.shop_plan import load_shop_plan
@@ -291,6 +297,39 @@ def _demo(preset: str, out_dir: Path, *, skip_cpsat: bool) -> int:
     _write_json(out_dir / "replan.json", replanned.result.model_dump(mode="json"))
     frozen_kept = diff_plans(problem, greed.result, replanned.result)
     _write_json(out_dir / "replan-diff.json", frozen_kept)
+    issued_frozen = {row.operation_id for row in problem.frozen_assignments if row.immutable}
+    # The latest visit keeps the released lane tail short. An early hole on a
+    # packed post can leave the list repair with an uncovered chain.
+    sample = max(
+        (row for row in greed.result.assignments if row.operation_id not in issued_frozen),
+        key=lambda row: row.start,
+    )
+    down = PostDown(work_center_id=sample.work_center_id, start=sample.start, end=sample.end)
+    revised = apply_disruption(problem, down)
+    old_down = recheck(
+        revised,
+        assignments=list(greed.result.assignments),
+        kernel_status="feasible",
+        solver_config="post-down-old",
+    )
+    post_replanned = replan_disruption(problem, base=greed, event=down)
+    _write_json(out_dir / "post-down.json", post_replanned.result.model_dump(mode="json"))
+    old_codes = sorted({row.code for row in old_down.result.violations})
+    placed = {row.operation_id: row for row in post_replanned.result.assignments}
+    issued = {row.operation_id: row for row in greed.result.assignments}
+    frozen_moved = 0
+    for op_id in issued_frozen:
+        old = issued.get(op_id)
+        new = placed.get(op_id)
+        if old is None or new is None or old.start != new.start or old.work_center_id != new.work_center_id:
+            frozen_moved += 1
+    post_down_ok = (
+        "CALENDAR_BROKEN" in old_codes
+        and not old_down.result.verified_feasible
+        and post_replanned.result.exit_code == 0
+        and post_replanned.result.verified_feasible
+        and frozen_moved == 0
+    )
 
     broken_assignments = corrupt_plan([row.model_dump(mode="json") for row in greed.result.assignments])
     broken_result = greed.result.model_copy(
@@ -338,6 +377,8 @@ def _demo(preset: str, out_dir: Path, *, skip_cpsat: bool) -> int:
         f"  config_hash={greed.result.config_hash}\n"
         f"  synaps={SYNAPS_COMMIT}\n"
         f"  frozen_broken={len(frozen_kept['broken_frozen_assignments'])}\n"
+        f"  post_down old={old_codes} replan_verified={post_replanned.result.verified_feasible} "
+        f"frozen_moved={frozen_moved}\n"
         f"  broken exit={broken_check.result.exit_code} codes="
         f"{sorted({row.code for row in broken_check.result.violations})}\n"
     )
@@ -345,7 +386,7 @@ def _demo(preset: str, out_dir: Path, *, skip_cpsat: bool) -> int:
     fifo_dirty = fifo.result.exit_code == 2 and len(fifo.result.violations) > 0
     broken_ok = broken_check.result.exit_code == 2
     frozen_ok = len(frozen_kept["broken_frozen_assignments"]) == 0
-    if clean_ok and fifo_dirty and broken_ok and frozen_ok and cpsat_ok:
+    if clean_ok and fifo_dirty and broken_ok and frozen_ok and cpsat_ok and post_down_ok:
         sys.stdout.write("MVP readiness: PASS\n")
         return 0
     sys.stderr.write("MVP readiness: FAIL\n")

@@ -1,0 +1,44 @@
+{
+  "schema": "repairflow.disruption_campaign.v1",
+  "preset": "tiny",
+  "seeds": [
+    1,
+    30
+  ],
+  "solvers": [
+    "GREED"
+  ],
+  "checked": 150,
+  "false_accept": 0,
+  "replanned": 150,
+  "mean_churn": 0.42222222222222267,
+  "replan_seconds": 0.5995108000133769,
+  "by_kind": {
+    "POST_DOWN": {
+      "checked": 30,
+      "false_accept": 0,
+      "replanned": 30
+    },
+    "CREW_ABSENT": {
+      "checked": 30,
+      "false_accept": 0,
+      "replanned": 30
+    },
+    "PART_DELAY": {
+      "checked": 30,
+      "false_accept": 0,
+      "replanned": 30
+    },
+    "DURATION_OVERRUN": {
+      "checked": 30,
+      "false_accept": 0,
+      "replanned": 30
+    },
+    "URGENT_JOB": {
+      "checked": 30,
+      "false_accept": 0,
+      "replanned": 30
+    }
+  },
+  "false_accept_example": null
+}
