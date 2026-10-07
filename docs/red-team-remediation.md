@@ -38,6 +38,7 @@ Regression tests: `tests/test_verdict_safety.py`, `tests/test_dag_compiler.py`, 
 | 5 types × tiny seeds 1–30 | `false_accept` 0, 150 replanned (`docs/disruption-campaign.json`) |
 | First visit of a packed MVP lane | the tail is released and list repair can return `PARTIAL`; the demo uses the latest visit |
 | Route-variant catalogue | not modeled |
+| Treat dispatch `37702688921` as an attestation of main | refused; it checked branch commit `6d7325d` only |
 
 ## Banned-phrase gate (2026-10-08)
 

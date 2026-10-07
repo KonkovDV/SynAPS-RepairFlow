@@ -7,6 +7,8 @@
   visits the event missed, including those that start inside the next 8 hours.
   On tiny seeds 1–30 the five types gave `false_accept` 0. A packed lane can
   still return `PARTIAL` when the hole is early; the demo takes the latest visit.
+  Dispatch `37702688921` checked `6d7325d` on Linux, including `test-slow`.
+  That run is not an attestation of main, and this note is not part of it.
 - Public claim pages are scanned against `docs/BANNED_CLAIMS.txt`.
   The two literature pages were renamed so a banned word is not a file name
   or a heading. A negation is an exact line in
