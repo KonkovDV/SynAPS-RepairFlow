@@ -5,7 +5,7 @@ Read the contract, then the evidence, then the pilot boundary.
 ## Start here
 
 1. [`../README.md`](../README.md): public scope, CLI, claims, and non-claims.
-2. [`SOTA_EVIDENCE_PROTOCOL.md`](SOTA_EVIDENCE_PROTOCOL.md): what counts as evidence.
+2. [`evidence-protocol.md`](evidence-protocol.md): what counts as evidence.
 3. [`limitations.md`](limitations.md): explicit technical and business limits.
 4. [`red-team-remediation.md`](red-team-remediation.md): what the checker closes, and what is still external.
 5. [`traceability-matrix.md`](traceability-matrix.md): requirement, status, and evidence.
@@ -18,7 +18,7 @@ Read the contract, then the evidence, then the pilot boundary.
 - [`adr/0002-dag-over-chain-kernel.md`](adr/0002-dag-over-chain-kernel.md): convergent cards compiled onto a chain kernel.
 - [`adr/0004-exchange-pool-ledger.md`](adr/0004-exchange-pool-ledger.md): exchange stock is a ledger.
 - [`adr/0005-inspection-rewrites-the-card.md`](adr/0005-inspection-rewrites-the-card.md): inspection freezes issued slots.
-- [`SOTA_2026.md`](SOTA_2026.md): positioning and the benchmark agenda.
+- [`literature-2026.md`](literature-2026.md): positioning and the benchmark agenda.
 - [`benchmark-protocol.md`](benchmark-protocol.md): reproducibility rules for synthetic comparisons.
 - [`atc-baseline-contract.md`](atc-baseline-contract.md): bounded local ATC ordering contract and integration boundary.
 - [`sbom-and-provenance.md`](sbom-and-provenance.md): what the SBOM covers, and what it does not.

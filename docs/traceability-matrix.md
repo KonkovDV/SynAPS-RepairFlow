@@ -35,7 +35,8 @@
 | `POST_DOWN`, `PART_DELAY`, route-variant catalogue | blocked | `docs/limitations.md` |
 | Rotable return lag inside the kernel model | documented | domain ledger is the authority; kernel silence is not `verified` |
 | Deletion-minimal witness for one hard code | implemented | `explanations.py`; not a CP-MUS or MCS |
-| MUS/MCS explanations | blocked | cited as future work in `docs/SOTA_2026.md` |
+| MUS/MCS explanations | blocked | cited as future work in `docs/literature-2026.md` |
+| Public pages avoid the banned-phrase list | implemented | `tests/test_banned_claims.py`; exceptions are exact lines in `docs/banned-claims-allowlist.txt` |
 | FTIM/MIC application readiness | blocked | legal entity, rights chain, named owner, data agreement |
 | TRL 6 | blocked | declared level is TRL 4 |
 | Customer effect or a savings claim | blocked | needs a baseline, a signed slice, and a reproducible analysis |

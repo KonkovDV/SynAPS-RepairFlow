@@ -2,7 +2,7 @@
 
 > **Проверяемое планирование ремонта городского транспорта: offline, воспроизводимо, fail-closed.**
 
-[![CI](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/workflows/ci.yml/badge.svg)](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/workflows/ci.yml) [![Python](https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/) [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![CI](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/workflows/ci.yml/badge.svg)](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/workflows/ci.yml) [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 # Русская версия
 
@@ -51,6 +51,8 @@ SynAPS RepairFlow — исследовательский доменный ада
 
 ## Быстрый воспроизводимый прогон
 
+Версия Python задана полем `requires-python` в [`pyproject.toml`](pyproject.toml).
+
 ```bash
 python -m venv .venv
 source .venv/bin/activate                 # Windows: .venv\\Scripts\\activate
@@ -96,15 +98,15 @@ false_accept_rate = invalid_plans_accepted_as_verified / invalid_plans_presented
 
 Для correctness-oracle fixtures целевой показатель — ноль.
 
-## SOTA 2026, FTIM и OSINT
+## Обзор работ, FTIM и OSINT
 
-RepairFlow не выдаёт себя за новый general-purpose solver. Научно защищаемая позиция — корректность доменной семантики, независимая fail-closed проверка, provenance, reproducibility и controlled path к shadow pilot. Позиционирование и bibliography: [`docs/SOTA_2026.md`](docs/SOTA_2026.md) и [`docs/SOTA_EVIDENCE_PROTOCOL.md`](docs/SOTA_EVIDENCE_PROTOCOL.md).
+RepairFlow не выдаёт себя за новый general-purpose solver. Научно защищаемая позиция — корректность доменной семантики, независимая fail-closed проверка, provenance, reproducibility и controlled path к shadow pilot. Позиционирование и bibliography: [обзор работ](docs/literature-2026.md) и [протокол evidence](docs/evidence-protocol.md).
 
 Публичный OSINT используется только для определения gate:
 
-- [FTIM pilot programme](https://ftim.ru/pilotirovanie/) описывает проверку на инфраструктуре московского транспорта, измеримую гипотезу и pilot до 90 дней;
+- [FTIM pilot programme](https://ftim.ru/pilotirovanie/) описывает проверку на инфраструктуре московского транспорта, измеримую гипотезу и ограниченный по сроку pilot;
 - [официальный профиль SVARZ](https://www.mosgortrans.ru/about/branches/filial-sokolnicheskii-vagonoremontno-stroitelnyi-zavod-svarz-gup-mosgortrans/) подтверждает ремонт транспортных компонентов, но не sponsor и не текущий workflow RepairFlow;
-- [Moscow Innovation Cluster](https://i.moscow/pilot) описывает readiness/right requirements; RepairFlow пока заявляет TRL 4.
+- [Moscow Innovation Cluster](https://i.moscow/pilot) описывает readiness/right requirements; зрелость RepairFlow — строка таблицы evidence выше.
 
 Первый пилот должен быть read-only/shadow: один contour, process owner, anonymised slice, baseline, holdout, operator accept/reject log, rollback и заранее определённые KPI. Ни один источник не доказывает sponsorship, savings, deployment или safety certification.
 
@@ -146,6 +148,8 @@ The repository does not prove industrial savings, customer accuracy, heuristic o
 
 ## Reproducible run
 
+The required Python version is the `requires-python` field of [`pyproject.toml`](pyproject.toml).
+
 ```bash
 python -m venv .venv
 source .venv/bin/activate                 # Windows: .venv\\Scripts\\activate
@@ -179,7 +183,7 @@ The checker does not import solver search code. `repairflow verify-plan` does no
 
 A resource with capacity `K` has `K` interchangeable lanes. Occupancy is half-open, `[start, end)`, so touching endpoints do not overlap. Setup extends occupancy backwards. The same sweep-line oracle is used for ordinary and frozen assignments. This avoids the anchor-based pairwise error that rejects staggered visits as simultaneous.
 
-## Evidence and SOTA 2026
+## Evidence and the literature review
 
 Every result should state data provenance, solver status, claim level and independent verification. `OPTIMAL` is reserved for a bounded exact run with a proven bound and an empty independent checker. Heuristics never inherit `optimal`.
 
@@ -187,13 +191,13 @@ Every result should state data provenance, solver status, claim level and indepe
 false_accept_rate = invalid_plans_accepted_as_verified / invalid_plans_presented
 ```
 
-The target for correctness-oracle fixtures is zero. RepairFlow does not claim a new general-purpose solver; its defensible position is explicit domain semantics, independent fail-closed verification, reproducibility, provenance and a controlled path to a shadow pilot. See [`docs/SOTA_2026.md`](docs/SOTA_2026.md) and [`docs/SOTA_EVIDENCE_PROTOCOL.md`](docs/SOTA_EVIDENCE_PROTOCOL.md).
+The target for correctness-oracle fixtures is zero. RepairFlow does not claim a new general-purpose solver; its defensible position is explicit domain semantics, independent fail-closed verification, reproducibility, provenance and a controlled path to a shadow pilot. See the [literature review](docs/literature-2026.md) and the [evidence protocol](docs/evidence-protocol.md).
 
 ## FTIM / OSINT boundary
 
 - [FTIM pilot programme](https://ftim.ru/pilotirovanie/) is used only for public pilot-gate framing.
 - The [official SVARZ profile](https://www.mosgortrans.ru/about/branches/filial-sokolnicheskii-vagonoremontno-stroitelnyi-zavod-svarz-gup-mosgortrans/) establishes transport-component repair, not a RepairFlow sponsor or workflow.
-- [Moscow Innovation Cluster](https://i.moscow/pilot) describes readiness and rights requirements; this repository remains laboratory TRL 4.
+- [Moscow Innovation Cluster](https://i.moscow/pilot) describes readiness and rights requirements; maturity is the value recorded in [`docs/evidence-manifest.json`](docs/evidence-manifest.json).
 
 A first pilot must be read-only/shadow-only, limited to one contour, with an anonymised data slice, agreed baseline, holdout, operator decision log, rollback and pre-declared KPIs. These sources do not prove deployment, savings, sponsorship or certification.
 

@@ -1,4 +1,4 @@
-# RepairFlow SOTA and evidence protocol
+# RepairFlow evidence protocol
 
 ## Purpose
 

@@ -1,4 +1,4 @@
-# SOTA 2026 positioning
+# Literature review, 2026
 
 ## Problem class
 

@@ -1,6 +1,6 @@
 # Benchmark protocol
 
-Full claim ladder and academic anchors: [`SOTA_EVIDENCE_PROTOCOL.md`](SOTA_EVIDENCE_PROTOCOL.md).
+Full claim ladder and academic anchors: [`evidence-protocol.md`](evidence-protocol.md).
 
 - Tag every number `synthetic_experiment` unless a customer holdout exists.
 - Same input hash for FIFO vs GREED vs CP-SAT.
