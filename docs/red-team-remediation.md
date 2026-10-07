@@ -61,4 +61,5 @@ Accepted limits:
 - a local `pip install -e .` still lets pip fetch `hatchling==1.32.4` during build isolation; CI builds with `--no-build-isolation` after the hashed install;
 - `force-include` of `src/repairflow` duplicated `repairflow/__init__.py` in a real wheel. Editable installs did not build that archive, so the duplicate stayed hidden. The wheel target now lists the package once. Dispatch `37700207661` installed the hashed lock: lint, fast tests, slow tests, the pin job, demo, and benchmark succeeded. The wheelhouse job failed on that duplicate, so the offline demo did not run.
 - `setup-python` still downloads CPython;
-- the checklist stays unchecked until this branch's own run is green.
+- the checklist cites dispatch `37700478444` on `0f56005`. That run's offline demo installed from the wheelhouse. It is not an attestation of main.
+- CodeQL and Scorecard have no run. GitHub dispatches a workflow only after the file exists on the default branch. Dependency review runs on a pull request, and this branch has none.

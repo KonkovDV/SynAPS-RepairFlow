@@ -4,13 +4,15 @@ A laboratory release and a pilot submission are different gates. A checked item 
 
 ## Laboratory release
 
-- [ ] `python tools/verify_lock.py` passes.
-- [ ] Ruff, mypy, schema export, fast tests, demo, and the default benchmark pass.
-- [ ] The evidence bundle records the SynAPS commit, Python version, OR-Tools version, platform, seed, input hash, config hash, and result hash.
-- [ ] Every row marked `verified` has full operation coverage and an empty hard notary.
-- [ ] Synthetic numbers name the preset, seed, solver, and commit.
-- [ ] Public text avoids the phrases in `docs/BANNED_CLAIMS.txt`.
-- [ ] The artifact is built from a clean commit.
+Workflow dispatch [37700478444](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/runs/37700478444) on `0f56005` ran the hashed install, the fast and slow tests, demo, benchmark, and the offline demo from the wheelhouse. `dependency-review` did not run: it is pull-request only. `codeql.yml` and `scorecard.yml` are not on the default branch, so they have no run.
+
+- [x] `python tools/verify_lock.py` passes.
+- [x] Ruff, mypy, schema export, fast tests, demo, and the default benchmark pass.
+- [x] The evidence bundle records the SynAPS commit, Python version, OR-Tools version, platform, seed, input hash, config hash, and result hash.
+- [x] Every row marked `verified` has full operation coverage and an empty hard notary.
+- [x] Synthetic numbers name the preset, seed, solver, and commit.
+- [x] Public text avoids the phrases in `docs/BANNED_CLAIMS.txt`.
+- [x] The artifact is built from a clean commit.
 
 ## FTIM/MIC pilot submission
 
