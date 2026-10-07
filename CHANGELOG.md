@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- `tests/oracle_minutes.py` is an independent minute oracle. It imports only
+  `repairflow.model`, refuses a horizon over eight days or a timestamp off the
+  minute, and is checked on hand-built plans. It does not judge the exchange-pool
+  ledger. The fault-campaign report is still v1.
 - Public claim pages are scanned against `docs/BANNED_CLAIMS.txt`.
   The two literature pages were renamed so a banned word is not a file name
   or a heading. A negation is an exact line in

@@ -23,6 +23,14 @@ Regression tests: `tests/test_verdict_safety.py`, `tests/test_dag_compiler.py`, 
 
 `claim_status=verified` means full coverage and an empty hard notary. It does not mean optimality, a safety certificate, legal compliance, deployment, or a customer effect.
 
+## Minute oracle (2026-10-08)
+
+`tests/oracle_minutes.py` does not import the checker. Hand tests, not a diff against checker output, are the evidence so far.
+
+Closed on those hand cases: one-minute overlap versus a shared endpoint, setup time inside occupancy, skill expiry at the visit end, hard deadline versus soft due date, a closed calendar, precedence lags, frozen position, setup cell, consumable receipts, rotable return lag, a preemptive gap, two lanes versus a third, and refusal of an eight-day-plus horizon or a sub-minute timestamp.
+
+Accepted limit: the exchange-pool ledger is not judged. The campaign file is still v1, so this oracle is not yet a false-accept measurement.
+
 ## Banned-phrase gate (2026-10-08)
 
 `tests/test_banned_claims.py` reads `docs/BANNED_CLAIMS.txt` and scans `README.md`, `APPLICATION.md`, and `docs/**/*.md`. Owner decision O1 followed the plan's recommendation: rename the two literature pages. Narrowing the rule to "a result claim" was rejected because a test cannot judge that.
