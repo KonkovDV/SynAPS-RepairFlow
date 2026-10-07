@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Operator decisions are a hash chain. `repairflow decide` checks the plan
+  hashes and will not accept a non-zero exit. `repairflow log verify` catches
+  a swapped or edited line, and a truncated tail when the tip hash is known.
+  A legacy log without the chain is read-only.
 - Public claim pages are scanned against `docs/BANNED_CLAIMS.txt`.
   The two literature pages were renamed so a banned word is not a file name
   or a heading. A negation is an exact line in

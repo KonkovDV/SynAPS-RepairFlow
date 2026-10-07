@@ -15,7 +15,7 @@ Regression tests: `tests/test_verdict_safety.py`, `tests/test_dag_compiler.py`, 
 
 ## Still outside this repository
 
-1. A writer for the operator decision log.
+1. A signature on the operator log. The chain writer is in `repairflow decide`.
 2. MUS/MCS explanations, `POST_DOWN`, `PART_DELAY`, and a route-variant catalogue.
 3. A hash lock of every transitive wheel, and a signed release artifact.
 4. A kernel encoding of a closed calendar, a mixed skill-pool shift, or preemptive open-minute counting. Non-empty shifts are compiled. The domain checker still enforces the rest.
@@ -43,3 +43,23 @@ Accepted limits, not treated as a pass:
 - `CHANGELOG.md` is not scanned. The historical mention was reworded anyway.
 - README digits outside the generated evidence block are rejected in visible text. Digits that exist only in a markdown link destination are the pointer to a file, not a copied measurement. `APPLICATION.md` still says "90-day" as a hypothesis length; that page is outside the digit rule.
 - One HTML unescape. A double-encoded entity is not decoded twice.
+
+## Decision log chain (2026-10-08)
+
+Closed, each with a regression in `tests/test_decision_log.py`:
+
+- a changed field fails `event_hash`;
+- swapping two lines fails the `prev_hash` link;
+- a missing tail fails when the caller still has the tip hash;
+- a legacy file is not treated as a broken chain, and it cannot be extended;
+- a second writer blocks on `O_EXCL` instead of interleaving a line;
+- `accepted` and `accepted_with_edits` are refused when `exit_code` is not 0.
+
+Accepted limits:
+
+- without the stored tip, a valid prefix verifies;
+- rewriting the suffix and replacing the stored tip is not detected;
+- `tools/append_decision.py` seals the chain and does not open the result file;
+- `log stats` repeats rejection reasons and does not try to find a name inside them;
+- a lock left by a crashed writer is not stolen; the next writer times out;
+- directory `fsync` is skipped when the operating system refuses it.

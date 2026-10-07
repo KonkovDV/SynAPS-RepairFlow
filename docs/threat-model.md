@@ -22,7 +22,7 @@ Work orders, technology cards, resource calendars, skills, spare availability, f
 
 - A signature on the release artifact.
 - A hash lock of every transitive wheel.
-- An append-only operator log writer. The record shape is in `docs/operator-decision-log.md`.
+- A signature on the operator log. The chain and the optional head hash are in `docs/operator-decision-log.md`. A rewritten suffix with a new head is not detected.
 - Automatic rejection of a file because its provenance label is missing. `data_provenance` is a field; a pilot still needs a signed data agreement.
 - A network-free installation story. Solving a local JSON file does not call out. `pip install` does.
 

@@ -31,7 +31,7 @@
 | Dependency lock of archive SHA-256 values | implemented | `repairflow.dependency_lock`; `locked` only when every hash is present |
 | Signed artifact | blocked | signature status stays `absent`; this build has no release key |
 | Offline / shadow boundary | documented | threat model, ADR-0003, pilot protocol |
-| Operator acceptance log | documented | JSONL contract; no writer |
+| Operator acceptance log | implemented | `repairflow decide`, `repairflow log verify`, hash chain; unsigned |
 | `POST_DOWN`, `PART_DELAY`, route-variant catalogue | blocked | `docs/limitations.md` |
 | Rotable return lag inside the kernel model | documented | domain ledger is the authority; kernel silence is not `verified` |
 | Deletion-minimal witness for one hard code | implemented | `explanations.py`; not a CP-MUS or MCS |
