@@ -1,0 +1,2 @@
+# reason: negation, the sentence says the MVP does not need one
+docs/SYNAPS_REPAIRFLOW_MVP_SKELETON.md:В MVP не нужны новая эвристика, нейросеть, RL, GPU, прогноз отказов и полноценная многокритериальная оптимизация. Нужны корректная модель, checker и воспроизводимый эксперимент.

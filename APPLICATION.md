@@ -12,6 +12,6 @@ Contest / accelerator packet. Not a customer contract.
 
 **Buyer profile (if a contact exists).** Owner of the repair production plan, shop supervisor, ТОиР specialist, or digitalisation lead for a repair contour. Not “any Department of Transport employee”.
 
-See `docs/README.md`, `docs/jury-demo.md`, `docs/pilot-protocol.md` and `docs/SOTA_EVIDENCE_PROTOCOL.md`.
+See `docs/README.md`, `docs/jury-demo.md`, `docs/pilot-protocol.md` and `docs/evidence-protocol.md`.
 
 Laboratory numbers live in `benchmark/results/benchmark.json` and `benchmark/results/SHA256SUMS`. The checked commit and the kernel pin live in `docs/evidence-manifest.json`. Those files are the evidence; this page does not copy their digits.

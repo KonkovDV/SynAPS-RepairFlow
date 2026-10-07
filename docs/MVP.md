@@ -2,7 +2,7 @@
 
 Runnable laboratory contour. Specification: `docs/SYNAPS_REPAIRFLOW_MVP_SKELETON.md`.
 
-Evidence and claim ladder: [`SOTA_EVIDENCE_PROTOCOL.md`](SOTA_EVIDENCE_PROTOCOL.md).
+Evidence and claim ladder: [`evidence-protocol.md`](evidence-protocol.md).
 
 Readiness command:
 

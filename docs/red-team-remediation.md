@@ -22,3 +22,24 @@ Regression tests: `tests/test_verdict_safety.py`, `tests/test_dag_compiler.py`, 
 5. A named business owner, a legal entity and IP basis, and a signed data agreement for any real pilot.
 
 `claim_status=verified` means full coverage and an empty hard notary. It does not mean optimality, a safety certificate, legal compliance, deployment, or a customer effect.
+
+## Banned-phrase gate (2026-10-08)
+
+`tests/test_banned_claims.py` reads `docs/BANNED_CLAIMS.txt` and scans `README.md`, `APPLICATION.md`, and `docs/**/*.md`. Owner decision O1 followed the plan's recommendation: rename the two literature pages. Narrowing the rule to "a result claim" was rejected because a test cannot judge that.
+
+Closed by the matcher, each with a regression in that test:
+
+- case, compatibility forms, and precomposed letters that decompose to the same phrase;
+- zero-width and combining marks, stripped after decomposition so they cannot fuse into a different letter first;
+- a short homoglyph map for letters that look like Latin;
+- HTML escapes, tags, and markdown `*` / backtick splits;
+- an allowlist hit is the whole source line, not a prefix, and each hit has its own reason.
+
+Accepted limits, not treated as a pass:
+
+- Russian morphology is not stemmed. A different ending is a different phrase.
+- A phrase split by a newline or by `_` is not one line. `_` stays, because identifiers use it.
+- `plans/` is not scanned. It is the instruction file and names the phrase list on purpose.
+- `CHANGELOG.md` is not scanned. The historical mention was reworded anyway.
+- README digits outside the generated evidence block are rejected in visible text. Digits that exist only in a markdown link destination are the pointer to a file, not a copied measurement. `APPLICATION.md` still says "90-day" as a hypothesis length; that page is outside the digit rule.
+- One HTML unescape. A double-encoded entity is not decoded twice.

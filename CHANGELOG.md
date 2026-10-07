@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Public claim pages are scanned against `docs/BANNED_CLAIMS.txt`.
+  The two literature pages were renamed so a banned word is not a file name
+  or a heading. A negation is an exact line in
+  `docs/banned-claims-allowlist.txt` with its own reason. README measurements
+  outside the generated evidence block are removed.
 - The evidence manifest attests main `e558751` / push run `37687520818`,
   including `test-slow`, and kernel `f939727`. `tools/attest.py` writes the
   manifest and re-renders the README table; this note does not attest itself.
@@ -115,7 +120,7 @@
   a frozen crew/post that cannot execute the card. Checker reports `PRECEDENCE_BROKEN`
   when a predecessor is missing from the plan.
 - Add committed-example schema verification to CI.
-- Add SOTA/evidence protocol: benchmark ladder, claim hierarchy, disruption metrics and pilot gates.
+- Add the evidence protocol: benchmark ladder, claim hierarchy, disruption metrics and pilot gates.
 - `test-slow` on `main` treats an empty `-m slow` selection (pytest exit 5) as pass.
 
 ## 0.1.0 — 2026-09-19
