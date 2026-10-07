@@ -15,16 +15,16 @@ Work orders, technology cards, resource calendars, skills, spare availability, f
 | A stale or edited plan presented as checked | Independent checker, full-coverage gate, input/config/result hashes | `repairflow check --verify-hashes` |
 | Dependency substitution of the kernel | SynAPS commit pin checked by CI | `tools/verify_lock.py`, `tests/test_pin_regression.py` |
 | Solver wheel drift | OR-Tools pinned to 9.15.6755; direct CycloneDX SBOM | `pyproject.toml`, `repairflow.sbom` |
+| Substitution of a transitive wheel | Universal hash lock; every line except the SynAPS git pin has a sha256 | `requirements-lock.txt`, `tools/verify_lock.py` |
 | Extra fields in an instance | Pydantic `extra=forbid` and the generated schema | `tools/export_schemas.py`, `schemas/negative/` |
 | Personal names inside a planning bundle | Field contract asks for pseudonymous crew ids | `docs/data-mapping-1c-toir.md` |
 
 ## Controls that are not implemented
 
 - A signature on the release artifact.
-- A hash lock of every transitive wheel.
 - An append-only operator log writer. The record shape is in `docs/operator-decision-log.md`.
 - Automatic rejection of a file because its provenance label is missing. `data_provenance` is a field; a pilot still needs a signed data agreement.
-- A network-free installation story. Solving a local JSON file does not call out. `pip install` does.
+- A network-free fetch of CPython itself. The offline demo job installs from a wheelhouse with `--no-index`. `setup-python` still downloads the interpreter. The SynAPS wheel is built from the git pin in the online job and is not hash-locked. CI builds that wheel with hashed hatchling and `--no-build-isolation`. A local editable install still reaches PyPI for the build backend.
 
 ## Pilot boundary
 

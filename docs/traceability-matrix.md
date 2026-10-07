@@ -26,6 +26,7 @@
 | Disruption replan with frozen slots | implemented | replan tests |
 | Canonical metrics and hash verification | implemented | `src/repairflow/metrics.py`, `repairflow check --verify-hashes` |
 | SynAPS commit pin | implemented | `tools/verify_lock.py` |
+| Hashed requirements lock | implemented | `requirements-lock.txt`; pydantic `2.13.5`; `tests/test_lock_hashes.py` |
 | OR-Tools pin and direct SBOM | implemented | `ortools==9.15.6755`, `repairflow.sbom` |
 | Installed wheel or sdist identity, distinct from the file manifest | implemented | `repairflow.artifact_record`; signature stays `absent` |
 | Dependency lock of archive SHA-256 values | implemented | `repairflow.dependency_lock`; `locked` only when every hash is present |

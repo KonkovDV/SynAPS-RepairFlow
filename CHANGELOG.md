@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- `requirements-lock.txt` is a universal hash freeze from
+  `uv pip compile --generate-hashes`. `pydantic` is `2.13.5`.
+  The SynAPS git pin stays a commit SHA with no wheel hash.
+  CI installs with `--require-hashes` on `ubuntu-24.04`.
 - Public claim pages are scanned against `docs/BANNED_CLAIMS.txt`.
   The two literature pages were renamed so a banned word is not a file name
   or a heading. A negation is an exact line in

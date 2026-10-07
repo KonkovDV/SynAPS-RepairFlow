@@ -9,16 +9,24 @@ on:
     - cron: "17 2 * * *"
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   lint:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    env:
+      PYTHONPATH: src
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.0.0
         with:
           python-version: "3.12"
-      - run: python -m pip install -U pip
-      - run: python -m pip install -e ".[dev]"
+      - name: Install the hashed lock
+        run: |
+          python tools/verify_lock.py --hashed-out "$RUNNER_TEMP/hashed.txt" --git-out "$RUNNER_TEMP/git.txt"
+          python -m pip install --require-hashes -r "$RUNNER_TEMP/hashed.txt"
+          python -m pip install --no-deps -r "$RUNNER_TEMP/git.txt"
       - run: python -m ruff check src tests tools
       - run: python -m ruff format --check src tests tools
       - run: python -m mypy --strict src/repairflow
@@ -26,40 +34,57 @@ jobs:
       - run: python tools/export_schemas.py
 
   test-fast:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    env:
+      PYTHONPATH: src
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.0.0
         with:
           python-version: "3.12"
-      - run: python -m pip install -U pip
-      - run: python -m pip install -e ".[dev]"
+      - name: Install the hashed lock
+        run: |
+          python tools/verify_lock.py --hashed-out "$RUNNER_TEMP/hashed.txt" --git-out "$RUNNER_TEMP/git.txt"
+          python -m pip install --require-hashes -r "$RUNNER_TEMP/hashed.txt"
+          python -m pip install --no-deps -r "$RUNNER_TEMP/git.txt"
       - run: python -m pytest -q -m "not slow"
 
   synaps-pin:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    env:
+      PYTHONPATH: src
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.0.0
         with:
           python-version: "3.12"
-      - run: python -m pip install -U pip
-      - run: python tools/verify_lock.py
-      - run: python -m pip install -e ".[dev]"
-      - run: python -m pytest -q tests/test_pin_regression.py tests/test_contract.py
+      - name: Install the hashed lock
+        run: |
+          python tools/verify_lock.py --hashed-out "$RUNNER_TEMP/hashed.txt" --git-out "$RUNNER_TEMP/git.txt"
+          python -m pip install --require-hashes -r "$RUNNER_TEMP/hashed.txt"
+          python -m pip install --no-deps -r "$RUNNER_TEMP/git.txt"
+      - run: python -m pytest -q tests/test_pin_regression.py tests/test_contract.py tests/test_lock_hashes.py
 
   demo-evidence:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      actions: write
+    env:
+      PYTHONPATH: src
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.0.0
         with:
           python-version: "3.12"
-      - run: python -m pip install -U pip
-      - run: python -m pip install -e ".[dev]"
+      - name: Install the hashed lock
+        run: |
+          python tools/verify_lock.py --hashed-out "$RUNNER_TEMP/hashed.txt" --git-out "$RUNNER_TEMP/git.txt"
+          python -m pip install --require-hashes -r "$RUNNER_TEMP/hashed.txt"
+          python -m pip install --no-deps -r "$RUNNER_TEMP/git.txt"
       - run: python -m repairflow demo --out out
       - run: python tools/pack_evidence.py --out out/evidence
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7.0.2
         with:
           name: repairflow-mvp-evidence
           path: |
@@ -67,16 +92,24 @@ jobs:
             out/evidence/
 
   benchmark:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      actions: write
+    env:
+      PYTHONPATH: src
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.0.0
         with:
           python-version: "3.12"
-      - run: python -m pip install -U pip
-      - run: python -m pip install -e ".[dev]"
+      - name: Install the hashed lock
+        run: |
+          python tools/verify_lock.py --hashed-out "$RUNNER_TEMP/hashed.txt" --git-out "$RUNNER_TEMP/git.txt"
+          python -m pip install --require-hashes -r "$RUNNER_TEMP/hashed.txt"
+          python -m pip install --no-deps -r "$RUNNER_TEMP/git.txt"
       - run: python -m repairflow benchmark --out bench
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: repairflow-benchmark
@@ -88,12 +121,75 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
       (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'slow'))
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    env:
+      PYTHONPATH: src
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.0.0
         with:
           python-version: "3.12"
-      - run: python -m pip install -U pip
-      - run: python -m pip install -e ".[dev]"
+      - name: Install the hashed lock
+        run: |
+          python tools/verify_lock.py --hashed-out "$RUNNER_TEMP/hashed.txt" --git-out "$RUNNER_TEMP/git.txt"
+          python -m pip install --require-hashes -r "$RUNNER_TEMP/hashed.txt"
+          python -m pip install --no-deps -r "$RUNNER_TEMP/git.txt"
       - run: python -m pytest -q -m slow
+
+  wheelhouse:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Download hashed wheels and build the two project wheels
+        run: |
+          python tools/verify_lock.py --hashed-out "$RUNNER_TEMP/hashed.txt" --git-out "$RUNNER_TEMP/git.txt"
+          python -m pip download --require-hashes -r "$RUNNER_TEMP/hashed.txt" -d wheelhouse
+          python -m pip install --no-index --find-links wheelhouse --require-hashes -r "$RUNNER_TEMP/hashed.txt"
+          python -m pip wheel --no-deps --no-build-isolation -r "$RUNNER_TEMP/git.txt" -w wheelhouse
+          python -m pip wheel --no-deps --no-build-isolation . -w wheelhouse
+          python -c "import pathlib; wheels=list(pathlib.Path('wheelhouse').glob('synaps-*.whl')); assert len(wheels)==1, wheels; project=list(pathlib.Path('wheelhouse').glob('synaps_repairflow-*.whl')); assert len(project)==1, project"
+      - uses: actions/upload-artifact@v7.0.2
+        with:
+          name: repairflow-wheelhouse
+          path: wheelhouse/
+
+  offline-demo:
+    needs: wheelhouse
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.0.0
+        with:
+          python-version: "3.12"
+      - uses: actions/download-artifact@v7.0.0
+        with:
+          name: repairflow-wheelhouse
+          path: wheelhouse
+      - name: Install from the wheelhouse and run demo
+        env:
+          PIP_DISABLE_PIP_VERSION_CHECK: "1"
+        run: |
+          python tools/verify_lock.py --hashed-out "$RUNNER_TEMP/hashed.txt" --git-out "$RUNNER_TEMP/git.txt"
+          python -m pip install --no-index --find-links wheelhouse --no-cache-dir --require-hashes -r "$RUNNER_TEMP/hashed.txt"
+          python -m pip install --no-index --no-cache-dir --no-deps wheelhouse/synaps-*.whl
+          python -m pip install --no-index --no-cache-dir --no-deps wheelhouse/synaps_repairflow-*.whl
+          python -m repairflow demo --out out
+
+  dependency-review:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/dependency-review-action@v5.0.0

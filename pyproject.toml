@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling>=1.26"]
+requires = ["hatchling==1.32.4"]
 build-backend = "hatchling.build"
 
 [project]
@@ -28,7 +28,7 @@ classifiers = [
 ]
 dependencies = [
   "synaps @ git+https://github.com/KonkovDV/SynAPS.git@f939727cd9369fd9b36438bfac7198f0c39c6d3b",
-  "pydantic>=2.9",
+  "pydantic==2.13.5",
   "ortools==9.15.6755",
 ]
 

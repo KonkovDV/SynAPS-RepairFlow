@@ -17,7 +17,7 @@ Regression tests: `tests/test_verdict_safety.py`, `tests/test_dag_compiler.py`, 
 
 1. A writer for the operator decision log.
 2. MUS/MCS explanations, `POST_DOWN`, `PART_DELAY`, and a route-variant catalogue.
-3. A hash lock of every transitive wheel, and a signed release artifact.
+3. A signed release artifact. The wheel hashes themselves are now in `requirements-lock.txt`.
 4. A kernel encoding of a closed calendar, a mixed skill-pool shift, or preemptive open-minute counting. Non-empty shifts are compiled. The domain checker still enforces the rest.
 5. A named business owner, a legal entity and IP basis, and a signed data agreement for any real pilot.
 
@@ -43,3 +43,21 @@ Accepted limits, not treated as a pass:
 - `CHANGELOG.md` is not scanned. The historical mention was reworded anyway.
 - README digits outside the generated evidence block are rejected in visible text. Digits that exist only in a markdown link destination are the pointer to a file, not a copied measurement. `APPLICATION.md` still says "90-day" as a hypothesis length; that page is outside the digit rule.
 - One HTML unescape. A double-encoded entity is not decoded twice.
+
+## Supply chain (2026-10-08)
+
+Release notes read before the bump: checkout v7.0.0 blocks a fork checkout on `pull_request_target` and `workflow_run` (this repo uses `pull_request`); v7.0.1 is the patch on that line. setup-python v7.0.0 removes `pip-install`, which this workflow never set. upload-artifact v7.0.2 still zips by default; download-artifact stays on v7.0.0 so it still unpacks those zips. download v8 errors on a digest mismatch and changes unzipping, so it is not paired with upload v7. dependency-review v5.0.0 and CodeQL v4.38.2 are the Node 24 lines. Scorecard v2.4.4 runs on the schedule only, with `publish_results: false`, so a low score is an artifact and not a green gate.
+
+Rejected:
+
+- floating `@v7` tags;
+- `ubuntu-latest`, because it becomes Ubuntu 26 on 19.10.2026;
+- `pip install -U pip` in CI, because that upgrade has no hash;
+- installing the SynAPS git URL inside the offline job, because `--no-index` does not stop a VCS requirement.
+
+Accepted limits:
+
+- the SynAPS wheel built in the online job has no hash;
+- a local `pip install -e .` still lets pip fetch `hatchling==1.32.4` during build isolation; CI builds with `--no-build-isolation` after the hashed install;
+- `setup-python` still downloads CPython;
+- the checklist stays unchecked until this branch's own run is green.
