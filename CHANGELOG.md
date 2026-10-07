@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- The evidence manifest attests main `e558751` / push run `37687520818`,
+  including `test-slow`, and kernel `f939727`. `tools/attest.py` writes the
+  manifest and re-renders the README table; this note does not attest itself.
 - `benchmark/results/SHA256SUMS` is the LF git blob of `benchmark.json`.
   A fresh GREED row is checked by input hash, status, coverage and makespan.
   `result_hash` stays in the snapshot and includes the machine runtime.
@@ -13,9 +16,7 @@
   `AuxiliaryResource.calendar` on SynAPS `f939727`. The kernel checker and
   CP-SAT keep occupancy inside one shift. An attended calendar with no windows,
   a skill pool with mixed shifts, and a preemptive operation on a published
-  shift stay `KERNEL_CALENDAR_UNSUPPORTED`. The evidence manifest attests
-  `9ea5a20` / run `36987936535` and kernel `f939727`. That commit is the
-  checked main; this note does not attest itself.
+  shift stay `KERNEL_CALENDAR_UNSUPPORTED`.
 - `repairflow verify-plan` checks a shop CSV (заказ, операция, пост, бригада,
   оснастка, начало, конец) without calling the kernel. A clean plan is
   `domain_verified`, not `verified` and not `optimal`.
@@ -82,8 +83,8 @@
 - `repairflow.artifact_record.v1` records a local wheel or sdist digest, or a
   PEP 610 archive hash already on disk. It is not the installed-file manifest
   and it does not claim a signature or a transitive lockfile.
-- `docs/evidence-manifest.json` records checked main `9ea5a20` and CI run
-  `36987936535`, including `test-slow`, against SynAPS `f939727`.
+- `docs/evidence-manifest.json` records a checked main commit and that
+  commit's own push CI, including `test-slow`, against SynAPS `f939727`.
 - A `calendar_id` missing from `calendars` is `CALENDAR_BROKEN` inside the
   checker. A resource with no `calendar_id` stays open for the horizon.
 - `docs/fault-campaign.json` records 10000 guaranteed-invalid mutations of
