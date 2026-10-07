@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import subprocess
 from pathlib import Path
 
 from repairflow.attestation import render_attestation_markdown
@@ -26,13 +25,10 @@ def test_evidence_manifest_matches_the_pinned_kernel() -> None:
     assert SYNAPS_COMMIT in lock
     assert SYNAPS_COMMIT in project
     assert SYNAPS_COMMIT in versions
-    head = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
-    if payload["attests_commit"] == head:
-        assert payload["stale"] is False
-    else:
-        assert payload["stale"] is True
-    assert payload["attests_commit"] == "9ea5a200ebc4e469fd59a35539781db7c5c16898"
-    assert payload["ci_run_id"] == "36987936535"
+    # The manifest lands in a later docs commit than the one it names.
+    assert payload["stale"] is True
+    assert payload["attests_commit"] == "e558751aa95a9959f62955ab27a11e93ab00c805"
+    assert payload["ci_run_id"] == "37687520818"
     assert payload["synaps_repo"] == SYNAPS_REPO
     assert len(SYNAPS_COMMIT) == 40
     assert payload["ci_result"] == "success"
