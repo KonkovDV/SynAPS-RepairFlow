@@ -19,4 +19,6 @@ The submission script adds three beats `repairflow demo` does not perform:
 - an explanation of an infeasible card (today: a deletion-minimal witness, not MUS/MCS);
 - an operator log line and `repairflow log verify` (that log command is not implemented).
 
+The fault campaign is not a step of this demo. Its counts live only in `docs/fault-campaign.json`.
+
 No figure on this page is a result. Results stay in the output files and in `docs/evidence-manifest.json`.
