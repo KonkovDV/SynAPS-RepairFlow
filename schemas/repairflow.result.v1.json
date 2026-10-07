@@ -33,6 +33,7 @@
     "input_hash": { "type": "string" },
     "config_hash": { "type": "string" },
     "result_hash": { "type": "string" },
+    "schedule_hash": { "type": "string" },
     "repairflow_version": { "type": "string" },
     "synaps_commit": { "type": "string", "minLength": 40, "maxLength": 40 },
     "claim_level": { "type": "string" },

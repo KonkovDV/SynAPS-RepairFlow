@@ -24,7 +24,7 @@
 | Inspection that freezes issued work | implemented | `repairflow inspect`, ADR-0005 |
 | Soft due date versus hard deadline | implemented | `DUE_MISSED` versus `DEADLINE_MISSED` |
 | Disruption replan with frozen slots | implemented | replan tests |
-| Canonical metrics and hash verification | implemented | `src/repairflow/metrics.py`, `repairflow check --verify-hashes` |
+| Canonical metrics and hash verification | implemented | `src/repairflow/metrics.py`, `repairflow check --verify-hashes`; `schedule_hash` has no runtime manifest, `result_hash` keeps it |
 | SynAPS commit pin | implemented | `tools/verify_lock.py` |
 | OR-Tools pin and direct SBOM | implemented | `ortools==9.15.6755`, `repairflow.sbom` |
 | Installed wheel or sdist identity, distinct from the file manifest | implemented | `repairflow.artifact_record`; signature stays `absent` |

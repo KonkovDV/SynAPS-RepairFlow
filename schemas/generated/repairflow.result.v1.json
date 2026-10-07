@@ -216,6 +216,11 @@
       "title": "Result Hash",
       "type": "string"
     },
+    "schedule_hash": {
+      "default": "",
+      "title": "Schedule Hash",
+      "type": "string"
+    },
     "repairflow_version": {
       "title": "Repairflow Version",
       "type": "string"

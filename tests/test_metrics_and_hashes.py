@@ -5,8 +5,10 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from repairflow.cli import main
-from repairflow.evidence import canonical_json, verify_plan_hashes
+from repairflow.evidence import canonical_json, runtime_manifest, verify_plan_hashes
 from repairflow.metrics import compute_metrics
 from repairflow.model import RepairFlowProblem
 from repairflow.planner import plan
@@ -35,6 +37,23 @@ def test_makespan_is_measured_from_the_horizon() -> None:
     assert raw["makespan_minutes"] != metrics["makespan_minutes"]
 
 
+def test_schedule_hash_ignores_the_runtime_manifest(monkeypatch: pytest.MonkeyPatch) -> None:
+    problem = synthesize("tiny", seed=1)
+    first = plan(problem, solver_config="GREED")
+
+    def other_runtime() -> dict[str, str]:
+        payload = runtime_manifest()
+        payload["platform"] = "schedule-hash-probe"
+        return payload
+
+    monkeypatch.setattr("repairflow.planner.runtime_manifest", other_runtime)
+    second = plan(problem, solver_config="GREED")
+    assert first.result.result_hash != second.result.result_hash
+    assert first.result.config_hash != second.result.config_hash
+    assert first.result.schedule_hash == second.result.schedule_hash
+    assert verify_plan_hashes(problem, second.result) == []
+
+
 def test_edd_is_feasible_where_fifo_is_not() -> None:
     problem = synthesize("tiny", seed=1)
     fifo = plan(problem, solver_config="FIFO")
@@ -59,7 +78,10 @@ def test_cpsat_records_a_domain_greed_warm_start() -> None:
 def test_verify_hashes_accepts_a_fresh_plan_and_rejects_tampering(tmp_path: Path) -> None:
     problem = synthesize("tiny", seed=1)
     outcome = plan(problem, solver_config="GREED")
+    assert len(outcome.result.schedule_hash) == 64
     assert verify_plan_hashes(problem, outcome.result) == []
+    forged = outcome.result.model_copy(update={"schedule_hash": "0" * 64})
+    assert "schedule_hash does not match the schedule" in verify_plan_hashes(problem, forged)
     problem_path = tmp_path / "problem.json"
     plan_path = tmp_path / "plan.json"
     problem_path.write_text(problem.model_dump_json(), encoding="utf-8")

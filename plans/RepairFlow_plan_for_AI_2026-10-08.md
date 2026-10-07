@@ -124,6 +124,7 @@ python tools/verify_schema.py, python tools/export_schemas.py, python tools/veri
 - **Ловушка:** не подгонять оракул под checker. Если они расходятся, сначала разобрать пример руками.
 
 ### Фаза 2. Воспроизводимый хэш плана (1 день)
+Статус: `schedule_hash` добавлен и проверяется `--verify-hashes`. В коммит кладётся хэш расписания; `result_hash` снимка не переписывался. Локальный тест подменяет runtime. Совпадение с Linux проверяет CI по этому хэшу.
 Ветка `feat/schedule-hash`.
 1. Падающий тест: один план, разный `runtime_manifest` → одинаковый новый хэш.
 2. Добавить `schedule_hash` = отпечаток (`input_hash`, `solver_config`, `synaps_commit`, отсортированные назначения, `claim_status`, `exit_code`, коды нарушений) без runtime. Поле добавочное, `repairflow.result.v1` не ломать. Схемы перегенерировать `tools/export_schemas.py` и `tools/write_schema_examples.py`.

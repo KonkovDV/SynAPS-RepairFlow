@@ -43,3 +43,11 @@ Accepted limits, not treated as a pass:
 - `CHANGELOG.md` is not scanned. The historical mention was reworded anyway.
 - README digits outside the generated evidence block are rejected in visible text. Digits that exist only in a markdown link destination are the pointer to a file, not a copied measurement. `APPLICATION.md` still says "90-day" as a hypothesis length; that page is outside the digit rule.
 - One HTML unescape. A double-encoded entity is not decoded twice.
+
+## Schedule hash (2026-10-08)
+
+`schedule_hash` is the schedule fingerprint: input hash, solver, SynAPS commit, assignments sorted by operation and time, claim status, exit code, and every violation code. Messages stay out, so a wording change does not move the hash. The runtime manifest stays in `config_hash` and `result_hash`, which still identify the machine.
+
+A stored `schedule_hash` of empty string, including an older result file, fails `check --verify-hashes`. The field is optional in the public v1 sketch so an old document still parses. `result_hash` is sealed after `schedule_hash`, so editing one without the other fails both checks.
+
+Not in the fingerprint: objective totals, the rejected-list, and the exchange-pool ledger beyond the violation codes the checker already emitted.

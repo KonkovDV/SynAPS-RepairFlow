@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- `schedule_hash` identifies a plan without the machine runtime.
+  `result_hash` and `config_hash` still include that runtime.
+  `repairflow check --verify-hashes` checks the new field.
 - Public claim pages are scanned against `docs/BANNED_CLAIMS.txt`.
   The two literature pages were renamed so a banned word is not a file name
   or a heading. A negation is an exact line in

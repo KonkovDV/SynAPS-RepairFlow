@@ -536,6 +536,7 @@ class RepairFlowResult(RepairFlowModel):
     input_hash: str
     config_hash: str
     result_hash: str = ""
+    schedule_hash: str = ""
     repairflow_version: str
     synaps_commit: str
     claim_level: ClaimLevel = "experiment"

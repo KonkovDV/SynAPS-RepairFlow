@@ -10,7 +10,7 @@ This is an installed-distribution file manifest, not a wheel archive hash. It is
 
 `repairflow.artifact_record.v1` is a separate record. It identifies a local wheel or sdist by the SHA-256 of the archive bytes, and it reads a PEP 610 `direct_url.json` hash when one is already on disk. An editable checkout stays `editable` with no archive digest. A hash that is not `sha256` stays `unsupported_hash`. Every signature field is `absent`. `lockfile_status` is `absent`, and `closure_status` is `installed_environment_not_a_lock`: the installed environment is not a closed transitive lock. The record points at `repairflow.runtime_binding.v1` as the installed-file manifest and marks that role as neither a wheel hash nor a signature.
 
-Each plan result stores `input_hash`, `config_hash`, and `result_hash`. The config payload includes a runtime manifest (Python, platform, RepairFlow version, SynAPS commit, OR-Tools, Pydantic). `repairflow check --verify-hashes` recomputes those hashes and exits 1 on a mismatch.
+Each plan result stores `input_hash`, `config_hash`, `result_hash`, and `schedule_hash`. The config payload includes a runtime manifest (Python, platform, RepairFlow version, SynAPS commit, OR-Tools, Pydantic), and `result_hash` covers that payload, so those two hashes differ across machines. `schedule_hash` covers the input hash, solver, SynAPS commit, sorted assignments, claim status, exit code, and violation codes. It does not cover the runtime manifest, violation messages, or the objective. `repairflow check --verify-hashes` recomputes all four and exits 1 on a mismatch.
 
 A pilot package that claims supply-chain attestation still needs:
 

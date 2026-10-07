@@ -89,14 +89,16 @@ def test_committed_benchmark_rows_carry_hashes() -> None:
         assert len(row["input_hash"]) == 64
         assert len(row["config_hash"]) == 64
         assert len(row["result_hash"]) == 64
+        assert len(row["schedule_hash"]) == 64
     tiny = next(
         row for row in rows if row["preset"] == "tiny" and row["seed"] == 1 and row["solver"] == "GREED"
     )
     fresh = plan(synthesize("tiny", seed=1), solver_config="GREED")
     # result_hash includes runtime_manifest, so it identifies the snapshot
-    # machine. The schedule itself is what must match on every runner.
+    # machine. schedule_hash does not, and must match on every runner.
     objective = fresh.result.objective
     assert fresh.result.input_hash == tiny["input_hash"]
+    assert fresh.result.schedule_hash == tiny["schedule_hash"]
     assert fresh.result.status.value == tiny["status"]
     assert fresh.result.exit_code == tiny["exit_code"]
     assert fresh.result.verified_feasible is True
