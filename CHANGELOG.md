@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- `mutmut` 3.8.0 on Linux run `37797011451` (`e54e33a`) killed 1261 of 1921
+  mutants and left 660 alive. Thirty-four ledger mutants died and none were
+  born. Checker, capacity, and lane setup did not move. The five named
+  exchange and rotable skips are among those deaths. Identity tests and
+  boundary tests are not in this score. This is not an attestation of main.
 - Boundary tests pin the horizon edges, an equal due date and deadline, the
   min-policy length, a zero spare, a receipt that spends the stock, draw order
   by operation id, max lag, preemptive setup edges, setup overlap, an unbound
