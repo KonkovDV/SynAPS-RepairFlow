@@ -38,6 +38,8 @@ The score of this run is 1120/1921. The README evidence table does not copy it.
 
 The other 788 survivors, in `checker.py` and `ledger.py`, are not marked equivalent. Across all 801, 59 diffs only wrap a string in `XX` and 20 replace `continue` with `break`. Those counts include mutants already named above. Many others set a violation field to `None`. A missing assertion is not an equivalent mutant.
 
+`continue` changed to `break` drops every later row in that loop. Tests in `tests/test_skip_does_not_hide_next.py` require the later finding: an unknown operation does not hide the next unknown post, a mutable freeze does not hide the next frozen rows, and one predecessor does not hide the next. Those tests are not part of run `37697094085`. Spare-receipt skips, an unknown auxiliary, and a violation field set to `None` are still open.
+
 Accepted before the run, not as a pass:
 
 - No `# pragma: no mutate` in those four modules.

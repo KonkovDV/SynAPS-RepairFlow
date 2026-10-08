@@ -10,8 +10,9 @@
   mutants and left 801 alive. That score is not in the README. Four capacity
   survivors are equivalent; the wrapped error sentence is now matched in full.
   Five lane survivors are covered by new tests and were still alive in that run.
-  The other checker and ledger survivors are not marked equivalent. The nightly
-  file of at least 100000 checks is still absent.
+  The other checker and ledger survivors are not marked equivalent. A skipped
+  notary row must not hide the next finding. The nightly file of at least
+  100000 checks is still absent.
 - Fault campaign v2 labels each mutation with that oracle. The committed
   matrix checks 10080 plans across `tiny` and `repair-site-mvp`, seeds 1–30,
   and GREED, EDD, ATC. `false_accept` is 0 and `false_reject` is 0. 9321 are
