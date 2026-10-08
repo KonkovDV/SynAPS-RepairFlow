@@ -3,7 +3,7 @@
 Pinned commit: `f939727cd9369fd9b36438bfac7198f0c39c6d3b`.
 
 This pin is `cf10ca3e8be39d9a46e5d983de75a8066f66ca39` plus auxiliary-resource
-shift calendars. The evidence manifest attests RepairFlow `3d83280`, whose
+shift calendars. The evidence manifest attests RepairFlow `921004e`, whose
 post-merge CI used this same pin.
 
 Checked on this pin:
