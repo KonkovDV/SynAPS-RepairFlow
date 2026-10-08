@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- `mutmut` 3.8.0 on Linux run `37759423830` (`de135ae`) killed 1227 of 1921
+  mutants and left 694 alive. The eight named spare, release, auxiliary, and
+  same-post setup skips died in that run. Ledger did not move. `7be8040` is
+  not part of the score. This is not an attestation of main.
 - A different unit type must not hide a later pool return, a healthy pool must
   not hide the next pool, and a skipped rotable row must not hide a later clash.
   Those tests are not in run `37759423830` or in the 1161/1921 score.
