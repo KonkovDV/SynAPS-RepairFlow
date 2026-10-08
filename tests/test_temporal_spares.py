@@ -7,7 +7,7 @@ from datetime import UTC, datetime, timedelta
 from repairflow.adapter import to_schedule_problem
 from repairflow.checker import check_plan
 from repairflow.ledger import exchange_pool_violations
-from repairflow.model import PlannedAssignment, RepairFlowProblem
+from repairflow.model import PlannedAssignment, RepairFlowProblem, Violation
 from repairflow.reasons import ReasonCode
 from repairflow.synthetic import synthesize
 
@@ -183,3 +183,98 @@ def test_rotable_spare_rejects_non_integer_return_lag() -> None:
     )
     assert any(row.code == ReasonCode.SPARE_UNAVAILABLE for row in violations)
     assert any(row.details.get("return_lag_min") is True for row in violations)
+
+
+def test_consumable_does_not_hide_a_later_rotable_clash() -> None:
+    loaded, rows, start = _seal_clash(bearing_rotable=False, unplaced_first=False)
+    hit = _seal_hit(exchange_pool_violations(loaded, rows))
+    assert hit.message == "rotable spare SP-SEAL is reused before return"
+    assert hit.start == start
+    assert hit.end == start + timedelta(minutes=20)
+
+
+def test_invalid_lag_does_not_hide_a_later_rotable_clash() -> None:
+    loaded, rows, start = _seal_clash(bearing_rotable=True, unplaced_first=False)
+    found = exchange_pool_violations(loaded, rows)
+    assert any(row.resource_id == "SP-BEARING" and row.details.get("return_lag_min") is True for row in found)
+    hit = _seal_hit(found)
+    assert hit.message == "rotable spare SP-SEAL is reused before return"
+    assert hit.start == start
+    assert hit.end == start + timedelta(minutes=20)
+
+
+def test_unplaced_use_does_not_hide_a_later_rotable_clash() -> None:
+    loaded, rows, start = _seal_clash(bearing_rotable=False, unplaced_first=True)
+    hit = _seal_hit(exchange_pool_violations(loaded, rows))
+    assert hit.message == "rotable spare SP-SEAL is reused before return"
+    assert hit.start == start
+    assert hit.end == start + timedelta(minutes=20)
+
+
+def _seal_clash(*, bearing_rotable: bool, unplaced_first: bool):
+    problem = synthesize("tiny", seed=1)
+    start = problem.planning_horizon.start + timedelta(hours=8)
+    first, second, third = problem.operations[:3]
+    wanted = {second.id, third.id}
+    if unplaced_first:
+        wanted.add(first.id)
+    operations = [
+        op.model_copy(
+            update={
+                "required_spare_ids": ["SP-SEAL"] if op.id in wanted else [],
+                "required_spares": [],
+            }
+        )
+        for op in problem.operations
+    ]
+    bearing_attrs = {"kind": "rotable", "return_lag_min": True} if bearing_rotable else {"kind": "consumable"}
+    spares = []
+    for spare in problem.spares:
+        if spare.id == "SP-BEARING":
+            spares.append(
+                spare.model_copy(
+                    update={
+                        "quantity": 1,
+                        "available_from": None,
+                        "receipts": [],
+                        "domain_attributes": bearing_attrs,
+                    }
+                )
+            )
+        elif spare.id == "SP-SEAL":
+            spares.append(
+                spare.model_copy(
+                    update={
+                        "quantity": 1,
+                        "available_from": None,
+                        "receipts": [],
+                        "domain_attributes": {"kind": "rotable", "return_lag_min": 0},
+                    }
+                )
+            )
+        else:
+            spares.append(spare)
+    loaded = RepairFlowProblem.model_validate(
+        problem.model_copy(update={"operations": operations, "spares": spares}).model_dump(mode="python")
+    )
+    rows = [
+        PlannedAssignment(
+            operation_id=second.id,
+            work_center_id=second.eligible_work_center_ids[0],
+            start=start,
+            end=start + timedelta(minutes=20),
+        ),
+        PlannedAssignment(
+            operation_id=third.id,
+            work_center_id=third.eligible_work_center_ids[0],
+            start=start,
+            end=start + timedelta(minutes=20),
+        ),
+    ]
+    return loaded, rows, start
+
+
+def _seal_hit(violations: list[Violation]) -> Violation:
+    found = [row for row in violations if row.resource_id == "SP-SEAL"]
+    assert len(found) == 1, [(row.resource_id, row.message) for row in violations]
+    return found[0]

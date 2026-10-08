@@ -75,7 +75,11 @@ Still alive on `37743200619`, and not marked equivalent:
 - `_colour_lanes` 52 (overflow `continue` to `break`; public callers use the first overflow only)
 - the other checker and ledger survivors, including `None` fields this run did not assert
 
-Tests added after that run require the later finding: an unknown operation does not hide a short receipt, a release violation, spare overuse, or setup on the same post; a spare with no receipts does not hide a short receipt; a spare that has receipts does not hide a later availability or a consumable overuse; an unknown auxiliary does not hide a closed auxiliary calendar. Those tests are not part of 1161/1921. They do not mark the mutants killed.
+Tests added after that run require the later finding: an unknown operation does not hide a short receipt, a release violation, spare overuse, or setup on the same post; a spare with no receipts does not hide a short receipt; a spare that has receipts does not hide a later availability or a consumable overuse; an unknown auxiliary does not hide a closed auxiliary calendar. Those tests are on `de135ae`. They are not part of 1161/1921. They do not mark the mutants killed.
+
+Linux `workflow_dispatch` `37759423830` was queued on `de135ae`. It is not a score until its `mutmut-results` artifact is read the same way. It does not include the ledger tests below.
+
+`_exchange_pool_violations` 10 and 30, and `_rotable_spare_violations` 6, 44, and 51, are the same `continue` to `break` shape. Tests now require a later return after a different unit type, a stockout on a second pool, and a rotable clash after a consumable, after an invalid return lag, and after an unplaced use. Those tests are not in `37759423830` and not in 1161/1921. `_colour_lanes` 52 stays open: the public functions use only the first overflow.
 
 The four remaining `capacity.py` survivors are the ones already marked equivalent (`peak_concurrency` 14, `excess_arrivals` 13, `_events` 8 and 9). `_colour_lanes` 49 and 50 stay the dead store. `ledger.py` did not move. The README evidence table does not copy 1161/1921.
 

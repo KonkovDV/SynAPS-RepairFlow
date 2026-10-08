@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- A different unit type must not hide a later pool return, a healthy pool must
+  not hide the next pool, and a skipped rotable row must not hide a later clash.
+  Those tests are not in run `37759423830` or in the 1161/1921 score.
 - A skipped spare, an unknown auxiliary, and a setup row on the same post must
   not hide the next finding. Those tests are not in the 1161/1921 mutation score.
 - `mutmut` 3.8.0 on Linux run `37743200619` (`13dbb9d`) killed 1161 of 1921
