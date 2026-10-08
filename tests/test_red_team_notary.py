@@ -268,14 +268,27 @@ def test_unsupported_dag_is_marked_deprecated() -> None:
 
 
 @pytest.mark.slow
+@pytest.mark.timeout(1200)
 def test_bad_mutations_are_not_accepted() -> None:
     report = json.loads(Path("docs/fault-campaign.json").read_text(encoding="utf-8"))
-    live = run_fault_campaign(checks=int(report["checked"]))
-    assert live["checked"] >= 10_000
+    live = run_fault_campaign(per_baseline=int(report["per_baseline"]))
+    assert report["schema"] == "repairflow.fault_campaign.v2"
+    assert live["schema"] == report["schema"]
+    assert int(live["checked"]) >= 10_000
     assert live["false_accept"] == 0
     assert report["false_accept"] == 0
-    assert report["checked"] == live["checked"]
-    assert report["input_hash"] == live["input_hash"]
+    for key in (
+        "checked",
+        "false_reject",
+        "must_reject",
+        "may_pass",
+        "input_hash",
+        "by_mutator",
+        "by_preset",
+    ):
+        assert report[key] == live[key]
     assert report["synaps_commit"] == SYNAPS_COMMIT
+    assert report["oracle"] == "tests.oracle_minutes"
+    assert report["per_baseline"] == 56
     assert report["claim_level"] == "experiment"
     assert report["data_provenance"] == "synthetic"

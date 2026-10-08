@@ -23,6 +23,37 @@ Regression tests: `tests/test_verdict_safety.py`, `tests/test_dag_compiler.py`, 
 
 `claim_status=verified` means full coverage and an empty hard notary. It does not mean optimality, a safety certificate, legal compliance, deployment, or a customer effect.
 
+## Minute oracle (2026-10-08)
+
+`tests/oracle_minutes.py` does not import the checker. Hand tests, not a diff against checker output, are the evidence so far.
+
+Closed on those hand cases: one-minute overlap versus a shared endpoint, setup time inside occupancy, skill expiry at the visit end, hard deadline versus soft due date, a closed calendar, precedence lags, frozen position, setup cell, consumable receipts, rotable return lag, a preemptive gap, two lanes versus a third, and refusal of an eight-day-plus horizon or a sub-minute timestamp.
+
+Accepted limit: the exchange-pool ledger is not judged.
+
+## Fault campaign v2 (2026-10-08)
+
+The oracle labels each mutation. `false_accept` means the checker verified a plan the oracle rejected. `false_reject` means the checker rejected a plan the oracle accepted. An unchanged plan is not counted. The oracle module was not edited to match the checker.
+
+Committed matrix in `docs/fault-campaign.json`: `tiny` and `repair-site-mvp`, seeds 1–30, GREED, EDD and ATC, 56 mutations per verified baseline. checked 10080, false_accept 0, false_reject 0, must_reject 9321, may_pass 759. The reason string in that file is the false_reject explanation: the checker rejected no oracle-accepted plan in this matrix.
+
+The 759 `may_pass` rows in the 56-prefix are real agreements, not invalid plans. They are later shifts (`shift+1`, `shift+5`, `shift+30`, `shift+240`) and some post changes. On that prefix every negative shift was a hard violation for both sides.
+
+The uncapped local run is `docs/fault-campaign-nightly.json`: checked 109665, false_accept 0, false_reject 0, must_reject 102105, may_pass 7560. Same `input_hash` and kernel pin as the prefix. It ran on this Windows host for about 89 minutes. The CI job uploads that file only on the nightly schedule, so this copy is not a GitHub artifact and not an attestation of main. Negative shifts are no longer all `must_reject`: `shift-1`, `shift-5` and `shift-30` each have 315 `may_pass`, and `shift-240` has 444. Those rows are agreements. `false_accept` on each of them is 0.
+
+Sampling: mutator families are round-robin, so the 56-prefix contains every family that applies on that baseline. A one-variant family appears once (`spare_overuse` 180, `rotable_clash` 180, `shift_frozen` 90 because only the repair-site preset freezes a row). `drop_aux` is 336 because `tiny` has no aux. Before this order, a prefix of 56 would have been the first operations' shifts and would have dropped spare, rotable and frozen.
+
+A full pass of `tiny` seed 1 (GREED, EDD, ATC) and of `repair-site-mvp` seed 1 (GREED) also disagreed nowhere. That probe is not part of the committed denominator.
+
+`exit_horizon` sets the visit end to one minute past the planning horizon. The problem horizon stays two or seven days, so the oracle's eight-day refusal does not apply. A mutation that raised `OracleLimit` would have aborted the run. None did.
+
+Accepted limits, not a pass:
+
+- The exchange-pool ledger is still not judged.
+- 10080 is a prefix. The uncapped matrix on the same mutators checked 109665, with false_accept 0. A cap of 100000 was rejected because it would drop later operations. The slow pytest still re-runs only the prefix.
+- `false_reject` 0 is this matrix only. The `may_pass` rows are slack moves, so a checker rule those moves never touch is unmeasured.
+- Run `37696570417` died while collecting tests. Run `37697094085` on `4167df4` finished: 1120 killed, 801 survived, score 1120/1921. Run `37742695440` on `e8f6efa` finished: 1126 killed, 795 survived. Run `37743200619` on `13dbb9d` finished: 1161 killed, 760 survived, score 1161/1921, and the rest of that workflow including `test-slow` succeeded. The four notary sources did not change, so the 41 deaths are tests. Four capacity survivors stay equivalent. Two lane survivors stay a dead store. Overflow `continue` versus `break` stays open. Spare-receipt skips, an unknown auxiliary, and a same-post setup skip were still alive on `13dbb9d`. Dispatch `37759423830` on `de135ae` finished: 1227 killed, 694 survived, score 1227/1921, and `test-slow` on that same run succeeded. Eight named skips died there. Exchange-pool and rotable skips are tested on `7be8040`, which this run did not mutate. Overflow `continue` versus `break` in `_colour_lanes` stays open. 694 survivors are not all triaged, so phase 1 stays open. These dispatches are not an attestation of main, and `e89eefd` was not mutated. See `docs/mutation-survivors.md`.
+
 ## Banned-phrase gate (2026-10-08)
 
 `tests/test_banned_claims.py` reads `docs/BANNED_CLAIMS.txt` and scans `README.md`, `APPLICATION.md`, and `docs/**/*.md`. Owner decision O1 followed the plan's recommendation: rename the two literature pages. Narrowing the rule to "a result claim" was rejected because a test cannot judge that.

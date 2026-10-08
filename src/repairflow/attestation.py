@@ -41,8 +41,9 @@ def render_attestation_markdown(
         (
             "| Fault campaign | "
             f"checked {campaign['checked']}, false_accept {campaign['false_accept']}, "
-            f"seed {campaign['seed']}, solver `{campaign['solver_config']}`, "
-            f"preset `{campaign['preset']}` |"
+            f"false_reject {campaign['false_reject']}, "
+            f"presets `{', '.join(str(item) for item in campaign['presets'])}`, "
+            f"solvers `{', '.join(str(item) for item in campaign['solvers'])}` |"
         ),
         f"| Манифест отстаёт от HEAD | {behind} |",
         "| Данные | committed synthetic fixtures; customer data отсутствуют |",

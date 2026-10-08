@@ -41,7 +41,7 @@ SynAPS RepairFlow — исследовательский доменный ада
 | SynAPS pin | [`f939727`](https://github.com/KonkovDV/SynAPS/commit/f939727cd9369fd9b36438bfac7198f0c39c6d3b) |
 | Solver | `ortools==9.15.6755` |
 | Benchmark | [`benchmark/results/benchmark.json`](benchmark/results/benchmark.json), SHA-256 `c1a604c70ee6a8e99e52ecb9ac59341fabdf7c1a8771cdccf3dc836c605a2186`, claim `experiment` |
-| Fault campaign | checked 10000, false_accept 0, seed 1, solver `GREED`, preset `tiny` |
+| Fault campaign | checked 10080, false_accept 0, false_reject 0, presets `tiny, repair-site-mvp`, solvers `GREED, EDD, ATC` |
 | Манифест отстаёт от HEAD | да |
 | Данные | committed synthetic fixtures; customer data отсутствуют |
 | Зрелость | laboratory fixture / TRL 4; не pilot result |

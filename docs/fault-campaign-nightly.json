@@ -1,10 +1,10 @@
 {
   "schema": "repairflow.fault_campaign.v2",
-  "checked": 10080,
+  "checked": 109665,
   "false_accept": 0,
   "false_reject": 0,
-  "must_reject": 9321,
-  "may_pass": 759,
+  "must_reject": 102105,
+  "may_pass": 7560,
   "false_reject_reason": "The checker rejected no plan that the oracle accepted in this matrix.",
   "presets": [
     "tiny",
@@ -47,7 +47,7 @@
     "EDD",
     "ATC"
   ],
-  "per_baseline": 56,
+  "per_baseline": null,
   "mutations": [
     "shift+1",
     "shift-1",
@@ -72,51 +72,51 @@
   ],
   "by_mutator": {
     "change_crew": {
-      "checked": 540,
-      "must_reject": 540,
+      "checked": 16470,
+      "must_reject": 16470,
       "false_accept": 0,
       "false_reject": 0
     },
     "change_post": {
-      "checked": 540,
-      "must_reject": 474,
+      "checked": 19530,
+      "must_reject": 19356,
       "false_accept": 0,
       "false_reject": 0,
-      "may_pass": 66
+      "may_pass": 174
     },
     "drop_aux": {
-      "checked": 336,
-      "must_reject": 336,
+      "checked": 1776,
+      "must_reject": 1776,
       "false_accept": 0,
       "false_reject": 0
     },
     "duplicate": {
-      "checked": 540,
-      "must_reject": 540,
+      "checked": 5490,
+      "must_reject": 5490,
       "false_accept": 0,
       "false_reject": 0
     },
     "exit_horizon": {
-      "checked": 540,
-      "must_reject": 540,
+      "checked": 5490,
+      "must_reject": 5490,
       "false_accept": 0,
       "false_reject": 0
     },
     "exit_window": {
-      "checked": 540,
-      "must_reject": 540,
+      "checked": 5490,
+      "must_reject": 5490,
       "false_accept": 0,
       "false_reject": 0
     },
     "expire_permit": {
-      "checked": 540,
-      "must_reject": 540,
+      "checked": 5490,
+      "must_reject": 5490,
       "false_accept": 0,
       "false_reject": 0
     },
     "precedence": {
-      "checked": 540,
-      "must_reject": 540,
+      "checked": 4140,
+      "must_reject": 4140,
       "false_accept": 0,
       "false_reject": 0
     },
@@ -127,62 +127,66 @@
       "false_reject": 0
     },
     "setup_zero": {
-      "checked": 540,
-      "must_reject": 540,
+      "checked": 1419,
+      "must_reject": 1419,
       "false_accept": 0,
       "false_reject": 0
     },
     "shift+1": {
-      "checked": 720,
-      "must_reject": 474,
+      "checked": 5490,
+      "must_reject": 3639,
       "false_accept": 0,
       "false_reject": 0,
-      "may_pass": 246
+      "may_pass": 1851
     },
     "shift+240": {
-      "checked": 540,
-      "must_reject": 408,
+      "checked": 5490,
+      "must_reject": 4776,
       "false_accept": 0,
       "false_reject": 0,
-      "may_pass": 132
+      "may_pass": 714
     },
     "shift+30": {
-      "checked": 630,
-      "must_reject": 495,
+      "checked": 5490,
+      "must_reject": 3909,
       "false_accept": 0,
       "false_reject": 0,
-      "may_pass": 135
+      "may_pass": 1581
     },
     "shift+5": {
-      "checked": 630,
-      "must_reject": 450,
+      "checked": 5490,
+      "must_reject": 3639,
       "false_accept": 0,
       "false_reject": 0,
-      "may_pass": 180
+      "may_pass": 1851
     },
     "shift-1": {
-      "checked": 720,
-      "must_reject": 720,
+      "checked": 5490,
+      "must_reject": 5175,
       "false_accept": 0,
-      "false_reject": 0
+      "false_reject": 0,
+      "may_pass": 315
     },
     "shift-240": {
-      "checked": 540,
-      "must_reject": 540,
+      "checked": 5490,
+      "must_reject": 5046,
       "false_accept": 0,
-      "false_reject": 0
+      "false_reject": 0,
+      "may_pass": 444
     },
     "shift-30": {
-      "checked": 564,
-      "must_reject": 564,
+      "checked": 5490,
+      "must_reject": 5175,
       "false_accept": 0,
-      "false_reject": 0
+      "false_reject": 0,
+      "may_pass": 315
     },
     "shift-5": {
-      "checked": 630,
-      "must_reject": 630,
+      "checked": 5490,
+      "must_reject": 5175,
       "false_accept": 0,
-      "false_reject": 0
+      "false_reject": 0,
+      "may_pass": 315
     },
     "shift_frozen": {
       "checked": 90,
@@ -199,18 +203,18 @@
   },
   "by_preset": {
     "repair-site-mvp": {
-      "checked": 5040,
-      "must_reject": 4506,
+      "checked": 95649,
+      "must_reject": 89034,
       "false_accept": 0,
       "false_reject": 0,
-      "may_pass": 534
+      "may_pass": 6615
     },
     "tiny": {
-      "checked": 5040,
-      "must_reject": 4815,
+      "checked": 14016,
+      "must_reject": 13071,
       "false_accept": 0,
       "false_reject": 0,
-      "may_pass": 225
+      "may_pass": 945
     }
   },
   "false_accept_examples": [],

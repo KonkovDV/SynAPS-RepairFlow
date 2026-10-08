@@ -2,6 +2,42 @@
 
 ## Unreleased
 
+- `mutmut` 3.8.0 on Linux run `37759423830` (`de135ae`) killed 1227 of 1921
+  mutants and left 694 alive. The eight named spare, release, auxiliary, and
+  same-post setup skips died in that run. Ledger did not move. `7be8040` is
+  not part of the score. This is not an attestation of main.
+- A different unit type must not hide a later pool return, a healthy pool must
+  not hide the next pool, and a skipped rotable row must not hide a later clash.
+  Those tests are not in run `37759423830` or in the 1161/1921 score.
+- A skipped spare, an unknown auxiliary, and a setup row on the same post must
+  not hide the next finding. Those tests are not in the 1161/1921 mutation score.
+- `mutmut` 3.8.0 on Linux run `37743200619` (`13dbb9d`) killed 1161 of 1921
+  mutants and left 760 alive. Run `37742695440` (`e8f6efa`) had killed 1126.
+  The four notary modules did not change between those commits. The README
+  does not copy the score. Spare-receipt skips, an unknown auxiliary, and a
+  setup skip on the same post were still alive. This is not an attestation
+  of main, and it does not include `e89eefd`.
+- `tests/oracle_minutes.py` is an independent minute oracle. It imports only
+  `repairflow.model`, refuses a horizon over eight days or a timestamp off the
+  minute, and is checked on hand-built plans. It does not judge the exchange-pool
+  ledger.
+- `mutmut` 3.8.0 on Linux run `37697094085` (`4167df4`) killed 1120 of 1921
+  mutants and left 801 alive. That score is not in the README. Four capacity
+  survivors are equivalent; the wrapped error sentence is now matched in full.
+  Five lane survivors are covered by new tests and were still alive in that run.
+  The other checker and ledger survivors are not marked equivalent. A skipped
+  notary row must not hide the next finding.
+- The uncapped fault campaign on this Windows host checked 109665 plans,
+  with `false_accept` 0 and `false_reject` 0 (`docs/fault-campaign-nightly.json`).
+  The 10080 prefix stays the committed slow-test matrix. Some negative shifts
+  in the full matrix are `may_pass`: both sides accept them. This file is not
+  a scheduled CI artifact and not an attestation of main.
+- Fault campaign v2 labels each mutation with that oracle. The committed
+  matrix checks 10080 plans across `tiny` and `repair-site-mvp`, seeds 1–30,
+  and GREED, EDD, ATC. `false_accept` is 0 and `false_reject` is 0. 9321 are
+  `must_reject` and 759 are `may_pass` (a later shift or another post that
+  both sides still accept). The nightly path keeps every applicable mutation.
+  That uncapped run is not in this commit. `mutmut` is not run.
 - Public claim pages are scanned against `docs/BANNED_CLAIMS.txt`.
   The two literature pages were renamed so a banned word is not a file name
   or a heading. A negation is an exact line in

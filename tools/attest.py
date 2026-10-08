@@ -41,7 +41,7 @@ def render_readme() -> None:
     text = README.read_text(encoding="utf-8")
     head, rest = text.split(BEGIN, 1)
     _, tail = rest.split(END, 1)
-    README.write_text(head + BEGIN + "\n" + table + END + tail, encoding="utf-8")
+    README.write_text(head + BEGIN + "\n" + table + END + tail, encoding="utf-8", newline="\n")
 
 
 def main() -> int:
@@ -73,7 +73,11 @@ def main() -> int:
             "synaps_commit": SYNAPS_COMMIT,
         }
     )
-    MANIFEST.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    MANIFEST.write_text(
+        json.dumps(manifest, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
     render_readme()
     return 0
 

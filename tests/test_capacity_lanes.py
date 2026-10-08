@@ -194,8 +194,9 @@ def test_simultaneous_starts_blame_only_the_arrivals_past_capacity() -> None:
 
 
 def test_negative_capacity_is_rejected() -> None:
-    with pytest.raises(ValueError, match="capacity must be non-negative"):
+    with pytest.raises(ValueError) as caught:
         excess_arrivals([_occ(0, 1, "a")], -1)
+    assert str(caught.value) == "capacity must be non-negative"
 
 
 def test_unknown_resource_defaults_to_one_lane() -> None:
