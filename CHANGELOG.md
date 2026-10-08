@@ -77,7 +77,7 @@
   or a heading. A negation is an exact line in
   `docs/banned-claims-allowlist.txt` with its own reason. README measurements
   outside the generated evidence block are removed.
-- The evidence manifest attests main `d0c82e0` / push run `37825613066`,
+- The evidence manifest attests main `6f34389` / push run `37831512163`,
   including `test-slow`, and kernel `f939727`. `tools/attest.py` writes the
   manifest and re-renders the README table; this note does not attest itself.
 - `benchmark/results/SHA256SUMS` is the LF git blob of `benchmark.json`.
