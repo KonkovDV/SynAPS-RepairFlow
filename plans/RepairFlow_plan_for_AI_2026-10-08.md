@@ -160,7 +160,7 @@ python tools/verify_schema.py, python tools/export_schemas.py, python tools/veri
 - **Acceptance:** п. 10 `docs/limitations.md` переписан по факту. Демо-сценарий «пост сломался» есть в `repairflow demo`.
 
 ### Фаза 6. Реальные данные и офлайн-пакет (3–5 дней)
-Статус: CSV-пакет без `manifest.json` не читается. CP1251, ночная смена 22:00–06:00 одним окном на следующие сутки, HMAC табельного номера в `crew-` и восемь hex, соль только аргументом. Пример пяти ошибок: `schemas/templates/five-errors/`. `tzdata==2026.3`. Docker и Astra не сделаны: хэш-лок фазы 3 на другой ветке, образа РЕД ОС здесь нет. Это не аттестация main.
+Статус: CSV-пакет без `manifest.json` не читается. CP1251, ночная смена 22:00–06:00 одним окном на следующие сутки, HMAC табельного номера в `crew-` и восемь hex, соль только аргументом. Пример пяти ошибок: `schemas/templates/five-errors/`. `tzdata==2026.3`. Docker и Astra не сделаны: хэш-лок фазы 3 на другой ветке, образа РЕД ОС здесь нет. Linux `workflow_dispatch` [37704013170](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/runs/37704013170) на `2a45feb`: success, шесть джобов, включая `test-slow`. Это прогон ветки, не аттестация main. Эта строка статуса не входит в тот прогон.
 Ветка `feat/ingest-manifest`.
 1. `manifest.json` рядом с CSV: `encoding` (utf-8, utf-8-sig, cp1251), `delimiter`, `source_tz` (по умолчанию `Europe/Moscow`), `data_provenance`, версия выгрузки. Без манифеста несинтетика не грузится.
 2. Перевод времени в UTC через `zoneinfo`. На Windows нужен пакет `tzdata`: добавить в зависимости и в lock.

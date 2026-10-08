@@ -7,6 +7,8 @@
   next date. A personnel number becomes an eight-hex crew code; the salt is
   not stored. The same CP1251 extract without the manifest is refused.
   There is no offline image and no Astra run.
+  Dispatch `37704013170` checked `2a45feb` on Linux, including `test-slow`.
+  That run is not an attestation of main, and this note is not part of it.
 - Public claim pages are scanned against `docs/BANNED_CLAIMS.txt`.
   The two literature pages were renamed so a banned word is not a file name
   or a heading. A negation is an exact line in

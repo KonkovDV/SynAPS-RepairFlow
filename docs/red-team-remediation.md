@@ -39,6 +39,7 @@ Regression tests: `tests/test_verdict_safety.py`, `tests/test_dag_compiler.py`, 
 | Eight hex characters | the published width; a collision is an error, not a merged crew |
 | Offline image, Astra, RED OS | not run; the hashed wheelhouse is on `ci/supply-chain` |
 | Who holds the salt | still owner decision O4; the code only accepts the salt as an argument |
+| Treat dispatch `37704013170` as an attestation of main | refused; it checked branch commit `2a45feb` only |
 
 ## Banned-phrase gate (2026-10-08)
 
