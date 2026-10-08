@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Dispatch `37810297431` on `e364f34` uploaded `fault-campaign-nightly`.
+  It checked 109665 plans, with `false_accept` 0 and `false_reject` 0, the
+  same `input_hash` as the committed Windows file. mutmut was skipped. This
+  is not an attestation of main.
 - `mutmut` 3.8.0 on Linux run `37797011451` (`e54e33a`) killed 1261 of 1921
   mutants and left 660 alive. Thirty-four ledger mutants died and none were
   born. Checker, capacity, and lane setup did not move. The five named
@@ -16,8 +20,8 @@
   call sites. `_violation` default severity, its `StrEnum` code, and the unused
   message fallback are equivalent. These tests are not a new mutation score.
   A dispatch uploads the uncapped campaign only when `run_nightly` is true, and
-  can skip mutmut when `run_mutation` is false. The nightly artifact is still
-  absent until that dispatch or the schedule runs.
+  can skip mutmut when `run_mutation` is false. Dispatch `37810297431` is
+  that upload.
 - A violation keeps the visit, the ids, and the sentence that named it.
   Replacing an explicit suggestion with `None` stays equivalent, because
   `_violation` fills that gap from the same table. The lane overflow
