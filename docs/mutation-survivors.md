@@ -105,7 +105,7 @@ Inside `_violation`, four edits do not change a returned finding. Default severi
 
 `_spare_receipts` 22, 25, and 28 change an event order. The opening quantity and each receipt use an empty operation id, which sorts before any real operation id. Moving the opening quantity or a receipt onto the use's order, or moving the use later, still applies the paying quantity before the draw. Equivalent.
 
-`tests/test_violation_identity.py` requires the visit, the ids, and the exact sentence on the findings those loops emit. `tests/test_boundary_survivors.py` pins the edges those loops compare with `<` and `>`. Neither file is in 1227/1921 or in the score below. A later dispatch can upload the uncapped campaign when `run_nightly` is true. That input defaults to false. `run_mutation` defaults to true, so the nightly upload can be requested without a second mutmut job. The artifact does not exist until that dispatch or the schedule runs.
+`tests/test_violation_identity.py` requires the visit, the ids, and the exact sentence on the findings those loops emit. `tests/test_boundary_survivors.py` pins the edges those loops compare with `<` and `>`. Neither file is in 1227/1921 or in the score below. A later dispatch can upload the uncapped campaign when `run_nightly` is true. That input defaults to false. `run_mutation` defaults to true, so the nightly upload can be requested without a second mutmut job. Dispatch `37810297431` is that upload.
 
 ## Run 37797011451
 
@@ -126,4 +126,4 @@ Accepted before the run, not as a pass:
 - No `# pragma: no mutate` in those four modules.
 - No mypy pre-filter. A type error can hide a mutant the tests would also miss.
 - The slow campaign test stays out of the mutant runner. It repeats the same notary for minutes and would not add a distinct kill.
-- The uncapped campaign is recorded in `docs/fault-campaign-nightly.json` (checked 109665, false_accept 0, false_reject 0). It is a local Windows run. The CI upload runs on the schedule or when a dispatch sets `run_nightly`. That artifact is not produced yet. Phase 1 stays open because the 694 survivors of run `37759423830` are not all triaged.
+- The uncapped campaign is recorded in `docs/fault-campaign-nightly.json` (checked 109665, false_accept 0, false_reject 0). It is a local Windows run. Dispatch `37810297431` on `e364f34` uploaded `fault-campaign-nightly` with the same counts and the same `input_hash`. mutmut was skipped. That artifact is not an attestation of main. Phase 1 stays open because the 660 survivors of run `37797011451` are not all triaged.
