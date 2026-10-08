@@ -105,7 +105,21 @@ Inside `_violation`, four edits do not change a returned finding. Default severi
 
 `_spare_receipts` 22, 25, and 28 change an event order. The opening quantity and each receipt use an empty operation id, which sorts before any real operation id. Moving the opening quantity or a receipt onto the use's order, or moving the use later, still applies the paying quantity before the draw. Equivalent.
 
-`tests/test_violation_identity.py` requires the visit, the ids, and the exact sentence on the findings those loops emit. `tests/test_boundary_survivors.py` pins the edges those loops compare with `<` and `>`. Neither file is in 1227/1921. Linux `workflow_dispatch` `37797011451` is on `e54e33a` and does not include them. It is not a score until its artifact is read. A later dispatch can upload the uncapped campaign when `run_nightly` is true. That input defaults to false. `run_mutation` defaults to true, so the nightly upload can be requested without a second mutmut job. The artifact does not exist until that dispatch or the schedule runs.
+`tests/test_violation_identity.py` requires the visit, the ids, and the exact sentence on the findings those loops emit. `tests/test_boundary_survivors.py` pins the edges those loops compare with `<` and `>`. Neither file is in 1227/1921 or in the score below. A later dispatch can upload the uncapped campaign when `run_nightly` is true. That input defaults to false. `run_mutation` defaults to true, so the nightly upload can be requested without a second mutmut job. The artifact does not exist until that dispatch or the schedule runs.
+
+## Run 37797011451
+
+Linux `workflow_dispatch` [37797011451](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/runs/37797011451) on `e54e33a` killed 1261 and left 660. Score 1261/1921. Exit codes are only 0 and 1. `test-slow` on that run succeeded. This is not an attestation of main. The mutated tree does not contain `tests/test_violation_identity.py` or `tests/test_boundary_survivors.py`.
+
+| Module | Killed | Survived | Total |
+| --- | ---: | ---: | ---: |
+| `capacity.py` | 62 | 4 | 66 |
+| `checker.py` | 917 | 589 | 1506 |
+| `lane_setup.py` | 102 | 3 | 105 |
+| `ledger.py` | 180 | 64 | 244 |
+| Total | 1261 | 660 | 1921 |
+
+Against run `37759423830`, 34 mutants died and none were born. All 34 are in `ledger.py`. `capacity.py`, `checker.py`, and `lane_setup.py` did not move. The five named `continue` to `break` skips are among the deaths: `_exchange_pool_violations` 10 and 30, `_rotable_spare_violations` 6, 44, and 51. The other 29 are `_completion_times` 3, 11, 18, 19, 20, 21, 22, 26, 28; `_exchange_pool_violations` 11, 12, 13, 27, 42, 43, 49, 50, 52, 53, 54, 55, 56; `_rotable_spare_violations` 17, 24, 30, 98, 99, 107, 108. The README evidence table does not copy 1261/1921. Phase 1 stays open because 660 survivors are not all triaged.
 
 Accepted before the run, not as a pass:
 
