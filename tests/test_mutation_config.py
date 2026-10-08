@@ -34,5 +34,15 @@ def test_mutation_job_runs_on_linux_outside_pull_requests() -> None:
     assert "runs-on: ubuntu-latest" in job
     assert "timeout-minutes: 360" in job
     assert "mutmut==3.8.0" in job
-    assert "github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'" in job
+    assert "github.event_name == 'schedule'" in job
+    assert "inputs.run_mutation == true" in job
     assert "pull_request" not in job.split("steps:", 1)[0]
+
+
+def test_nightly_campaign_is_opt_in() -> None:
+    text = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    assert "run_nightly:" in text
+    assert "default: false" in text.split("run_mutation:", 1)[0]
+    nightly = text.split("name: Nightly fault campaign", 1)[1].split("mutation:", 1)[0]
+    assert nightly.count("inputs.run_nightly == true") == 2
+    assert "github.event_name == 'schedule'" in nightly
