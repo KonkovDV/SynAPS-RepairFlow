@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- A skipped spare, an unknown auxiliary, and a setup row on the same post must
+  not hide the next finding. Those tests are not in the 1161/1921 mutation score.
 - `mutmut` 3.8.0 on Linux run `37743200619` (`13dbb9d`) killed 1161 of 1921
   mutants and left 760 alive. Run `37742695440` (`e8f6efa`) had killed 1126.
   The four notary modules did not change between those commits. The README

@@ -67,13 +67,15 @@ The 35 deaths against the `e8f6efa` artifact are all in `checker.py`. They were 
 
 Read from the mutant copies, the `continue` to `break` deaths in that list are `_ref_and_duration` 21, `_frozen` 4 and 23, `_precedence` 11 and 33, and `_skills_and_eligibility` 9. Several others replace a violation or a field with `None`, or invert `op is not None`. `_setup` 16 changes `op is None or placed is None` into `and`.
 
-Still alive, and not marked equivalent:
+Still alive on `37743200619`, and not marked equivalent:
 
 - `_spare_receipts` 7 and 15, `_due_release_spares` 9, 39, 82, and 89
 - `_calendars_windows_horizon` 139 (`aux is None` then `break`)
 - `_setup` 19 (`op is None or placed is None` then `break`)
 - `_colour_lanes` 52 (overflow `continue` to `break`; public callers use the first overflow only)
 - the other checker and ledger survivors, including `None` fields this run did not assert
+
+Tests added after that run require the later finding: an unknown operation does not hide a short receipt, a release violation, spare overuse, or setup on the same post; a spare with no receipts does not hide a short receipt; a spare that has receipts does not hide a later availability or a consumable overuse; an unknown auxiliary does not hide a closed auxiliary calendar. Those tests are not part of 1161/1921. They do not mark the mutants killed.
 
 The four remaining `capacity.py` survivors are the ones already marked equivalent (`peak_concurrency` 14, `excess_arrivals` 13, `_events` 8 and 9). `_colour_lanes` 49 and 50 stay the dead store. `ledger.py` did not move. The README evidence table does not copy 1161/1921.
 
