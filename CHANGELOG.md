@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- A violation keeps the visit, the ids, and the sentence that named it.
+  Replacing an explicit suggestion with `None` stays equivalent, because
+  `_violation` fills that gap from the same table. The lane overflow
+  `continue` to `break` is equivalent for every caller: only the first
+  overflow is read. These notes are not a new mutation score.
 - `mutmut` 3.8.0 on Linux run `37759423830` (`de135ae`) killed 1227 of 1921
   mutants and left 694 alive. The eight named spare, release, auxiliary, and
   same-post setup skips died in that run. Ledger did not move. `7be8040` is
