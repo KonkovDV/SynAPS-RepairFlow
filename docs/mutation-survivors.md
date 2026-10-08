@@ -45,4 +45,4 @@ Accepted before the run, not as a pass:
 - No `# pragma: no mutate` in those four modules.
 - No mypy pre-filter. A type error can hide a mutant the tests would also miss.
 - The slow campaign test stays out of the mutant runner. It repeats the same notary for minutes and would not add a distinct kill.
-- The nightly file with at least 100000 checks is not in this tree. Phase 1 stays open.
+- The uncapped campaign is recorded in `docs/fault-campaign-nightly.json` (checked 109665, false_accept 0, false_reject 0). It is a local Windows run, not the scheduled CI artifact. Phase 1 stays open because the 801 survivors are not all triaged.

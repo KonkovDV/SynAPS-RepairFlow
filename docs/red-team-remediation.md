@@ -37,7 +37,9 @@ The oracle labels each mutation. `false_accept` means the checker verified a pla
 
 Committed matrix in `docs/fault-campaign.json`: `tiny` and `repair-site-mvp`, seeds 1–30, GREED, EDD and ATC, 56 mutations per verified baseline. checked 10080, false_accept 0, false_reject 0, must_reject 9321, may_pass 759. The reason string in that file is the false_reject explanation: the checker rejected no oracle-accepted plan in this matrix.
 
-The 759 `may_pass` rows are real agreements, not invalid plans. They are later shifts (`shift+1`, `shift+5`, `shift+30`, `shift+240`) and some post changes. On these left-packed baselines every negative shift was a hard violation for both sides. That does not prove every shift is invalid.
+The 759 `may_pass` rows in the 56-prefix are real agreements, not invalid plans. They are later shifts (`shift+1`, `shift+5`, `shift+30`, `shift+240`) and some post changes. On that prefix every negative shift was a hard violation for both sides.
+
+The uncapped local run is `docs/fault-campaign-nightly.json`: checked 109665, false_accept 0, false_reject 0, must_reject 102105, may_pass 7560. Same `input_hash` and kernel pin as the prefix. It ran on this Windows host for about 89 minutes. The CI job uploads that file only on the nightly schedule, so this copy is not a GitHub artifact and not an attestation of main. Negative shifts are no longer all `must_reject`: `shift-1`, `shift-5` and `shift-30` each have 315 `may_pass`, and `shift-240` has 444. Those rows are agreements. `false_accept` on each of them is 0.
 
 Sampling: mutator families are round-robin, so the 56-prefix contains every family that applies on that baseline. A one-variant family appears once (`spare_overuse` 180, `rotable_clash` 180, `shift_frozen` 90 because only the repair-site preset freezes a row). `drop_aux` is 336 because `tiny` has no aux. Before this order, a prefix of 56 would have been the first operations' shifts and would have dropped spare, rotable and frozen.
 
@@ -48,7 +50,7 @@ A full pass of `tiny` seed 1 (GREED, EDD, ATC) and of `repair-site-mvp` seed 1 (
 Accepted limits, not a pass:
 
 - The exchange-pool ledger is still not judged.
-- 10080 is a prefix. A count of the same mutators on this matrix, before the identity filter, was 109665. The nightly script keeps every applicable mutation and fails unless checked is at least 100000 and false_accept is 0. That run has not completed. A cap of 100000 was rejected because it would drop later operations.
+- 10080 is a prefix. The uncapped matrix on the same mutators checked 109665, with false_accept 0. A cap of 100000 was rejected because it would drop later operations. The slow pytest still re-runs only the prefix.
 - `false_reject` 0 is this matrix only. The `may_pass` rows are slack moves, so a checker rule those moves never touch is unmeasured.
 - Run `37696570417` died while collecting tests. Run `37697094085` on `4167df4` finished: 1120 killed, 801 survived, no other exit, score 1120/1921. Five capacity survivors were read: four are equivalent, and the wrapped error sentence is now an exact assertion. Two lane survivors are a dead store. Five lane survivors are covered by new tests and stay survived in that run. `continue` versus `break` on the overflow tail is open. A skipped notary row must not hide the next finding (`tests/test_skip_does_not_hide_next.py`); that test is not in the 1120/1921 run. The other checker and ledger survivors are not marked equivalent. This dispatch is not an attestation of main. See `docs/mutation-survivors.md`.
 
