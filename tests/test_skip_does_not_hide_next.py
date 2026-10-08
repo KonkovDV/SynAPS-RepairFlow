@@ -15,10 +15,6 @@ from repairflow.reasons import ReasonCode
 from repairflow.synthetic import synthesize
 
 
-def _codes(problem: RepairFlowProblem, rows: list[PlannedAssignment]) -> set[str]:
-    return {item.code for item in check_domain_assignments(problem, rows)}
-
-
 def test_unknown_row_does_not_hide_the_next_row() -> None:
     problem = synthesize("tiny", seed=1)
     operation = problem.operations[0]
@@ -38,11 +34,23 @@ def test_unknown_row_does_not_hide_the_next_row() -> None:
             end=start + held,
         ),
     ]
-    found = _codes(problem, rows)
+    violations = check_domain_assignments(problem, rows)
+    found = {item.code for item in violations}
     assert ReasonCode.UNKNOWN_OPERATION in found
     assert ReasonCode.UNKNOWN_RESOURCE in found
     assert ReasonCode.ELIGIBLE_CENTER_MISMATCH in found
     assert ReasonCode.MISSING_SETUP in found
+    unknown = next(item for item in violations if item.code == ReasonCode.UNKNOWN_OPERATION)
+    assert unknown.start == rows[0].start
+    assert unknown.end == rows[0].end
+    missing_post = next(
+        item
+        for item in violations
+        if item.code == ReasonCode.UNKNOWN_RESOURCE and item.resource_id == "POST-NOPE"
+    )
+    assert missing_post.start == rows[1].start
+    assert missing_post.end == rows[1].end
+    assert missing_post.operation_id == operation.id
 
 
 def test_mutable_freeze_does_not_hide_later_frozen_rows() -> None:
