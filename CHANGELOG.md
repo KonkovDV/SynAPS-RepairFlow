@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Survivor tests require an unknown duration policy, a missing return lag of
+  zero, a rotable marked only by `mode`, two returns at one moment, one return
+  against a demand of two, a job with no operations, a later return after an
+  incomplete job, preemptive work that ignores a closed unattended calendar
+  and an unused auxiliary, and violation order. A subset check ignores a
+  missing predecessor. `_precedence` 1, `_duration_violation` 38,
+  `spare_is_rotable` 12 and 16, and the `PYTHON` model dump are equivalent.
+  These tests are not in the 1261/1921 score. Dispatch `37829096222` does not
+  contain this file and is not an attestation of main.
 - Dispatch `37810297431` on `e364f34` uploaded `fault-campaign-nightly`.
   It checked 109665 plans, with `false_accept` 0 and `false_reject` 0, the
   same `input_hash` as the committed Windows file. mutmut was skipped. This

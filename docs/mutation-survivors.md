@@ -121,6 +121,17 @@ Linux `workflow_dispatch` [37797011451](https://github.com/KonkovDV/SynAPS-Repai
 
 Against run `37759423830`, 34 mutants died and none were born. All 34 are in `ledger.py`. `capacity.py`, `checker.py`, and `lane_setup.py` did not move. The five named `continue` to `break` skips are among the deaths: `_exchange_pool_violations` 10 and 30, `_rotable_spare_violations` 6, 44, and 51. The other 29 are `_completion_times` 3, 11, 18, 19, 20, 21, 22, 26, 28; `_exchange_pool_violations` 11, 12, 13, 27, 42, 43, 49, 50, 52, 53, 54, 55, 56; `_rotable_spare_violations` 17, 24, 30, 98, 99, 107, 108. The README evidence table does not copy 1261/1921. Phase 1 stays open because 660 survivors are not all triaged.
 
+Read from the mutant bodies of that artifact, not from the names:
+
+- `_precedence` 1 changes the default `ignore_absent` from `False` to `True`. The only caller is `_constraint_violations`, and it always passes `ignore_absent=subset_mode`. The default is not read. Equivalent. `_constraint_violations` 24 deletes that argument, so the default is used. That one is not equivalent.
+- `_duration_violation` 38 changes `if masks else held` into `if masks or True`. An empty mask list is the whole interval, and a non-empty list already takes that branch. The integer is the same. Equivalent.
+- `spare_is_rotable` 12 drops the inner default, so a missing kind is `None`. `str(None).lower()` is not `rotable`, which is the same answer as the word `consumable`. Equivalent. Mutant 16 uses `CONSUMABLE`; `.lower()` still is not `rotable`. Equivalent. Mutant 8 renames `mode` to `MODE` and is not equivalent.
+- `check_domain_assignments` 5 and `check_plan` 6 pass `model_dump(mode="PYTHON")`. That dump is the same dict as `mode="python"`, so the revalidated problem is unchanged. Equivalent.
+
+`tests/test_more_survivors.py` requires the unknown-policy sentence, a missing return lag of zero, a spare that is rotable by `mode` alone, two returns at one moment against a demand of two, one return against that demand, a job with no operations, a later return after an incomplete job, preemptive work that ignores a closed unattended calendar and an unused auxiliary, a preemptive unknown post and crew, sort order by operation id and by resource id, and a subset that ignores a missing predecessor. Those tests are not in 1261/1921. Dispatch `37829096222` measures `e027edd` and does not contain this file. It is not a score until its artifact is read, and it is not an attestation of main.
+
+`_completion_times` 24 and 27 still have no test. The sink loop walks a set, so which sink is seen first is not stable. They are not marked equivalent.
+
 Accepted before the run, not as a pass:
 
 - No `# pragma: no mutate` in those four modules.

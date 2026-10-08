@@ -19,7 +19,7 @@
 | Dangling calendar id is not an open horizon | implemented | checker `CALENDAR_BROKEN`. Non-synthetic data must set `calendar_id` or `availability=always_open`. Synthetic data may omit the calendar |
 | Fault campaign of at least 10 000 labelled plans | implemented | `docs/fault-campaign.json` v2 prefix: checked 10080, false_accept 0, false_reject 0; `docs/fault-campaign-nightly.json` local uncapped run: checked 109665, false_accept 0, false_reject 0; synthetic; exchange-pool ledger not judged; not a CI artifact |
 | Independent minute oracle | implemented | `tests/oracle_minutes.py`, `tests/test_oracle_minutes.py`; campaign v2 uses it; exchange-pool ledger not judged |
-| Mutation testing of the notary | measured, not closed | run `37797011451` on `e54e33a`: 1261 killed, 660 survived, score 1261/1921; ledger only moved; not a main attestation; `docs/mutation-survivors.md` |
+| Mutation testing of the notary | measured, not closed | run `37797011451` on `e54e33a`: 1261 killed, 660 survived, score 1261/1921; ledger only moved; not a main attestation; later edge tests are not in that score; `docs/mutation-survivors.md` |
 | Shop plan checked without the kernel | implemented | `repairflow verify-plan`; claim `domain_verified`; `tests/test_shop_plan.py` |
 | Blocking spares | implemented | checker spare tests |
 | Exchange pool as a stock ledger | implemented | `src/repairflow/ledger.py`, ADR-0004 |
