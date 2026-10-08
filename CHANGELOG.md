@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- Boundary tests pin the horizon edges, an equal due date and deadline, the
+  min-policy length, a zero spare, a receipt that spends the stock, draw order
+  by operation id, max lag, preemptive setup edges, setup overlap, an unbound
+  frozen crew, and which sink returns a unit. A ledger `Violation` does not
+  fill a missing suggestion, so those sentences are required. Checker calls
+  that only drop `suggested_relaxation` stay equivalent, including nine further
+  call sites. `_violation` default severity, its `StrEnum` code, and the unused
+  message fallback are equivalent. These tests are not a new mutation score.
+  A dispatch uploads the uncapped campaign only when `run_nightly` is true, and
+  can skip mutmut when `run_mutation` is false. The nightly artifact is still
+  absent until that dispatch or the schedule runs.
 - A violation keeps the visit, the ids, and the sentence that named it.
   Replacing an explicit suggestion with `None` stays equivalent, because
   `_violation` fills that gap from the same table. The lane overflow
