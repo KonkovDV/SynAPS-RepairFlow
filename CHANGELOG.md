@@ -6,10 +6,12 @@
   `repairflow.model`, refuses a horizon over eight days or a timestamp off the
   minute, and is checked on hand-built plans. It does not judge the exchange-pool
   ledger.
-- `mutmut` 3.8.0 is configured for the four notary modules. It needs
-  `os.fork`, so the run is a Linux CI job, not a Windows score. The first
-  run stopped during test collection because the sandbox lacked `tools`.
-  No mutation score is claimed.
+- `mutmut` 3.8.0 on Linux run `37697094085` (`4167df4`) killed 1120 of 1921
+  mutants and left 801 alive. That score is not in the README. Four capacity
+  survivors are equivalent; the wrapped error sentence is now matched in full.
+  Five lane survivors are covered by new tests and were still alive in that run.
+  The other checker and ledger survivors are not marked equivalent. The nightly
+  file of at least 100000 checks is still absent.
 - Fault campaign v2 labels each mutation with that oracle. The committed
   matrix checks 10080 plans across `tiny` and `repair-site-mvp`, seeds 1–30,
   and GREED, EDD, ATC. `false_accept` is 0 and `false_reject` is 0. 9321 are

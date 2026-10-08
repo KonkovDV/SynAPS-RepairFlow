@@ -10,10 +10,70 @@ import pytest
 
 from repairflow.checker import _setup
 from repairflow.checker_primitives import lookup_setup_minutes
-from repairflow.lane_setup import lane_local_setup_placements
+from repairflow.lane_setup import lane_local_setup_placements, lane_setup_evidence
 from repairflow.model import PlannedAssignment
 from repairflow.planner import domain_greed, plan, replan_after_disruption
 from repairflow.synthetic import synthesize
+
+
+def test_unknown_post_keeps_one_lane_and_names_it() -> None:
+    problem = synthesize("tiny", seed=1)
+    start = problem.planning_horizon.start
+    rows = [
+        PlannedAssignment(
+            operation_id="OP-Z",
+            work_center_id="POST-MISSING",
+            start=start,
+            end=start + timedelta(minutes=10),
+        ),
+        PlannedAssignment(
+            operation_id="OP-A",
+            work_center_id="POST-MISSING",
+            start=start,
+            end=start + timedelta(minutes=10),
+        ),
+    ]
+    placed = lane_setup_evidence(problem, rows)
+    assert [row.operation_id for row in placed] == ["OP-A"]
+    assert placed[0].work_center_id == "POST-MISSING"
+
+
+def test_tie_uses_the_lower_lane_index_and_an_unknown_state_stays_empty() -> None:
+    problem = synthesize("tiny", seed=1)
+    post = problem.work_centers[0].id
+    loaded = problem.model_copy(
+        update={
+            "work_centers": [
+                row.model_copy(update={"max_parallel": 2}) if row.id == post else row
+                for row in problem.work_centers
+            ]
+        }
+    )
+    start = loaded.planning_horizon.start
+    rows = [
+        PlannedAssignment(
+            operation_id="OP-Z",
+            work_center_id=post,
+            start=start,
+            end=start + timedelta(minutes=10),
+        ),
+        PlannedAssignment(
+            operation_id="OP-A",
+            work_center_id=post,
+            start=start + timedelta(minutes=1),
+            end=start + timedelta(minutes=10),
+        ),
+        PlannedAssignment(
+            operation_id="OP-M",
+            work_center_id=post,
+            start=start + timedelta(minutes=10),
+            end=start + timedelta(minutes=20),
+        ),
+    ]
+    by_id = {row.operation_id: row for row in lane_local_setup_placements(loaded, rows)}
+    assert by_id["OP-M"].previous_operation_id == "OP-Z"
+    assert by_id["OP-M"].previous_state == ""
+    assert by_id["OP-M"].work_center_id == post
 
 
 def test_parallel_lanes_keep_independent_setup_state() -> None:
