@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- `mutmut` 3.8.0 on Linux run `37743200619` (`13dbb9d`) killed 1161 of 1921
+  mutants and left 760 alive. Run `37742695440` (`e8f6efa`) had killed 1126.
+  The four notary modules did not change between those commits. The README
+  does not copy the score. Spare-receipt skips, an unknown auxiliary, and a
+  setup skip on the same post were still alive. This is not an attestation
+  of main, and it does not include `e89eefd`.
 - `tests/oracle_minutes.py` is an independent minute oracle. It imports only
   `repairflow.model`, refuses a horizon over eight days or a timestamp off the
   minute, and is checked on hand-built plans. It does not judge the exchange-pool
