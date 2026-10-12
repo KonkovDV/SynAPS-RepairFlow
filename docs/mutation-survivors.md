@@ -33,7 +33,7 @@ The score of this run is 1120/1921. The README evidence table does not copy it.
 `lane_setup.py`:
 
 - The tuple appended when a lane is opened is overwritten before anything reads it. Replacing that tuple with `None`, or its empty label with `XXXX`, does not change a later read. Equivalent dead store (`mutmut_49`, `mutmut_50`).
-- `continue` changed to `break` after an overflow (`mutmut_52`). The public functions use only the first overflow. The shorter private list is not a tested contract. Left open. Not marked equivalent inside `_colour_lanes`.
+- `continue` changed to `break` after an overflow (`mutmut_52`). The public functions use only the first overflow. The shorter private list is not a tested contract. A later section marks this mutant equivalent for every caller, because nothing reads a later overflow.
 - An unknown post defaulting to 2 lanes, a tie broken by the lane tuple instead of the index, an unknown operation forced through `setup_state`, an unknown operation labelled `XXXX`, and a placement whose post is `None` are not equivalent. Tests now cover those five. This run still counts them as survived.
 
 The other 788 survivors, in `checker.py` and `ledger.py`, are not marked equivalent. Across all 801, 59 diffs only wrap a string in `XX` and 20 replace `continue` with `break`. Those counts include mutants already named above. Many others set a violation field to `None`. A missing assertion is not an equivalent mutant.
@@ -128,13 +128,51 @@ Read from the mutant bodies of that artifact, not from the names:
 - `spare_is_rotable` 12 drops the inner default, so a missing kind is `None`. `str(None).lower()` is not `rotable`, which is the same answer as the word `consumable`. Equivalent. Mutant 16 uses `CONSUMABLE`; `.lower()` still is not `rotable`. Equivalent. Mutant 8 renames `mode` to `MODE` and is not equivalent.
 - `check_domain_assignments` 5 and `check_plan` 6 pass `model_dump(mode="PYTHON")`. That dump is the same dict as `mode="python"`, so the revalidated problem is unchanged. Equivalent.
 
-`tests/test_more_survivors.py` requires the unknown-policy sentence, a missing return lag of zero, a spare that is rotable by `mode` alone, two returns at one moment against a demand of two, one return against that demand, a job with no operations, a later return after an incomplete job, preemptive work that ignores a closed unattended calendar and an unused auxiliary, a preemptive unknown post and crew, sort order by operation id and by resource id, and a subset that ignores a missing predecessor. Those tests are not in 1261/1921. Dispatch `37829096222` measures `e027edd` and does not contain this file. It is not a score until its artifact is read, and it is not an attestation of main.
+`tests/test_more_survivors.py` requires the unknown-policy sentence, a missing return lag of zero, a spare that is rotable by `mode` alone, two returns at one moment against a demand of two, one return against that demand, a job with no operations, a later return after an incomplete job, preemptive work that ignores a closed unattended calendar and an unused auxiliary, a preemptive unknown post and crew, sort order by operation id and by resource id, and a subset that ignores a missing predecessor. Those tests are not in 1261/1921.
 
-`_completion_times` 24 and 27 still have no test. The sink loop walks a set, so which sink is seen first is not stable. They are not marked equivalent.
+## Run 37829096222
+
+Linux `workflow_dispatch` [37829096222](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/runs/37829096222) on `e027edd` killed 1562 and left 359. Score 1562/1921. Exit codes are only 0 and 1. `test-slow` on that run succeeded. The mutation job succeeded; it was not skipped. The tree contains `tests/test_violation_identity.py` and `tests/test_boundary_survivors.py`. It does not contain `tests/test_more_survivors.py`. This is not an attestation of main.
+
+| Module | Killed | Survived | Total |
+| --- | ---: | ---: | ---: |
+| `capacity.py` | 62 | 4 | 66 |
+| `checker.py` | 1199 | 307 | 1506 |
+| `lane_setup.py` | 102 | 3 | 105 |
+| `ledger.py` | 199 | 45 | 244 |
+| Total | 1562 | 359 | 1921 |
+
+Against run `37797011451`, 301 mutants died and none were born. `capacity.py` and `lane_setup.py` did not move. Checker went from 917 killed to 1199. Ledger went from 180 killed to 199. The eight ledger suggestion deletions died (`_exchange_pool_violations` 44 and 51, `_rotable_spare_violations` 26, 32, 64, 74, 101, and 110), and `_violation` 42 died. Those were the ids the previous note said were not equivalent. `_completion_times` 12, 14, and 27 died. Mutant 27 changes `if complete and ends` into `if complete or ends`. Boundary tests that keep every job and pass only one or two operations leave the other jobs with no sinks. `complete` stays true, `ends` stays empty, and `max` of that empty list raises. Mutant 24, `complete = False` changed to `True`, is still alive. The sink loop walks a set, so that one is not marked equivalent. The README evidence table does not copy 1562/1921.
+
+## Run 38228010896
+
+Four scheduled runs on `b7c8c29` finished with mutation success and `test-slow` success: [37908445280](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/runs/37908445280), [38037961461](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/runs/38037961461), [38126032914](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/runs/38126032914), and [38228010896](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/runs/38228010896). Their `exit_code_by_key` maps are identical. The score below is that map. Killed 1587, survived 334, total 1921. Exit codes are only 0 and 1. The tree contains `tests/test_more_survivors.py` as well as the identity and boundary tests. `b7c8c29` attests `6f34389` and does not attest itself. These scheduled runs are not an attestation of main. The README evidence table does not copy 1587/1921.
+
+| Module | Killed | Survived | Total |
+| --- | ---: | ---: | ---: |
+| `capacity.py` | 62 | 4 | 66 |
+| `checker.py` | 1216 | 290 | 1506 |
+| `lane_setup.py` | 102 | 3 | 105 |
+| `ledger.py` | 207 | 37 | 244 |
+| Total | 1587 | 334 | 1921 |
+
+Against run `37797011451`, 326 mutants died and none were born. Against run `37829096222`, 25 died and none were born. Those 25 are the edge tests that were not on `e027edd`: `_attended_masks` 3, 13, 23, 33, 35, 36, and 37; `_constraint_violations` 21 and 24; `_duration_violation` 9, 10, 11, 12, and 13; `_precedence` 14; `_sorted` 8; `check_plan` 48; `_exchange_pool_violations` 14 and 16; `_rotable_spare_violations` 10, 12, and 15; `spare_is_rotable` 3, 7, and 8. `check_plan` 48 passes `subset_mode=None`, and `None` does not ignore a missing predecessor. `_precedence` 14 deletes the missing-predecessor sentence, so the domain check no longer has that exact message.
+
+`_attended_masks` 14, 24, and 34 are still alive. Picking a different center or crew, or passing `None` as the auxiliary calendar id, did not change the assertions those tests make. They are not marked equivalent.
+
+Read from the mutant bodies, and still alive on this score:
+
+- `spare_is_rotable` 10 stores `None` for a missing kind, and mutant 15 stores `XXconsumableXX`. Neither string is `rotable` after `.lower()`. Same answer as `consumable`. Equivalent, for the same reason as mutants 12 and 16.
+- `_violation` 1 changes the default severity to `XXhardXX`. The stored level is `kpi` only when the argument is `kpi`, so it stays `hard`. Equivalent. Mutant 6 changes the non-`ReasonCode` arm to `str(None)`. Every caller passes a `ReasonCode`, including the capacity helper, so that arm is not evaluated. Equivalent.
+- `_duration_violation` 50 changes the final `message = ""` to `None`. `policy_of` returns only `exact`, `min`, `preemptive`, or `invalid`, so that `else` is not reached. `if not message` would also treat `None` like `""`. Equivalent.
+- `_exchange_pool_violations` 21 sets the initial `worst_at` to `""`. A reported stockout has already assigned a moment, because `initial_serviceable` is at least 0 and `worst` starts there. The initial value is not read. Equivalent.
+- `_completion_times` 7 appends `None` instead of the successor id. The list is only tested for emptiness. Equivalent. Mutant 23 sets `complete` to `None`. `if complete and ends` is false either way. Equivalent.
+
+Sixty-two survivors of 334 have one of these reasons or an earlier one. The other 272 do not. Phase 1 stays open. `_completion_times` 24 is one of the 272.
 
 Accepted before the run, not as a pass:
 
 - No `# pragma: no mutate` in those four modules.
 - No mypy pre-filter. A type error can hide a mutant the tests would also miss.
 - The slow campaign test stays out of the mutant runner. It repeats the same notary for minutes and would not add a distinct kill.
-- The uncapped campaign is recorded in `docs/fault-campaign-nightly.json` (checked 109665, false_accept 0, false_reject 0). It is a local Windows run. Dispatch `37810297431` on `e364f34` uploaded `fault-campaign-nightly` with the same counts and the same `input_hash`. mutmut was skipped. That artifact is not an attestation of main. Phase 1 stays open because the 660 survivors of run `37797011451` are not all triaged.
+- The uncapped campaign is recorded in `docs/fault-campaign-nightly.json` (checked 109665, false_accept 0, false_reject 0). It is a local Windows run. Dispatch `37810297431` on `e364f34` uploaded `fault-campaign-nightly` with the same counts and the same `input_hash`. mutmut was skipped. That artifact is not an attestation of main. Phase 1 stays open. The later score is run `38228010896`: 334 survivors, of which 272 have no equivalent reason.
