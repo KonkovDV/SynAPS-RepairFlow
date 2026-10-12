@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Four scheduled mutmut runs on `b7c8c29` agree: 1587 of 1921 killed,
+  334 alive. The runs are `37908445280`, `38037961461`, `38126032914`,
+  and `38228010896`. Exit codes are only 0 and 1. `tests/test_more_survivors.py`
+  is in that tree. Dispatch `37829096222` on `e027edd` killed 1562 and left
+  359; it did not contain that file. Sixty-two of the 334 have an equivalent
+  reason. The other 272 do not. Phase 1 stays open. These runs are not an
+  attestation of main, and the README does not copy the score.
 - Survivor tests require an unknown duration policy, a missing return lag of
   zero, a rotable marked only by `mode`, two returns at one moment, one return
   against a demand of two, a job with no operations, a later return after an
