@@ -220,6 +220,20 @@ In `checker.py` the mutant ids did not move. Ten died, all on the max-lag findin
 
 In `ledger.py` the edit `complete = False` to `complete = True` is now mutant 25, and it died. Mutant 24 is now `complete = None` inside the missing-sink arm. `if complete and ends` is false for `None` and for `False`, so that one stays equivalent. Mutant 30, `max(ends)` to `max(None)`, is the new node and it died. Four survivors still have no equivalent reason: the three normalize ids and `_spare_receipts` 11. Phase 1 stays open. The README does not copy 1810/1922. Tests added after this dispatch call `check_plan` with a kernel row, so a dropped crew or auxiliary is visible, and a rotable draw before its receipt must not be reported as a consumable stockout. Those tests are not in 1810/1922.
 
+## Dispatch 38618458299
+
+`workflow_dispatch` [38618458299](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/runs/38618458299) on `a4e4e90` finished with mutation success and `test-slow` success. It is not an attestation of main. The four notary modules are the same text as on `04ad612`, so the mutant ids did not move. Exit codes are only 0 and 1.
+
+| Module | Killed | Survived | Total |
+| --- | ---: | ---: | ---: |
+| `capacity.py` | 62 | 4 | 66 |
+| `checker.py` | 1415 | 91 | 1506 |
+| `lane_setup.py` | 102 | 3 | 105 |
+| `ledger.py` | 235 | 10 | 245 |
+| Total | 1814 | 108 | 1922 |
+
+Against `38565194050`, four mutants died and none were born. They are `_normalize_assignments` 42, 49, and 50, and `_spare_receipts` 11. No recorded equivalent died. The other 108 survivors are the ones that already have a written equivalent reason. This artifact leaves no survivor without that reason. The README does not copy 1814/1922.
+
 Accepted before the run, not as a pass:
 
 - No `# pragma: no mutate` in those four modules.

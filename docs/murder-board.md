@@ -22,8 +22,8 @@
 
 ## Notary score
 
-- Is 1810/1922 a closed phase? No. Dispatch `38565194050` on `04ad612` killed 1810 and left 112. It is not an attestation. Ten max-lag mutants died. The `complete = True` sink mutant died; its id is now 25. Four survivors still have no equivalent reason: `_normalize_assignments` 42, 49, and 50, and `_spare_receipts` 11. Later tests aim at those four and are not in this score.
-- Does that score attest main? No. The manifest attests `04ad612` from push `38563996424`, including `test-slow`. Dispatches `38555693129` and `38565194050` are not attestations. This note does not attest itself.
+- Is 1814/1922 a closed phase? The dispatch `38618458299` on `a4e4e90` killed 1814 and left 108. The four survivors that had no equivalent reason died, and none were born. Every remaining survivor already has a written reason. The dispatch is not an attestation, and the README does not copy the score.
+- Does that score attest main? No. The manifest attests `04ad612` from push `38563996424`, including `test-slow`. Dispatches `38555693129`, `38565194050`, and `38618458299` are not attestations. This note does not attest itself.
 - Did the edge tests fail to kill what they named? The 25 deaths against dispatch `37829096222` are those tests. On `04ad612` the max-lag finding's ten mutants died, and `complete = True` on a missing sink died as ledger mutant 25.
 - Did any recorded equivalent die in these runs? No. The 62 named equivalents are still alive. The eight ledger suggestion deletions and `_violation` 42 did die earlier, and the note at that time said they were not equivalent.
 - Is `_job_of` 6 equivalent? No. An unknown operation outside the horizon calls it. `_op` 3 is the same path. `_spare_receipts` 23 is equivalent: the changed operation id sorts only among order-0 additions.
