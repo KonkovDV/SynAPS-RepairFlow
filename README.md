@@ -35,8 +35,8 @@ SynAPS RepairFlow — исследовательский доменный ада
 <!-- evidence:begin -->
 | Факт | Значение |
 |---|---|
-| Проверенный `main` | [`2d2c2db`](https://github.com/KonkovDV/SynAPS-RepairFlow/commit/2d2c2db2f955ea61dcdb3154cc472b8bdcd1ba1e) |
-| CI для этого `main` | [Actions run 38546773574](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/runs/38546773574), success, включая `test-slow` |
+| Проверенный `main` | [`66e8e9d`](https://github.com/KonkovDV/SynAPS-RepairFlow/commit/66e8e9d8edcdfa1513fd201c6e965a19a7863beb) |
+| CI для этого `main` | [Actions run 38552948941](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/runs/38552948941), success, включая `test-slow` |
 | Sweep-line commit | [`a3621fd`](https://github.com/KonkovDV/SynAPS-RepairFlow/commit/a3621fd538019f4dcc0c681d5634c022260382e9) |
 | SynAPS pin | [`f939727`](https://github.com/KonkovDV/SynAPS/commit/f939727cd9369fd9b36438bfac7198f0c39c6d3b) |
 | Solver | `ortools==9.15.6755` |
