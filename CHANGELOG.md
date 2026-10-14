@@ -4,6 +4,13 @@
 
 - The evidence manifest attests main `f7a8a2e` / push run `38634344366`,
   including `test-slow`. This commit does not attest itself.
+- A CSV bundle requires `manifest.json` (encoding, delimiter, source timezone,
+  provenance, export version). A 22:00–06:00 local shift is one window on the
+  next date. A personnel number becomes an eight-hex crew code; the salt is
+  not stored. The same CP1251 extract without the manifest is refused.
+  There is no offline image and no Astra run.
+  Dispatch `37704013170` checked `2a45feb` on Linux, including `test-slow`.
+  That run is not an attestation of main, and this note is not part of it.
 - Public pages are rewritten in plain language. Commands, verdict words, and
   the generated evidence table stay as they are. No score is copied.
 - The evidence manifest attests main `93320f1` / push run `38629025631`,
