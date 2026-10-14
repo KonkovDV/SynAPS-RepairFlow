@@ -141,12 +141,12 @@ false_accept_rate = invalid_plans_accepted_as_verified / invalid_plans_presented
 <!-- evidence:begin -->
 | Факт | Значение |
 |---|---|
-| Проверенный `main` | [`93320f1`](https://github.com/KonkovDV/SynAPS-RepairFlow/commit/93320f14a67e01986d0a6d871f0d656f1474f845) |
-| CI для этого `main` | [Actions run 38629025631](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/runs/38629025631), success, включая `test-slow` |
+| Проверенный `main` | [`f7a8a2e`](https://github.com/KonkovDV/SynAPS-RepairFlow/commit/f7a8a2e1309344c6c1e51fd1d82d84e2250eb1bc) |
+| CI для этого `main` | [Actions run 38634344366](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/runs/38634344366), success, включая `test-slow` |
 | Sweep-line commit | [`a3621fd`](https://github.com/KonkovDV/SynAPS-RepairFlow/commit/a3621fd538019f4dcc0c681d5634c022260382e9) |
 | SynAPS pin | [`f939727`](https://github.com/KonkovDV/SynAPS/commit/f939727cd9369fd9b36438bfac7198f0c39c6d3b) |
 | Solver | `ortools==9.15.6755` |
-| Benchmark | [`benchmark/results/benchmark.json`](benchmark/results/benchmark.json), SHA-256 `c1a604c70ee6a8e99e52ecb9ac59341fabdf7c1a8771cdccf3dc836c605a2186`, claim `experiment` |
+| Benchmark | [`benchmark/results/benchmark.json`](benchmark/results/benchmark.json), SHA-256 `f1a30188f07c516c016d2b09654085386380ba32213c1f19c3d2a36057782900`, claim `experiment` |
 | Fault campaign | checked 10080, false_accept 0, false_reject 0, presets `tiny, repair-site-mvp`, solvers `GREED, EDD, ATC` |
 | Манифест отстаёт от HEAD | да |
 | Данные | committed synthetic fixtures; customer data отсутствуют |
