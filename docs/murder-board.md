@@ -22,9 +22,9 @@
 
 ## Notary score
 
-- Is 1587/1921 a closed phase? No. Dispatch `38555693129` on `eef52f8` later killed 1798 and left 123. It is not an attestation. 211 of the old survivors died and none were born. Fifteen still have no equivalent reason, including `_completion_times` 24. `_capacity_overlaps` 9 is equivalent. Sinks are sorted by operation id; that sort is not in 1798/1921.
-- Does that score attest main? No. The manifest attests `04ad612` from push `38563996424`, including `test-slow`. Dispatch `38555693129` measured `eef52f8` and is not an attestation. This note does not attest itself.
-- Did the edge tests fail to kill what they named? The 25 deaths against dispatch `37829096222` are those tests, and a recount of the artifacts matches that list exactly. `_attended_masks` 14, 24, and 34 survived them because the open-minute count did not change. `_completion_times` 24 survived every run on this source.
+- Is 1810/1922 a closed phase? No. Dispatch `38565194050` on `04ad612` killed 1810 and left 112. It is not an attestation. Ten max-lag mutants died. The `complete = True` sink mutant died; its id is now 25. Four survivors still have no equivalent reason: `_normalize_assignments` 42, 49, and 50, and `_spare_receipts` 11.
+- Does that score attest main? No. The manifest attests `04ad612` from push `38563996424`, including `test-slow`. Dispatches `38555693129` and `38565194050` are not attestations. This note does not attest itself.
+- Did the edge tests fail to kill what they named? The 25 deaths against dispatch `37829096222` are those tests. On `04ad612` the max-lag finding's ten mutants died, and `complete = True` on a missing sink died as ledger mutant 25.
 - Did any recorded equivalent die in these runs? No. The 62 named equivalents are still alive. The eight ledger suggestion deletions and `_violation` 42 did die earlier, and the note at that time said they were not equivalent.
 - Is `_job_of` 6 equivalent? No. An unknown operation outside the horizon calls it. `_op` 3 is the same path. `_spare_receipts` 23 is equivalent: the changed operation id sorts only among order-0 additions.
 - Is the score stable? The four scheduled artifacts from 9 October through 12 October have the same `exit_code_by_key`. The four notary modules did not change between `e54e33a` and `b7c8c29`. That is not a proof about a future source change.
