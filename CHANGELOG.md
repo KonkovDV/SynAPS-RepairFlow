@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- The README gained a problem statement, a contents list, exit codes, a
+  working cycle with the artifact of each command, a Mermaid boundary
+  diagram, a reason-code table, a comparison with open schedulers, a
+  documents table, and citation, contribution, and security pointers. The
+  evidence table is unchanged and no score is copied.
 - Dispatch `38618458299` on `a4e4e90` killed 1814 of 1922 and left 108.
   The four survivors that had no equivalent reason died. None were born.
   Every remaining survivor already has a written equivalent reason. This
