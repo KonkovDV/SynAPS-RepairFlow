@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- The wheel target no longer force-includes `src/repairflow` on top of
+  the package list. A real wheel was adding `repairflow/__init__.py` twice.
+- `requirements-lock.txt` is a universal hash freeze from
+  `uv pip compile --generate-hashes`. `pydantic` is `2.13.5`.
+  The SynAPS git pin stays a commit SHA with no wheel hash.
+  CI installs with `--require-hashes` on `ubuntu-24.04`.
 - Public pages are rewritten in plain language. Commands, verdict words, and
   the generated evidence table stay as they are. No score is copied.
 - The evidence manifest attests main `93320f1` / push run `38629025631`,
