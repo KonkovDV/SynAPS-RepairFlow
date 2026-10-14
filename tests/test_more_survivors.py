@@ -411,6 +411,25 @@ def test_a_rotable_with_receipts_is_not_a_consumable_stockout() -> None:
     assert not any("stock is short" in message for message in messages)
 
 
+def test_a_rotable_draw_before_its_receipt_is_not_a_consumable_stockout() -> None:
+    problem = synthesize("tiny", seed=1)
+    user = next(row for row in problem.operations if "SP-BEARING" in row.required_spare_ids)
+    start = problem.planning_horizon.start + timedelta(hours=8)
+    spare = next(row for row in problem.spares if row.id == "SP-BEARING")
+    edited = spare.model_copy(
+        update={
+            "quantity": 0,
+            "domain_attributes": {"kind": "rotable", "return_lag_min": 0},
+            "receipts": [SpareReceipt(at=start + timedelta(hours=3), qty=1)],
+        }
+    )
+    spares = [edited if row.id == spare.id else row for row in problem.spares]
+    loaded = _reload(problem, spares=spares)
+    row = _visit(user, start, end=start + timedelta(minutes=20))
+    messages = [item.message for item in check_domain_assignments(loaded, [row])]
+    assert not any("stock is short" in message for message in messages)
+
+
 def test_an_always_open_shop_post_needs_no_calendar() -> None:
     problem = synthesize("tiny", seed=1)
     op = problem.operations[0]

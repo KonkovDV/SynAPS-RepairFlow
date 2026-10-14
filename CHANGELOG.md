@@ -2,7 +2,10 @@
 
 ## Unreleased
 
-- Dispatch `38565194050` on `04ad612` killed 1810 of 1922 and left 112.
+- A kernel crew with the required skill stays bound, and a kernel auxiliary
+  that is on the visit is not missing. A rotable draw before its receipt is
+  not a consumable stockout. These tests are not in 1810/1922. Phase 1 stays
+  open. The README does not copy the score.- Dispatch `38565194050` on `04ad612` killed 1810 of 1922 and left 112.
   The ten max-lag precedence mutants died. `complete = False` changed to
   `complete = True` died after the sink sort; that id is now 25. Four
   survivors still have no equivalent reason. This dispatch is not an
