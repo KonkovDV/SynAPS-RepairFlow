@@ -22,7 +22,7 @@
 
 ## Notary score
 
-- Is 1587/1921 a closed phase? No. 334 mutants survived the four identical scheduled runs on `b7c8c29`. Of the 272 that had no equivalent reason, 45 now have one, read from the mutant body. 227 do not. `_completion_times` 24 is one of them and is not equivalent. Sinks are sorted by operation id; a missing later sink still withholds the pool return. The other 226 are what the tests in `tests/test_kernel_binding.py` and `tests/test_open_edges.py` assert, plus tests already on main. Those tests are not in the score.
+- Is 1587/1921 a closed phase? No. Dispatch `38555693129` on `eef52f8` later killed 1798 and left 123. It is not an attestation. 211 of the old survivors died and none were born. Fifteen still have no equivalent reason, including `_completion_times` 24. `_capacity_overlaps` 9 is equivalent. Sinks are sorted by operation id; that sort is not in 1798/1921.
 - Does that score attest main? No. The manifest attests `c256831` from push `38559830627`, including `test-slow`. The mutation runs are scheduled jobs on the earlier commit `b7c8c29`. This note does not attest itself.
 - Did the edge tests fail to kill what they named? The 25 deaths against dispatch `37829096222` are those tests, and a recount of the artifacts matches that list exactly. `_attended_masks` 14, 24, and 34 survived them because the open-minute count did not change. `_completion_times` 24 survived every run on this source.
 - Did any recorded equivalent die in these runs? No. The 62 named equivalents are still alive. The eight ledger suggestion deletions and `_violation` 42 did die earlier, and the note at that time said they were not equivalent.

@@ -190,6 +190,20 @@ Observed on the installed Pydantic: `model_dump(mode=None)` and `model_dump(mode
 
 227 of the 272 still have no equivalent reason. `_completion_times` 24 is one of them. It sets `complete = True` when a sink is missing. It is not equivalent. Sinks are now sorted by operation id, which does not change a complete card or a card with any sink missing: the original still withholds the return. The sort makes the partial return observable, and `test_an_unfinished_later_sink_does_not_return_the_unit` requires the stockout. That test is not in 1587/1921. Dispatch `38555693129` checks out `eef52f8` and does not contain the sort. The other 226 are what `tests/test_kernel_binding.py` and `tests/test_open_edges.py` assert, together with the tests already on main for the assigned post, the assigned crew, the partial auxiliary window, the negative return lag, the always-open shop post, the unknown operation outside the horizon, and a rotable that also has receipts. Those assertions are not in 1587/1921. A later mutmut on a tree that contains them is the measurement. This section is not that measurement. Phase 1 stays open. The README does not copy the score.
 
+## Dispatch 38555693129
+
+`workflow_dispatch` [38555693129](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/runs/38555693129) on `eef52f8` finished with mutation success and `test-slow` success. It is not an attestation of main. The tree contains `tests/test_kernel_binding.py` and `tests/test_open_edges.py`. It does not contain the later sink sort. Exit codes are only 0 and 1.
+
+| Module | Killed | Survived | Total |
+| --- | ---: | ---: | ---: |
+| `capacity.py` | 62 | 4 | 66 |
+| `checker.py` | 1401 | 105 | 1506 |
+| `lane_setup.py` | 102 | 3 | 105 |
+| `ledger.py` | 233 | 11 | 244 |
+| Total | 1798 | 123 | 1921 |
+
+Against `38228010896`, 211 mutants died and none were born. None of the 62 earlier equivalents died. None of the 45 reasons read from the 272 died. Of those 272, 61 are still alive: the 45 reasons, plus 16 without one. `_capacity_overlaps` 9 sets `start = None` and the next line replaces it, because every caller passes `include_setup=True`. Equivalent. The other 15 are not equivalent and this dispatch did not kill them: `_normalize_assignments` 42, 49, and 50; `_precedence` 69 through 73 and 78 through 82 (the max-lag finding); `_spare_receipts` 11; `_completion_times` 24. The max-lag test added after this dispatch is not in 1798/1921. The sink sort is not in it either. Phase 1 stays open. The README does not copy 1798/1921.
+
 Accepted before the run, not as a pass:
 
 - No `# pragma: no mutate` in those four modules.

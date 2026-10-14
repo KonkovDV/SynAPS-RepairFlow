@@ -16,6 +16,7 @@ from repairflow.model import (
     FrozenAssignment,
     Operation,
     PlannedAssignment,
+    PredecessorLink,
     RepairFlowProblem,
     SpareReceipt,
 )
@@ -145,6 +146,32 @@ def test_an_early_successor_keeps_its_fields() -> None:
     current = _visit(edited, start)
     hit = _one(check_domain_assignments(loaded, [pred, current]), ReasonCode.PRECEDENCE_BROKEN)
     assert hit.message == f"{edited.id} starts before predecessor {first.id} plus lag 0 min"
+    assert hit.operation_id == edited.id
+    assert hit.job_id == edited.job_id
+    assert hit.resource_id == first.id
+    assert hit.start == current.start
+    assert hit.end == current.end
+
+
+def test_a_late_successor_keeps_its_fields() -> None:
+    problem = synthesize("tiny", seed=1)
+    first, second = problem.operations[0], problem.operations[1]
+    link = PredecessorLink(id=first.id, min_lag_min=0, max_lag_min=10)
+    edited = second.model_copy(
+        update={
+            "predecessor_ids": [first.id],
+            "predecessors": [link],
+            "required_skills": [],
+            "required_aux_ids": [],
+        }
+    )
+    first_clear = first.model_copy(update={"predecessor_ids": [], "predecessors": [], "required_skills": []})
+    loaded = _swap(problem, edited, also=first_clear)
+    start = problem.planning_horizon.start + timedelta(hours=8)
+    pred = _visit(first_clear, start)
+    current = _visit(edited, start + timedelta(hours=2))
+    hit = _one(check_domain_assignments(loaded, [pred, current]), ReasonCode.PRECEDENCE_BROKEN)
+    assert hit.message == f"{edited.id} starts after the max lag from predecessor {first.id}"
     assert hit.operation_id == edited.id
     assert hit.job_id == edited.job_id
     assert hit.resource_id == first.id
