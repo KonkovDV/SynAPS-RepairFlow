@@ -80,7 +80,7 @@
 | B-9 | medium | CP-SAT недетерминирован: ядро по умолчанию `num_workers=8` + лимит по стенным часам (`pareto_slice_solver.py:150`). | Для конфигураций `CPSAT*` RepairFlow ставит `num_workers=1`, `random_seed=42` (если не заданы). В `metadata.solver` добавлены `num_workers` и `reproducible`: для CP-SAT `true` только при 1 воркере, фиксированном seed и доказанном `OPTIMAL` (остановка `FEASIBLE` по таймеру зависит от стенного времени). Ядро SynAPS не правилось (внешний репозиторий). | исправлено |
 | B-10 | low | Голый `pytest` падал с `ModuleNotFoundError: tools`. | `pythonpath = ["src", "."]` в `pyproject.toml`. | исправлено |
 
-Побочный эффект B-9: `config_hash` CP-SAT-прогонов меняется, т.к. `num_workers`/`random_seed` входят в хешируемые kwargs.
+Побочные эффекты: `config_hash` CP-SAT-прогонов меняется (`num_workers`/`random_seed` входят в хешируемые kwargs); `schedule_hash` планов на параллельных постах меняется из-за поля `lane` — в `benchmark/results/benchmark.json` обновлены только `schedule_hash`, пересчитаны `SHA256SUMS` и блок evidence в README; метрики не изменились.
 
 ## 6. Формальная модель и соответствие коду
 

@@ -146,7 +146,7 @@ false_accept_rate = invalid_plans_accepted_as_verified / invalid_plans_presented
 | Sweep-line commit | [`a3621fd`](https://github.com/KonkovDV/SynAPS-RepairFlow/commit/a3621fd538019f4dcc0c681d5634c022260382e9) |
 | SynAPS pin | [`f939727`](https://github.com/KonkovDV/SynAPS/commit/f939727cd9369fd9b36438bfac7198f0c39c6d3b) |
 | Solver | `ortools==9.15.6755` |
-| Benchmark | [`benchmark/results/benchmark.json`](benchmark/results/benchmark.json), SHA-256 `f1a30188f07c516c016d2b09654085386380ba32213c1f19c3d2a36057782900`, claim `experiment` |
+| Benchmark | [`benchmark/results/benchmark.json`](benchmark/results/benchmark.json), SHA-256 `5cccd7d9045d36ca1d920f291f3263d2ed311685db79adf12c9769f14324b381`, claim `experiment` |
 | Fault campaign | checked 10080, false_accept 0, false_reject 0, presets `tiny, repair-site-mvp`, solvers `GREED, EDD, ATC` |
 | Манифест отстаёт от HEAD | да |
 | Данные | committed synthetic fixtures; customer data отсутствуют |
