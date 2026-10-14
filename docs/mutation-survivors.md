@@ -170,6 +170,14 @@ Read from the mutant bodies, and still alive on this score:
 
 Sixty-two survivors of 334 have one of these reasons or an earlier one. The other 272 do not. Phase 1 stays open. `_completion_times` 24 is one of the 272.
 
+A recount of the four artifact directories agrees: the `exit_code_by_key` maps are identical, killed 1587, survived 334, total 1921, and the only exit codes are 0 and 1. All 62 named equivalents are still alive. None of the 272 is in that named set. Against `37829096222`, the 25 deaths are exactly the ids listed above. `checker.py`, `ledger.py`, `capacity.py`, and `lane_setup.py` are the same text from `e54e33a` through `b7c8c29`, so those ids name the same edits. This recount is not a new score.
+
+`_job_of` 6 changes `op is None` into `(op is None) and False`, so a missing operation raises instead of returning no job. `_calendars_windows_horizon` calls `_job_of` for an unknown operation that sits outside the horizon. `_op` 3 drops the `None` default on that same path and raises `StopIteration`. Neither is equivalent.
+
+`_spare_receipts` 23 replaces the opening event's operation id `""` with `XXXX`. That id is only a sort key. The opening quantity and every receipt are order 0 and add stock. A use is order 1, so it stays after those additions. Equivalent.
+
+`_attended_masks` 14, 24, and 34 stayed alive because a different post, a different crew, or a dropped auxiliary calendar still left the open-minute count unchanged in the tests that existed. Tests now require the assigned post, the assigned crew, and a partial auxiliary window. A negative `return_lag_min` must be invalid (`_rotable_spare_violations` 16 changes `or` to `and`). A shop resource that declares `always_open` and has no calendar must stay silent (`_named_calendar_fit` 6 drops the `not`). An unknown operation outside the horizon must not raise. These tests are not in 1587/1921.
+
 Accepted before the run, not as a pass:
 
 - No `# pragma: no mutate` in those four modules.

@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- A recount of the four scheduled mutmut artifacts matches the recorded
+  score: 1587 killed, 334 alive, identical exit codes, 62 equivalents still
+  alive, 272 without a reason. `_job_of` 6 and `_op` 3 are not equivalent.
+  `_spare_receipts` 23 is. New tests require the assigned post and crew, a
+  partial auxiliary window, a negative return lag, an always-open shop post,
+  and an unknown operation outside the horizon. They are not in 1587/1921.
+  This is not an attestation of main.
 - Four scheduled mutmut runs on `b7c8c29` agree: 1587 of 1921 killed,
   334 alive. The runs are `37908445280`, `38037961461`, `38126032914`,
   and `38228010896`. Exit codes are only 0 and 1. `tests/test_more_survivors.py`
@@ -84,7 +91,7 @@
   or a heading. A negation is an exact line in
   `docs/banned-claims-allowlist.txt` with its own reason. README measurements
   outside the generated evidence block are removed.
-- The evidence manifest attests main `6f34389` / push run `37831512163`,
+- The evidence manifest attests main `d3cb6d1` / push run `38300105511`,
   including `test-slow`, and kernel `f939727`. `tools/attest.py` writes the
   manifest and re-renders the README table; this note does not attest itself.
 - `benchmark/results/SHA256SUMS` is the LF git blob of `benchmark.json`.
