@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Exchange-pool sinks are sorted by operation id. A complete card still
+  returns at the latest sink, and any missing sink still withholds the
+  return. The order no longer depends on set iteration. This is not in
+  1587/1921, and phase 1 stays open.
 - Reading the 272 survivors that had no equivalent reason: 45 now have
   one, taken from the mutant body, including equal `model_dump` modes and
   the two `_named_calendar_fit` returns that validation never reaches. 227

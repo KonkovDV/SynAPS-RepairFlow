@@ -183,7 +183,10 @@ def _completion_times(
     finished: dict[str, datetime] = {}
     for job in problem.jobs:
         job_ops = by_job_ops.get(job.id, set())
-        sinks = [op_id for op_id in job_ops if not successors[op_id]]
+        # Set order is not a language guarantee. Sorting keeps the same
+        # verdict: a missing sink still withholds the return, and a complete
+        # card still returns at the latest sink.
+        sinks = sorted(op_id for op_id in job_ops if not successors[op_id])
         ends: list[datetime] = []
         complete = True
         for op_id in sinks:
