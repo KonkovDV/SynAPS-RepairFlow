@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- The evidence manifest attests main `f7a8a2e` / push run `38634344366`,
+  including `test-slow`. This commit does not attest itself.
 - A CSV bundle requires `manifest.json` (encoding, delimiter, source timezone,
   provenance, export version). A 22:00–06:00 local shift is one window on the
   next date. A personnel number becomes an eight-hex crew code; the salt is
