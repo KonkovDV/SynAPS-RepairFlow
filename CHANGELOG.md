@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+- The evidence manifest attests main `f7a8a2e` / push run `38634344366`,
+  including `test-slow`. This commit does not attest itself.
+- A CSV bundle requires `manifest.json` (encoding, delimiter, source timezone,
+  provenance, export version). A 22:00–06:00 local shift is one window on the
+  next date. A personnel number becomes an eight-hex crew code; the salt is
+  not stored. The same CP1251 extract without the manifest is refused.
+  There is no offline image and no Astra run.
+  Dispatch `37704013170` checked `2a45feb` on Linux, including `test-slow`.
+- `POST_DOWN`, `PART_DELAY`, `CREW_ABSENT`, `DURATION_OVERRUN`, and `URGENT_JOB`
+  change the card and recheck the issued plan. `replan_disruption` freezes
+  visits the event missed, including those that start inside the next 8 hours.
+  On tiny seeds 1–30 the five types gave `false_accept` 0. A packed lane can
+  still return `PARTIAL` when the hole is early; the demo takes the latest visit.
+  Dispatch `37702688921` checked `6d7325d` on Linux, including `test-slow`.
+  That run is not an attestation of main, and this note is not part of it.
 - Operator decisions are a hash chain. `repairflow decide` checks the plan
   hashes and will not accept a non-zero exit. `repairflow log verify` catches
   a swapped or edited line, and a truncated tail when the tip hash is known.

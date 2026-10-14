@@ -18,12 +18,18 @@ from repairflow.decision_log import (
 )
 from repairflow.diff import diff_plans
 from repairflow.domain_verify import verify_domain_plan
-from repairflow.events import InspectionEvent
+from repairflow.events import InspectionEvent, PostDown, apply_disruption
 from repairflow.evidence import verify_plan_hashes
 from repairflow.io import read_text_limited
 from repairflow.model import PlannedAssignment, RepairFlowResult
 from repairflow.normalize import load_problem
-from repairflow.planner import plan, recheck, replan_after_disruption, replan_after_inspection
+from repairflow.planner import (
+    plan,
+    recheck,
+    replan_after_disruption,
+    replan_after_inspection,
+    replan_disruption,
+)
 from repairflow.reasons import REASON_RU
 from repairflow.report import render_html, render_markdown
 from repairflow.shop_plan import load_shop_plan
@@ -34,6 +40,12 @@ from repairflow.versions import REPAIRFLOW_VERSION, SYNAPS_COMMIT
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="repairflow")
     sub = parser.add_subparsers(dest="command")
+    salted = argparse.ArgumentParser(add_help=False)
+    salted.add_argument(
+        "--crew-salt",
+        default=None,
+        help="HMAC salt for a personnel number. The salt is not stored.",
+    )
 
     sub.add_parser("version", help="Print RepairFlow version and SynAPS pin")
 
@@ -42,12 +54,12 @@ def main(argv: list[str] | None = None) -> int:
     p_syn.add_argument("--seed", type=int, default=42)
     p_syn.add_argument("--out", type=Path, required=True)
 
-    p_solve = sub.add_parser("solve", help="Build a candidate schedule")
+    p_solve = sub.add_parser("solve", parents=[salted], help="Build a candidate schedule")
     p_solve.add_argument("input", type=Path)
     p_solve.add_argument("--preset", default="GREED", dest="solver")
     p_solve.add_argument("--out", type=Path, required=True)
 
-    p_check = sub.add_parser("check", help="Independent checker only")
+    p_check = sub.add_parser("check", parents=[salted], help="Independent checker only")
     p_check.add_argument("problem", type=Path)
     p_check.add_argument("plan", type=Path)
     p_check.add_argument("--report", type=Path, default=None)
@@ -59,31 +71,36 @@ def main(argv: list[str] | None = None) -> int:
 
     p_shop = sub.add_parser(
         "verify-plan",
+        parents=[salted],
         help="Domain notary for a shop CSV plan; does not call the kernel",
     )
     p_shop.add_argument("--problem", type=Path, required=True)
     p_shop.add_argument("--plan", type=Path, required=True)
     p_shop.add_argument("--out", type=Path, default=None)
 
-    p_cmp = sub.add_parser("compare", help="Diff two plans")
+    p_cmp = sub.add_parser("compare", parents=[salted], help="Diff two plans")
     p_cmp.add_argument("problem", type=Path)
     p_cmp.add_argument("baseline", type=Path)
     p_cmp.add_argument("candidate", type=Path)
     p_cmp.add_argument("--out", type=Path, required=True)
 
-    p_rep = sub.add_parser("report", help="Markdown + optional HTML/Gantt")
+    p_rep = sub.add_parser("report", parents=[salted], help="Markdown + optional HTML/Gantt")
     p_rep.add_argument("problem", type=Path)
     p_rep.add_argument("plan", type=Path)
     p_rep.add_argument("--html", type=Path, default=None)
     p_rep.add_argument("--md", type=Path, default=None)
 
-    p_dis = sub.add_parser("disrupt", help="Local replan; keep frozen assignments")
+    p_dis = sub.add_parser("disrupt", parents=[salted], help="Local replan; keep frozen assignments")
     p_dis.add_argument("problem", type=Path)
     p_dis.add_argument("base", type=Path)
     p_dis.add_argument("--operation-id", action="append", required=True)
     p_dis.add_argument("--out", type=Path, required=True)
 
-    p_ins = sub.add_parser("inspect", help="Reveal a defect branch and replan other units frozen")
+    p_ins = sub.add_parser(
+        "inspect",
+        parents=[salted],
+        help="Reveal a defect branch and replan other units frozen",
+    )
     p_ins.add_argument("problem", type=Path)
     p_ins.add_argument("plan", type=Path)
     p_ins.add_argument("event", type=Path)
@@ -158,19 +175,37 @@ def main(argv: list[str] | None = None) -> int:
             args.out.write_text(problem.model_dump_json(indent=2), encoding="utf-8")
             return 0
         if args.command == "solve":
-            return _solve(args.input, args.out, args.solver)
+            return _solve(args.input, args.out, args.solver, crew_salt=args.crew_salt)
         if args.command == "check":
-            return _check(args.problem, args.plan, args.report, verify_hashes=args.verify_hashes)
+            return _check(
+                args.problem,
+                args.plan,
+                args.report,
+                verify_hashes=args.verify_hashes,
+                crew_salt=args.crew_salt,
+            )
         if args.command == "verify-plan":
-            return _verify_plan(args.problem, args.plan, args.out)
+            return _verify_plan(args.problem, args.plan, args.out, crew_salt=args.crew_salt)
         if args.command == "compare":
-            return _compare(args.problem, args.baseline, args.candidate, args.out)
+            return _compare(
+                args.problem,
+                args.baseline,
+                args.candidate,
+                args.out,
+                crew_salt=args.crew_salt,
+            )
         if args.command == "report":
-            return _report(args.problem, args.plan, args.html, args.md)
+            return _report(args.problem, args.plan, args.html, args.md, crew_salt=args.crew_salt)
         if args.command == "disrupt":
-            return _disrupt(args.problem, args.base, args.operation_id, args.out)
+            return _disrupt(
+                args.problem,
+                args.base,
+                args.operation_id,
+                args.out,
+                crew_salt=args.crew_salt,
+            )
         if args.command == "inspect":
-            return _inspect(args.problem, args.plan, args.event, args.out)
+            return _inspect(args.problem, args.plan, args.event, args.out, crew_salt=args.crew_salt)
         if args.command == "demo":
             return _demo(args.preset, args.out, skip_cpsat=args.skip_cpsat)
         if args.command == "benchmark":
@@ -227,8 +262,8 @@ def _log(args: argparse.Namespace) -> int:
     raise ValueError("log command must be verify or stats")
 
 
-def _solve(input_path: Path, output: Path, solver: str) -> int:
-    problem = load_problem(input_path)
+def _solve(input_path: Path, output: Path, solver: str, *, crew_salt: str | None) -> int:
+    problem = load_problem(input_path, crew_salt=crew_salt)
     outcome = plan(problem, solver_config=solver)
     _write_json(output, outcome.result.model_dump(mode="json"))
     return int(outcome.result.exit_code)
@@ -240,8 +275,9 @@ def _check(
     report_path: Path | None,
     *,
     verify_hashes: bool = False,
+    crew_salt: str | None = None,
 ) -> int:
-    problem = load_problem(problem_path)
+    problem = load_problem(problem_path, crew_salt=crew_salt)
     payload = json.loads(read_text_limited(plan_path))
     result = RepairFlowResult.model_validate(payload)
     if verify_hashes:
@@ -263,8 +299,14 @@ def _check(
     return int(outcome.result.exit_code)
 
 
-def _verify_plan(problem_path: Path, plan_path: Path, output: Path | None) -> int:
-    problem = load_problem(problem_path)
+def _verify_plan(
+    problem_path: Path,
+    plan_path: Path,
+    output: Path | None,
+    *,
+    crew_salt: str | None = None,
+) -> int:
+    problem = load_problem(problem_path, crew_salt=crew_salt)
     assignments, extra = load_shop_plan(plan_path, problem)
     result = verify_domain_plan(problem, assignments, extra_violations=extra)
     if output is not None:
@@ -280,8 +322,15 @@ def _verify_plan(problem_path: Path, plan_path: Path, output: Path | None) -> in
     return int(result.exit_code)
 
 
-def _compare(problem_path: Path, baseline_path: Path, candidate_path: Path, output: Path) -> int:
-    problem = load_problem(problem_path)
+def _compare(
+    problem_path: Path,
+    baseline_path: Path,
+    candidate_path: Path,
+    output: Path,
+    *,
+    crew_salt: str | None = None,
+) -> int:
+    problem = load_problem(problem_path, crew_salt=crew_salt)
     baseline = RepairFlowResult.model_validate_json(read_text_limited(baseline_path))
     candidate = RepairFlowResult.model_validate_json(read_text_limited(candidate_path))
     payload = diff_plans(problem, baseline, candidate)
@@ -289,8 +338,15 @@ def _compare(problem_path: Path, baseline_path: Path, candidate_path: Path, outp
     return 0 if not payload["broken_frozen_assignments"] else 2
 
 
-def _report(problem_path: Path, plan_path: Path, html_path: Path | None, md_path: Path | None) -> int:
-    problem = load_problem(problem_path)
+def _report(
+    problem_path: Path,
+    plan_path: Path,
+    html_path: Path | None,
+    md_path: Path | None,
+    *,
+    crew_salt: str | None = None,
+) -> int:
+    problem = load_problem(problem_path, crew_salt=crew_salt)
     result = RepairFlowResult.model_validate_json(read_text_limited(plan_path))
     markdown = render_markdown(problem, result)
     if md_path is not None:
@@ -304,8 +360,15 @@ def _report(problem_path: Path, plan_path: Path, html_path: Path | None, md_path
     return 0 if result.verified_feasible else 2
 
 
-def _inspect(problem_path: Path, plan_path: Path, event_path: Path, output: Path) -> int:
-    problem = load_problem(problem_path)
+def _inspect(
+    problem_path: Path,
+    plan_path: Path,
+    event_path: Path,
+    output: Path,
+    *,
+    crew_salt: str | None = None,
+) -> int:
+    problem = load_problem(problem_path, crew_salt=crew_salt)
     base = RepairFlowResult.model_validate_json(read_text_limited(plan_path))
     event = InspectionEvent.model_validate_json(read_text_limited(event_path))
     outcome = replan_after_inspection(problem, base=base, event=event)
@@ -314,8 +377,15 @@ def _inspect(problem_path: Path, plan_path: Path, event_path: Path, output: Path
     return int(outcome.result.exit_code)
 
 
-def _disrupt(problem_path: Path, base_path: Path, operation_ids: list[str], output: Path) -> int:
-    problem = load_problem(problem_path)
+def _disrupt(
+    problem_path: Path,
+    base_path: Path,
+    operation_ids: list[str],
+    output: Path,
+    *,
+    crew_salt: str | None = None,
+) -> int:
+    problem = load_problem(problem_path, crew_salt=crew_salt)
     base_result = RepairFlowResult.model_validate_json(read_text_limited(base_path))
     base = recheck(
         problem,
@@ -357,6 +427,39 @@ def _demo(preset: str, out_dir: Path, *, skip_cpsat: bool) -> int:
     _write_json(out_dir / "replan.json", replanned.result.model_dump(mode="json"))
     frozen_kept = diff_plans(problem, greed.result, replanned.result)
     _write_json(out_dir / "replan-diff.json", frozen_kept)
+    issued_frozen = {row.operation_id for row in problem.frozen_assignments if row.immutable}
+    # The latest visit keeps the released lane tail short. An early hole on a
+    # packed post can leave the list repair with an uncovered chain.
+    sample = max(
+        (row for row in greed.result.assignments if row.operation_id not in issued_frozen),
+        key=lambda row: row.start,
+    )
+    down = PostDown(work_center_id=sample.work_center_id, start=sample.start, end=sample.end)
+    revised = apply_disruption(problem, down)
+    old_down = recheck(
+        revised,
+        assignments=list(greed.result.assignments),
+        kernel_status="feasible",
+        solver_config="post-down-old",
+    )
+    post_replanned = replan_disruption(problem, base=greed, event=down)
+    _write_json(out_dir / "post-down.json", post_replanned.result.model_dump(mode="json"))
+    old_codes = sorted({row.code for row in old_down.result.violations})
+    placed = {row.operation_id: row for row in post_replanned.result.assignments}
+    issued = {row.operation_id: row for row in greed.result.assignments}
+    frozen_moved = 0
+    for op_id in issued_frozen:
+        old = issued.get(op_id)
+        new = placed.get(op_id)
+        if old is None or new is None or old.start != new.start or old.work_center_id != new.work_center_id:
+            frozen_moved += 1
+    post_down_ok = (
+        "CALENDAR_BROKEN" in old_codes
+        and not old_down.result.verified_feasible
+        and post_replanned.result.exit_code == 0
+        and post_replanned.result.verified_feasible
+        and frozen_moved == 0
+    )
 
     broken_assignments = corrupt_plan([row.model_dump(mode="json") for row in greed.result.assignments])
     broken_result = greed.result.model_copy(
@@ -404,6 +507,8 @@ def _demo(preset: str, out_dir: Path, *, skip_cpsat: bool) -> int:
         f"  config_hash={greed.result.config_hash}\n"
         f"  synaps={SYNAPS_COMMIT}\n"
         f"  frozen_broken={len(frozen_kept['broken_frozen_assignments'])}\n"
+        f"  post_down old={old_codes} replan_verified={post_replanned.result.verified_feasible} "
+        f"frozen_moved={frozen_moved}\n"
         f"  broken exit={broken_check.result.exit_code} codes="
         f"{sorted({row.code for row in broken_check.result.violations})}\n"
     )
@@ -411,7 +516,7 @@ def _demo(preset: str, out_dir: Path, *, skip_cpsat: bool) -> int:
     fifo_dirty = fifo.result.exit_code == 2 and len(fifo.result.violations) > 0
     broken_ok = broken_check.result.exit_code == 2
     frozen_ok = len(frozen_kept["broken_frozen_assignments"]) == 0
-    if clean_ok and fifo_dirty and broken_ok and frozen_ok and cpsat_ok:
+    if clean_ok and fifo_dirty and broken_ok and frozen_ok and cpsat_ok and post_down_ok:
         sys.stdout.write("MVP readiness: PASS\n")
         return 0
     sys.stderr.write("MVP readiness: FAIL\n")
