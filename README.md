@@ -1,36 +1,47 @@
 # SynAPS RepairFlow
 
-> **Проверяемое планирование ремонта городского транспорта: offline, воспроизводимо, fail-closed.**
+> **Проверяемое планирование ремонта: offline, воспроизводимо, fail-closed.**
 
 [![CI](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/workflows/ci.yml/badge.svg)](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/workflows/ci.yml) [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
+Лабораторный доменный адаптер и независимый нотариус. Ядро ищет слоты. Этот репозиторий описывает ремонтную задачу и отдельно решает, можно ли назвать план проверенным.
+
 # Русская версия
 
-## Кратко для жюри
+## Допустимое утверждение
 
-SynAPS RepairFlow — исследовательский доменный адаптер и независимый checker для планирования ремонта. Он описывает задания, операции, посты, бригады, навыки, инструменты, sequence-dependent setup, календари, замороженные назначения, запчасти и обменный фонд. Система строит кандидатный план, а затем независимо проверяет его по объявленным ограничениям.
+Для формального экземпляра RepairFlow строит кандидатный график и независимо сообщает, выполнены ли заявленные жёсткие ограничения, либо возвращает структурированные причины.
 
-**Допустимое утверждение:** для формального экземпляра RepairFlow строит кандидатный график и независимо сообщает, выполнены ли заявленные жёсткие ограничения, либо возвращает структурированные причины нарушения.
+Это shadow-режим. Человек принимает решение. Программа не диспетчеризует выпуск, не пишет в учётную систему и не подменяет контур безопасности.
 
-Это лабораторный и shadow-mode инструмент. Это не диспетчеризация, не EAM/ERP/CMMS, не контур безопасности, не управление выпуском транспорта и не автономное решение «AI всё решил».
+## Как читать вердикт
 
-### Что подтверждает текущая версия
+| Слово | Когда оно честное |
+| --- | --- |
+| `verified` | Покрыты все операции, жёсткий нотариус пуст, статус ядра — `feasible` или `optimal`. |
+| `domain_verified` | Цеховой CSV прошёл `repairflow verify-plan`. Ядро не вызывалось. `verified_feasible` остаётся ложным. |
+| `optimal` | Точный прогон вернул `OPTIMAL` на исходной цепочке за один проход компилятора, и нотариус пуст. Эвристика это слово не наследует. |
 
-- схема отклоняет неполные и неоднозначные входы;
-- checker отделён от solver search path;
-- capacity моделируется как `K` взаимозаменяемых half-open lanes `[start, end)`;
-- в одной точке времени `end` обрабатывается раньше `start`;
-- setup входит в occupancy, когда это требует контракт;
-- `due_date` отделён от жёсткого `deadline`;
-- проверяются precedence, crews, skills, calendars, auxiliary resources, spares и frozen assignments;
-- вход, конфигурация, результат и pin ядра участвуют в evidence-пути;
-- для sweep-line есть adversarial и property-based тесты против независимого brute-force oracle.
+Более короткий makespan не является улучшением, если потеряно покрытие или появилось жёсткое нарушение.
 
-### Чего проект не подтверждает
+## Семейство репозиториев
 
-Нет утверждений о промышленных KPI, экономии, customer accuracy, production readiness, сертификации безопасности, оптимальности эвристик, действующем заказчике, спонсоре или deployment на SVARZ/Mosgortrans. Публичные источники не превращаются в customer claim.
+Публичные репозитории [KonkovDV](https://github.com/KonkovDV) рядом с этим. Их отчёты не переносятся сюда.
+
+| Репозиторий | Роль | Что RepairFlow оттуда не берёт |
+| --- | --- | --- |
+| [SynAPS](https://github.com/KonkovDV/SynAPS) | Ядро поиска слотов. Именованные конфигурации решателя, воспроизводимый прогон, свой контроль допустимости. | Код ядра. Здесь только пин из таблицы доказательств. |
+| [SynAPS-GridPlan](https://github.com/KonkovDV/SynAPS-GridPlan) | Лабораторное планирование ТОиР энергооборудования. Поиск и проверка разведены. | Другой домен, другой пин, другие отчёты. |
+| [SynAPS-ProgramPlan](https://github.com/KonkovDV/SynAPS-ProgramPlan) | Сводный план программы: расчёт и вторая проверка, журнал решений с хеш-цепочкой. | Журнал оператора здесь ещё контракт, не цепочка записей. |
+| [SynAPS-MobiRoute](https://github.com/KonkovDV/SynAPS-MobiRoute) | Планирование перевозки по вызову. | Не ремонт и не этот нотариус. |
+| [AeroBIM](https://github.com/KonkovDV/AeroBIM) | Находка несёт пункт и идентификатор. Флаг годности ставит детерминированный контур, не текст модели. | Строительная проверка. Оттуда взята форма вердикта: код, идентификаторы, интервал. |
+| [RailBreak](https://github.com/KonkovDV/RailBreak) | Подача для жюри: один запуск, таблица с источником, явный список того, что не покрыто. | Измерения одометрии. |
+
+Если этот текст расходится с [`docs/limitations.md`](docs/limitations.md) или с таблицей ниже, верны они.
 
 ## Зафиксированная граница доказательств
+
+Таблица между маркерами собрана `tools/attest.py`. Проверка публичных страниц отвергает цифру вне неё. Слова «ноль» и «пусто» здесь — про цель оракула корректности, не про новый замер.
 
 <!-- evidence:begin -->
 | Факт | Значение |
@@ -49,9 +60,9 @@ SynAPS RepairFlow — исследовательский доменный ада
 
 Число без commit, provenance, seed, solver status, checker output и denominator не является доказательством.
 
-## Быстрый воспроизводимый прогон
+## Воспроизведение
 
-Версия Python задана полем `requires-python` в [`pyproject.toml`](pyproject.toml).
+Версия Python — поле `requires-python` в [`pyproject.toml`](pyproject.toml).
 
 ```bash
 python -m venv .venv
@@ -62,7 +73,7 @@ repairflow demo --out out
 repairflow benchmark --out bench
 ```
 
-Для проверки качества:
+Проверка качества:
 
 ```bash
 python tools/verify_schema.py
@@ -73,82 +84,89 @@ python -m mypy --strict src/repairflow
 python -m pytest -q -m "not slow"
 ```
 
-Demo использует только synthetic data, проверяет чистый и намеренно сломанный план и должен сохранять fail-closed поведение.
+Демо использует только синтетические данные, проверяет чистый и намеренно сломанный план и обязано оставаться fail-closed.
 
-## Архитектура и safety boundary
+## Контур
 
 ```text
 formal instance → schema/domain validation → candidate planner
                → independent checker → evidence bundle → human decision
 ```
 
-Доменный checker не импортирует solver search code и проверяет нормализованный кандидат против исходного domain contract. Опубликованный вердикт дополнительно читает feasibility checker закреплённого SynAPS, поэтому независимость относится к поиску, а не ко всей экосистеме SynAPS. `repairflow verify-plan` этот контур не вызывает: чистый цеховой CSV получает claim `domain_verified`, а не `verified`. Сокращение makespan не считается улучшением, если потеряно покрытие или появился hard violation.
+Нотариус не импортирует код поиска решателя. Опубликованный вердикт `verified` дополнительно читает проверку допустимости закреплённого SynAPS: независимость относится к поиску, не ко всей экосистеме ядра. `repairflow verify-plan` ядро не вызывает.
 
-### Capacity oracle
-
-Ресурс ёмкости `K` — это `K` взаимозаменяемых lanes. Интервал `[start, end)` означает, что касание endpoint не создаёт overlap. Setup расширяет occupancy назад. Тот же sweep-line применяется к обычным и frozen assignments. Это устраняет ошибку anchor-based pairwise counting, когда несинхронные визиты ошибочно объявляются одновременными.
-
-### Evidence и false accept
-
-Каждый результат должен иметь provenance (`synthetic`, `open_data`, `experiment` и т. д.), solver status, claim level и independent verification. `OPTIMAL` допускается только для bounded exact run с proven bound и пустым независимым checker. Эвристика не наследует слово `optimal`.
+Ёмкость `K` — это `K` взаимозаменяемых полос. Интервал `[start, end)` : касание концов не есть пересечение. Наладка удлиняет занятость назад. В один момент окончание обрабатывается раньше начала. Тот же обход применяется к обычным и замороженным назначениям. Это убирает ошибку попарного якоря, когда сдвинутые визиты объявляют одновременными.
 
 ```text
 false_accept_rate = invalid_plans_accepted_as_verified / invalid_plans_presented
 ```
 
-Для correctness-oracle fixtures целевой показатель — ноль.
+Для фикстур оракула корректности цель — ноль принятых неверных планов. Оракул минут не судит обменный фонд. Расхождение оракула и нотариуса разбирается вручную, оракул под нотариус не подгоняется.
 
-## Обзор работ, FTIM и OSINT
+## Что нотариус проверяет
 
-RepairFlow не выдаёт себя за новый general-purpose solver. Научно защищаемая позиция — корректность доменной семантики, независимая fail-closed проверка, provenance, reproducibility и controlled path к shadow pilot. Позиционирование и bibliography: [обзор работ](docs/literature-2026.md) и [протокол evidence](docs/evidence-protocol.md).
+Схема отвергает неполный и неоднозначный вход. Дальше проверяются покрытие, предшествование с лагами, посты, бригады, навыки, календари, оснастка, наладка, запчасти, обменный фонд, замороженные назначения и отделение мягкого срока от жёсткого.
 
-Публичный OSINT используется только для определения gate:
+Позиция относительно опубликованных работ — в [обзоре](docs/literature-2026.md) и [протоколе доказательств](docs/evidence-protocol.md). RepairFlow не объявляет себя новым универсальным решателем.
 
-- [FTIM pilot programme](https://ftim.ru/pilotirovanie/) описывает проверку на инфраструктуре московского транспорта, измеримую гипотезу и ограниченный по сроку pilot;
-- [официальный профиль SVARZ](https://www.mosgortrans.ru/about/branches/filial-sokolnicheskii-vagonoremontno-stroitelnyi-zavod-svarz-gup-mosgortrans/) подтверждает ремонт транспортных компонентов, но не sponsor и не текущий workflow RepairFlow;
-- [Moscow Innovation Cluster](https://i.moscow/pilot) описывает readiness/right requirements; зрелость RepairFlow — строка таблицы evidence выше.
+## Что не покрыто
 
-Первый пилот должен быть read-only/shadow: один contour, process owner, anonymised slice, baseline, holdout, operator accept/reject log, rollback и заранее определённые KPI. Ни один источник не доказывает sponsorship, savings, deployment или safety certification.
+Нет записи в учётную систему, диспетчеризации, SCADA и функции безопасности. Нет утверждения о промышленном эффекте, действующем заказчике, спонсорстве или сертификации. Публичные страницы [программы пилотов](https://ftim.ru/pilotirovanie/), [профиля завода](https://www.mosgortrans.ru/about/branches/filial-sokolnicheskii-vagonoremontno-stroitelnyi-zavod-svarz-gup-mosgortrans/) и [кластера](https://i.moscow/pilot) задают ворота входа, а не факт внедрения.
 
-## RailBreak как documentation precedent
+Маршрутные варианты не смоделированы. Журнал оператора — контракт без писателя. Нативная точная модель не начата: её открывает решение владельца, не этот README. Полный список — [`docs/limitations.md`](docs/limitations.md).
 
-[`KonkovDV/RailBreak`](https://github.com/KonkovDV/RailBreak) изучен как пример jury-grade подачи: one-command demo, таблицы с commit/data/method/denominator, отдельные assumptions/results/TЗ audit/references, fault campaigns, degraded modes и раздел «что не покрыто». Его odometry numbers, ROS assumptions и transport claims не являются evidence для RepairFlow.
+Первый пилот, если он будет, остаётся теневым: один контур, обезличенный срез, согласованная база, журнал решений человека и откат.
 
-## Пределы и документация
+## Документы
 
-В проекте нет write-back в EAM/ERP/CMMS, dispatch control, SCADA, safety function или customer data. Checker доказывает только явно объявленные ограничения. Подробная карта: [`docs/README.md`](docs/README.md), [`docs/traceability-matrix.md`](docs/traceability-matrix.md), [`docs/threat-model.md`](docs/threat-model.md), [`docs/osint-and-pilot-gates.md`](docs/osint-and-pilot-gates.md), [`SECURITY.md`](SECURITY.md), [`LICENSES.md`](LICENSES.md).
+[`docs/README.md`](docs/README.md), [`docs/traceability-matrix.md`](docs/traceability-matrix.md), [`docs/threat-model.md`](docs/threat-model.md), [`docs/osint-and-pilot-gates.md`](docs/osint-and-pilot-gates.md), [`SECURITY.md`](SECURITY.md), [`LICENSES.md`](LICENSES.md).
+
+Лицензия MIT, если файл не говорит иного. Этот текст — инженерное описание, не договор, не обоснование безопасности и не сертификат готовности.
 
 ---
 
 # English version
 
-## Jury summary
+## Allowed claim
 
-SynAPS RepairFlow is a research-grade domain adapter and independent checker for repair-shop scheduling. It models jobs, operations, work centres, crews, skills, tooling, sequence-dependent setup, calendars, frozen assignments, spares and exchange-pool constraints. It builds candidate schedules and checks them independently against the declared hard constraints.
+Given a formal repair instance, RepairFlow builds a candidate schedule and independently reports whether the declared hard constraints hold, or returns structured reasons.
 
-**Allowed claim:** given a formal repair instance, RepairFlow can construct a candidate schedule and independently report whether the declared hard constraints hold, or return structured reasons why they fail.
+The mode is shadow. A person decides. The program does not dispatch vehicles, write back to an enterprise system, or replace a safety controller.
 
-It is an offline laboratory and shadow-mode decision-support system. It is not dispatch control, an EAM/ERP/CMMS replacement, a safety controller, an autonomous AI decision maker, or proof of production readiness.
+## How to read a verdict
 
-### Current evidence
+| Word | When it is honest |
+| --- | --- |
+| `verified` | Every operation is covered, the hard notary is empty, and the kernel status is `feasible` or `optimal`. |
+| `domain_verified` | A shop CSV passed `repairflow verify-plan`. The kernel was not called. `verified_feasible` stays false. |
+| `optimal` | An exact run returned `OPTIMAL` on the original chain in one compiler pass, and the notary is empty. A heuristic does not inherit the word. |
 
-- malformed and ambiguous inputs are rejected by the domain contract;
-- the checker is outside the solver search path;
-- capacity uses interchangeable half-open lanes `[start, end)`;
-- equal-time ends are processed before starts;
-- setup is included in occupancy where required;
-- soft `due_date` is separated from hard `deadline`;
-- precedence, crews, skills, calendars, auxiliary resources, spares and frozen assignments are explicit checker concerns;
-- hashes, dependency pins and checker output are evidence fields;
-- sweep-line semantics are tested with adversarial and property-based cases.
+A shorter makespan is not an improvement when coverage is incomplete or a hard violation appears.
 
-### Explicit non-claims
+## Repository family
 
-The repository does not prove industrial savings, customer accuracy, heuristic optimality, labour-law compliance, production deployment, safety certification, a live SVARZ/Mosgortrans customer relationship, or sponsorship inferred from public sources.
+Public repositories under [KonkovDV](https://github.com/KonkovDV) sit beside this one. Their reports are not RepairFlow evidence.
 
-## Reproducible run
+| Repository | Role | What RepairFlow does not import |
+| --- | --- | --- |
+| [SynAPS](https://github.com/KonkovDV/SynAPS) | Slot search. Named solver configs, a reproducible run, its own feasibility check. | The kernel source. This repo keeps the pin in the evidence table. |
+| [SynAPS-GridPlan](https://github.com/KonkovDV/SynAPS-GridPlan) | Laboratory maintenance scheduling for power equipment. Search and checking are separate. | A different domain, pin, and report set. |
+| [SynAPS-ProgramPlan](https://github.com/KonkovDV/SynAPS-ProgramPlan) | A programme plan with a second check and a hash-chained decision log. | The operator log here is still a contract, not a hash chain. |
+| [SynAPS-MobiRoute](https://github.com/KonkovDV/SynAPS-MobiRoute) | Dial-a-ride planning. | Not repair, and not this notary. |
+| [AeroBIM](https://github.com/KonkovDV/AeroBIM) | A finding carries a clause and an identifier. A deterministic gate sets the pass flag. | Construction review. The borrowed idea is the shape of a verdict: code, identifiers, interval. |
+| [RailBreak](https://github.com/KonkovDV/RailBreak) | A jury packet: one run, a sourced table, an explicit uncovered list. | Odometry measurements. |
 
-The required Python version is the `requires-python` field of [`pyproject.toml`](pyproject.toml).
+If this page disagrees with [`docs/limitations.md`](docs/limitations.md) or with the table below, those win.
+
+## Evidence boundary
+
+The only generated table is in the Russian section above, between the evidence markers. `tools/attest.py` writes it. The public-page check rejects a digit outside it. The words "zero" and "empty" below name the correctness-oracle target, not a fresh measurement.
+
+A number without a commit, provenance, seed, solver status, checker output, and a denominator is not evidence.
+
+## Reproduce
+
+The Python version is the `requires-python` field of [`pyproject.toml`](pyproject.toml).
 
 ```bash
 python -m venv .venv
@@ -170,45 +188,41 @@ python -m mypy --strict src/repairflow
 python -m pytest -q -m "not slow"
 ```
 
-The demo uses synthetic data, checks clean and intentionally broken plans, and must remain fail-closed.
+The demo uses synthetic data only, checks a clean plan and an intentionally broken one, and must stay fail-closed.
 
-## Trust boundary and semantics
+## Boundary
 
 ```text
 formal instance → schema/domain validation → candidate planner
                → independent checker → evidence bundle → human decision
 ```
 
-The checker does not import solver search code. `repairflow verify-plan` does not call the kernel: a clean shop CSV is claim `domain_verified`, not `verified`. A shorter makespan is not an improvement when coverage is incomplete or a hard violation is introduced.
+The notary does not import solver search code. A published `verified` verdict also reads the pinned SynAPS feasibility check: independence is about search, not about the whole kernel ecosystem. `repairflow verify-plan` does not call the kernel.
 
-A resource with capacity `K` has `K` interchangeable lanes. Occupancy is half-open, `[start, end)`, so touching endpoints do not overlap. Setup extends occupancy backwards. The same sweep-line oracle is used for ordinary and frozen assignments. This avoids the anchor-based pairwise error that rejects staggered visits as simultaneous.
-
-## Evidence and the literature review
-
-Every result should state data provenance, solver status, claim level and independent verification. `OPTIMAL` is reserved for a bounded exact run with a proven bound and an empty independent checker. Heuristics never inherit `optimal`.
+Capacity `K` is `K` interchangeable lanes. Occupancy is half-open, `[start, end)`, so touching endpoints do not overlap. Setup extends occupancy backwards. At one instant an end is processed before a start. The same sweep covers ordinary and frozen assignments.
 
 ```text
 false_accept_rate = invalid_plans_accepted_as_verified / invalid_plans_presented
 ```
 
-The target for correctness-oracle fixtures is zero. RepairFlow does not claim a new general-purpose solver; its defensible position is explicit domain semantics, independent fail-closed verification, reproducibility, provenance and a controlled path to a shadow pilot. See the [literature review](docs/literature-2026.md) and the [evidence protocol](docs/evidence-protocol.md).
+For correctness-oracle fixtures the target is zero accepted invalid plans. The minute oracle does not judge the exchange-pool ledger. When the oracle and the notary disagree, the case is read by hand. The oracle is not fitted to the notary.
 
-## FTIM / OSINT boundary
+## What the notary checks
 
-- [FTIM pilot programme](https://ftim.ru/pilotirovanie/) is used only for public pilot-gate framing.
-- The [official SVARZ profile](https://www.mosgortrans.ru/about/branches/filial-sokolnicheskii-vagonoremontno-stroitelnyi-zavod-svarz-gup-mosgortrans/) establishes transport-component repair, not a RepairFlow sponsor or workflow.
-- [Moscow Innovation Cluster](https://i.moscow/pilot) describes readiness and rights requirements; maturity is the value recorded in [`docs/evidence-manifest.json`](docs/evidence-manifest.json).
+The schema rejects an incomplete or ambiguous input. The checker then covers assignment coverage, precedence with lags, posts, crews, skills, calendars, tooling, setup, spares, the exchange pool, frozen assignments, and the split between a soft due date and a hard deadline.
 
-A first pilot must be read-only/shadow-only, limited to one contour, with an anonymised data slice, agreed baseline, holdout, operator decision log, rollback and pre-declared KPIs. These sources do not prove deployment, savings, sponsorship or certification.
+The published-work position is the [literature review](docs/literature-2026.md) and the [evidence protocol](docs/evidence-protocol.md). RepairFlow does not present itself as a new general-purpose solver.
 
-## RailBreak comparison
+## Not covered
 
-The public [`KonkovDV/RailBreak`](https://github.com/KonkovDV/RailBreak) repository was used as a documentation precedent: one-command jury execution, evidence tables, assumptions/results/TЗ traceability, fault campaigns and explicit limitations. RailBreak measurements are not RepairFlow evidence.
+There is no write-back, dispatch, SCADA, or safety function. There is no claim of an industrial effect, a live customer, sponsorship, or a certificate. The public pages of the [pilot programme](https://ftim.ru/pilotirovanie/), the [plant profile](https://www.mosgortrans.ru/about/branches/filial-sokolnicheskii-vagonoremontno-stroitelnyi-zavod-svarz-gup-mosgortrans/), and the [innovation cluster](https://i.moscow/pilot) are entry gates, not a deployment record.
 
-## Reproducibility, limits and documentation
+Route variants are not modelled. The operator log is a contract without a writer. The native exact model has not been started: an owner decision opens it, not this page. The full list is [`docs/limitations.md`](docs/limitations.md).
 
-For every serious result record the repository commit, dependency lock, SynAPS pin, input/config/result hashes, solver class, seed, time limit, checker output, metric denominator, environment and CI run. The checker can only prove declared constraints. No EAM/ERP/CMMS write-back, dispatch, SCADA or safety function is included.
+A first pilot, if one happens, stays in shadow: one contour, an anonymised slice, an agreed baseline, a human decision log, and rollback.
 
-See [`docs/README.md`](docs/README.md), [`docs/traceability-matrix.md`](docs/traceability-matrix.md), [`docs/threat-model.md`](docs/threat-model.md), [`docs/osint-and-pilot-gates.md`](docs/osint-and-pilot-gates.md), [`SECURITY.md`](SECURITY.md) and [`LICENSES.md`](LICENSES.md).
+## Documents
 
-The repository is MIT-licensed unless a file states otherwise. This README is a research and engineering description, not a customer contract, safety case, procurement commitment or production-readiness certificate.
+[`docs/README.md`](docs/README.md), [`docs/traceability-matrix.md`](docs/traceability-matrix.md), [`docs/threat-model.md`](docs/threat-model.md), [`docs/osint-and-pilot-gates.md`](docs/osint-and-pilot-gates.md), [`SECURITY.md`](SECURITY.md), and [`LICENSES.md`](LICENSES.md).
+
+MIT, unless a file says otherwise. This page is an engineering description, not a contract, a safety case, or a readiness certificate.
