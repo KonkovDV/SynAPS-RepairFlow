@@ -1,21 +1,21 @@
-# Benchmark protocol
+# Протокол замера
 
-Full claim ladder and academic anchors: [`evidence-protocol.md`](evidence-protocol.md).
+Лестница заявлений и опоры в статьях: [`evidence-protocol.md`](evidence-protocol.md).
 
-- Tag every number `synthetic_experiment` unless a customer holdout exists.
-- Same input hash for FIFO vs GREED vs CP-SAT.
-- Record RepairFlow version, full SynAPS SHA, config hash, seed, result hash.
-- OPTIMAL is allowed only for CP-SAT with a proven bound and empty checker.
-- Do not mix kernel 50k evidence into RepairFlow claims.
-- Store JSON under `benchmark/results/` (gitignored payloads except `.gitkeep`).
-- CLI: `repairflow benchmark --out bench` writes `benchmark.{json,md,html}` plus per-instance reports.
-- Default matrix: `tiny` 1/42/99 and `repair-site-mvp` 42/7/13. `--preset` filters those pairs; `--preset` plus `--seeds` is an explicit cartesian product.
-- Frozen `JOB-01-03` binds a crew that covers the operation skills (electrical restore → `CREW-ELEC`), so electrical seeds are not excluded from the portfolio.
-- Exit `0` only if every GREED row is checker-verified; otherwise exit `2`.
-- FIFO is an infeasible compact packing. A shorter FIFO makespan is not a quality win; report FIFO hard violations and GREED makespan as primary KPIs.
-- Makespan, tardiness, setup and coverage in `objective` are recomputed from the horizon start for every solver. The solver's own numbers stay in `metadata.solver_objective`.
-- `EDD` is a capacity-aware list scheduler (due date, then priority). It is a feasible baseline. Select it with `--solvers FIFO GREED EDD`.
-- `ATC` is a RepairFlow list rule, not a SynAPS solver. Among ready operations it ranks `(priority / duration) * exp(-max(slack, 0) / (k * mean duration))` with fixed `k = 2`. Slack uses the due date, the duration, and the earliest start already fixed by release and placed predecessors. It is opt-in (`--solvers ATC`) and is not the CI matrix.
-- CP-SAT receives the domain GREED assignment as `warm_start_assignments` unless the caller already passed one.
-- The published CI matrix stays the six pairs above. A 30-seed study is an explicit `--preset` plus `--seeds` product, not the default.
-- CI uploads `bench/` even when the job fails so dirty cells remain inspectable.
+- Каждое число помечать `synthetic_experiment`, пока нет отложенной выборки заказчика.
+- Один и тот же хеш входа у FIFO, GREED и CP-SAT.
+- Записывать версию RepairFlow, полный SHA SynAPS, хеш настройки, зерно, хеш результата.
+- OPTIMAL допустим только у CP-SAT с доказанной границей и пустым нотариусом.
+- Свидетельства ядра на 50 тысячах в заявления RepairFlow не подмешивать.
+- JSON класть в `benchmark/results/` (полезные файлы в gitignore, кроме `.gitkeep`).
+- Команда `repairflow benchmark --out bench` пишет `benchmark.json`, `benchmark.md`, `benchmark.html` и отчёты по каждому примеру.
+- Матрица по умолчанию: `tiny` с зёрнами 1, 42, 99 и `repair-site-mvp` с зёрнами 42, 7, 13. `--preset` оставляет эти пары. `--preset` вместе с `--seeds` — явное декартово произведение.
+- Замороженный `JOB-01-03` привязан к бригаде, которая закрывает навыки операции (электрическое восстановление → `CREW-ELEC`), поэтому электрические зёрна из портфеля не выкидываются.
+- Код выхода `0`, только если каждая строка GREED прошла нотариус. Иначе код выхода `2`.
+- FIFO — плотная укладка, которая невыполнима. Более короткий общий срок FIFO победой не считается. Главные показатели — жёсткие нарушения FIFO и общий срок GREED.
+- Общий срок, просрочка, переналадка и покрытие в `objective` заново считаются от начала горизонта для каждого решателя. Собственные числа решателя остаются в `metadata.solver_objective`.
+- `EDD` — списочный планировщик, который видит ёмкость (срок, потом приоритет). Это выполнимая база. Включается как `--solvers FIFO GREED EDD`.
+- `ATC` — списочное правило RepairFlow, не решатель SynAPS. Среди готовых операций оно ранжирует `(priority / duration) * exp(-max(slack, 0) / (k * mean duration))` при фиксированном `k = 2`. Запас времени берёт срок, длительность и самый ранний старт, уже зафиксированный выпуском и поставленными предшественниками. Правило по желанию (`--solvers ATC`) и в матрицу CI не входит.
+- CP-SAT получает назначение доменного GREED как `warm_start_assignments`, если вызывающий уже не передал своё.
+- Опубликованная матрица CI — те шесть пар выше. Исследование на 30 зёрнах — это явное произведение `--preset` и `--seeds`, не значение по умолчанию.
+- CI выкладывает `bench/`, даже если задание упало, чтобы грязные клетки можно было посмотреть.

@@ -1,10 +1,10 @@
-# MVP entrypoint
+# Точка входа MVP
 
-Runnable laboratory contour. Specification: `docs/SYNAPS_REPAIRFLOW_MVP_SKELETON.md`.
+Лабораторный контур, который можно запустить. Спецификация: `docs/SYNAPS_REPAIRFLOW_MVP_SKELETON.md`.
 
-Evidence and claim ladder: [`evidence-protocol.md`](evidence-protocol.md).
+Лестница доказательств и допустимых формулировок: [`evidence-protocol.md`](evidence-protocol.md).
 
-Readiness command:
+Команда готовности:
 
 ```bash
 pip install -e ".[dev]"

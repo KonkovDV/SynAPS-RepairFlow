@@ -1,42 +1,41 @@
-# ADR-0002. Repair DAG over a chain-only kernel
+# ADR-0002. Ремонтная карта поверх ядра, которое умеет только цепочку
 
-## Context
+## Контекст
 
-SynAPS `ScheduleProblem` accepts one predecessor per operation and requires that
-predecessor to be the previous `seq_in_order` inside the same order. A repair card
-is a convergent DAG: disassembly splits into parallel branches and assembly waits
-for every branch.
+`ScheduleProblem` в SynAPS принимает одного предшественника на операцию и требует,
+чтобы это был предыдущий `seq_in_order` внутри того же заказа. Ремонтная карта
+сходится: разборка расходится на параллельные ветки, сборка ждёт каждую.
 
-Rejecting that graph makes RepairFlow a renamed chain scheduler. Silently keeping
-only `predecessor_ids[0]` drops edges.
+Если такой граф отвергать, RepairFlow останется переименованным планировщиком цепочек.
+Если молча оставить только `predecessor_ids[0]`, рёбра пропадут.
 
-## Decision
+## Решение
 
-1. The domain model accepts an acyclic `predecessor_ids` graph. A cycle is a
-   validation error. An empty `eligible_work_center_ids` is a validation error.
-2. `dag_compiler` offers two strategies:
-   - `serialize`: topological order, one chain per job. Feasible for the chain
-     implies feasible for the intra-job DAG. Parallel branches are lost.
-   - `split_release_fixpoint` (default): maximal unbranched chains become kernel
-     orders. Edges that are not inside a chain are release windows. Windows only
-     grow. If they do not settle within `max_fixpoint_iter`, the result is
-     `DAG_FIXPOINT_NOT_CONVERGED` and exit 2.
-3. The domain checker evaluates the original edges, including joins. Segment
-   chains are not a substitute for that check.
-4. `claim_status=optimal` is allowed only for CP-SAT `OPTIMAL`, an empty hard
-   notary, and a single compiled pass. A later fixpoint iteration caps the claim
-   at `verified`. When cross edges exist, `optimality_scope` is
-   `compiled_windows`: that is optimality of the compiled model, not a claim that
-   the original DAG was optimized.
+1. Доменная модель принимает граф `predecessor_ids` без циклов. Цикл —
+   ошибка проверки. Пустой `eligible_work_center_ids` — тоже ошибка проверки.
+2. У `dag_compiler` две стратегии:
+   - `serialize`: топологический порядок, одна цепочка на заказ. Допустимость цепочки
+     влечёт допустимость графа внутри заказа. Параллельные ветки теряются.
+   - `split_release_fixpoint` (по умолчанию): самые длинные неразветвлённые цепочки становятся заказами
+     ядра. Рёбра вне цепочки становятся окнами выпуска. Окна только
+     растут. Если они не устаканятся за `max_fixpoint_iter`, результат —
+     `DAG_FIXPOINT_NOT_CONVERGED` и код выхода 2.
+3. Доменный нотариус судит исходные рёбра, включая слияния. Цепочки отрезков
+   эту проверку не заменяют.
+4. `claim_status=optimal` допустим только при CP-SAT `OPTIMAL`, пустом жёстком
+   нотариусе и одном проходе компилятора. Следующая итерация неподвижной точки оставляет
+   максимум `verified`. Когда есть рёбра между отрезками, `optimality_scope` равен
+   `compiled_windows`: это оптимальность собранной модели, не заявление, что
+   исходный граф оптимизировали.
 
-## Alternatives
+## Что рассматривали ещё
 
-- Wait for upstream DAG precedence. Recorded as a wish; it does not block the lab.
-- Keep rejecting branches. Hides the repair card the domain is about.
+- Ждать, пока в ядре появится порядок по графу. Записано как пожелание. Лабораторию это не блокирует.
+- Продолжать отвергать ветки. Тогда карта, ради которой домен и затеян, прячется.
 
-## Consequences
+## Что из этого следует
 
-Linear fixtures stay one segment per job and keep the previous kernel order id.
-Branched cards produce several kernel orders. Heuristic plans that pass the notary
-are `claim_status=verified` with solver status `HEURISTIC_FEASIBLE`. They are not
-called optimal.
+Линейные примеры остаются одним отрезком на заказ и сохраняют прежний идентификатор порядка ядра.
+Ветвистые карты дают несколько заказов ядра. Эвристические планы, прошедшие нотариус,
+имеют `claim_status=verified` и статус решателя `HEURISTIC_FEASIBLE`. Оптимальными
+их не называют.

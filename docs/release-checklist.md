@@ -1,27 +1,27 @@
-# Release checklist
+# Список перед выпуском
 
-A laboratory release and a pilot submission are different gates. A checked item needs evidence in the repository or a named external document.
+Лабораторный выпуск и подача на пилот — разные ворота. Отмеченный пункт должен опираться на свидетельство в репозитории или на названный внешний документ.
 
-## Laboratory release
+## Лабораторный выпуск
 
-- [ ] `python tools/verify_lock.py` passes.
-- [ ] Ruff, mypy, schema export, fast tests, demo, and the default benchmark pass.
-- [ ] The evidence bundle records the SynAPS commit, Python version, OR-Tools version, platform, seed, input hash, config hash, and result hash.
-- [ ] Every row marked `verified` has full operation coverage and an empty hard notary.
-- [ ] Synthetic numbers name the preset, seed, solver, and commit.
-- [ ] Public text avoids the phrases in `docs/BANNED_CLAIMS.txt`.
-- [ ] The artifact is built from a clean commit.
+- [ ] `python tools/verify_lock.py` проходит.
+- [ ] Проходят ruff, mypy, выгрузка схем, быстрые тесты, демо и замер по умолчанию.
+- [ ] Пакет доказательств записывает коммит SynAPS, версию Python, версию OR-Tools, платформу, зерно, хеш входа, хеш настройки и хеш результата.
+- [ ] У каждой строки со статусом `verified` полное покрытие операций и пустой жёсткий нотариус.
+- [ ] Синтетические числа называют пресет, зерно, решатель и ревизию.
+- [ ] В публичном тексте нет фраз из `docs/BANNED_CLAIMS.txt`.
+- [ ] Артефакт собран из чистой ревизии.
 
-## FTIM/MIC pilot submission
+## Подача на пилот ФТИМ или кластера
 
-- [ ] Legal entity or IP owner is identified.
-- [ ] Rights chain for the software and dependencies is documented.
-- [ ] Named business owner, data owner, and information-security contact are confirmed.
-- [ ] One repair contour, one baseline, one anonymized slice, and one measurable hypothesis are agreed.
-- [ ] The protocol is shadow-only, offline, reversible, and limited to 90 days.
-- [ ] Operator acceptance and rollback criteria are defined before the first run.
-- [ ] The application says TRL 4.
+- [ ] Названо юридическое лицо или владелец прав.
+- [ ] Описана цепочка прав на программу и зависимости.
+- [ ] Подтверждены владелец процесса, владелец данных и контакт по информационной безопасности.
+- [ ] Согласованы один ремонтный участок, одна база, один обезличенный срез и одна измеримая гипотеза.
+- [ ] Протокол теневой, без сети, обратимый и ограничен 90 днями.
+- [ ] До первого прогона определены приёмка оператором и условия отката.
+- [ ] В заявке сказано TRL 4.
 
-## What a green benchmark is
+## Что значит зелёный замер
 
-A green synthetic benchmark is evidence about that fixture. It is not economic effect, customer pain, legal compliance, or production safety. Public information about SVARZ confirms a repair profile, not sponsorship.
+Зелёный синтетический замер говорит об этом примере. Экономического эффекта, боли заказчика, юридического соответствия и производственной безопасности из него не следует. Открытые сведения о СВАРЗ подтверждают ремонтный профиль, не спонсорство.

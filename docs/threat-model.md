@@ -1,31 +1,31 @@
-# Threat model and offline deployment boundary
+# Модель угроз и граница автономной установки
 
-## Scope
+## О чём речь
 
-RepairFlow is a read-only, offline planning aid. A solve does not write to EAM or ERP, does not issue transport commands, and does not decide release to line.
+RepairFlow — подсказка для планирования. Она читает задачу и ничего не пишет в EAM или ERP, не отдаёт команд транспорту и не решает, выпускать ли технику на линию. Расчёт идёт без сети.
 
-## Assets
+## Что бережём
 
-Work orders, technology cards, resource calendars, skills, spare availability, frozen assignments, generated plans, hashes, and operator decisions.
+Заказы, технологические карты, календари ресурсов, допуски, доступность запчастей, замороженные назначения, собранные планы, хеши и решения оператора.
 
-## Threats and controls that exist in this repository
+## Что уже закрыто в этом репозитории
 
-| Threat | Control that exists now | Where to look |
-|---|---|---|
-| A stale or edited plan presented as checked | Independent checker, full-coverage gate, input/config/result hashes | `repairflow check --verify-hashes` |
-| Dependency substitution of the kernel | SynAPS commit pin checked by CI | `tools/verify_lock.py`, `tests/test_pin_regression.py` |
-| Solver wheel drift | OR-Tools pinned to 9.15.6755; direct CycloneDX SBOM | `pyproject.toml`, `repairflow.sbom` |
-| Extra fields in an instance | Pydantic `extra=forbid` and the generated schema | `tools/export_schemas.py`, `schemas/negative/` |
-| Personal names inside a planning bundle | Field contract asks for pseudonymous crew ids | `docs/data-mapping-1c-toir.md` |
+| Угроза | Что есть сейчас | Где смотреть |
+| --- | --- | --- |
+| Устаревший или подправленный план выдают за проверенный | Независимый нотариус, полное покрытие, хеши входа, настройки и результата | `repairflow check --verify-hashes` |
+| Подмена ядра другой ревизией | Пин коммита SynAPS проверяет CI | `tools/verify_lock.py`, `tests/test_pin_regression.py` |
+| Уехало колесо решателя | OR-Tools закреплён на 9.15.6755; прямая опись CycloneDX | `pyproject.toml`, `repairflow.sbom` |
+| В экземпляр подложены лишние поля | Pydantic `extra=forbid` и собранная схема | `tools/export_schemas.py`, `schemas/negative/` |
+| В пакете плана оказались фамилии | Договор о полях просит псевдонимы бригад | `docs/data-mapping-1c-toir.md` |
 
-## Controls that are not implemented
+## Чего ещё нет
 
-- A signature on the release artifact.
-- A hash lock of every transitive wheel.
-- An append-only operator log writer. The record shape is in `docs/operator-decision-log.md`.
-- Automatic rejection of a file because its provenance label is missing. `data_provenance` is a field; a pilot still needs a signed data agreement.
-- A network-free installation story. Solving a local JSON file does not call out. `pip install` does.
+- Подписи на выпускаемом архиве.
+- Хеш-замка на каждое транзитивное колесо.
+- Писателя журнала оператора, в который можно только дописывать. Форма записи есть в `docs/operator-decision-log.md`.
+- Автоматического отказа файлу, у которого не проставлено происхождение. `data_provenance` — поле; пилоту всё равно нужен подписанный договор о данных.
+- Установки, которая обходится совсем без сети. Решение локального JSON наружу не зовёт. `pip install` зовёт.
 
-## Pilot boundary
+## Граница пилота
 
-Start with synthetic or anonymized data, one repair contour, shadow output, and a documented rollback to the existing process. A pilot does not authorize production control.
+Начинать с синтетики или с обезличенных данных, с одного ремонтного участка, с теневого результата и с записанного отката к действующему процессу. Пилот не даёт права управлять производством.

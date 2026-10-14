@@ -1,44 +1,41 @@
-# Limitations / non-claims
+# Границы
 
-1. Synthetic fixtures are not SVARZ data and not a Mosgortrans dump.
-2. No EAM / ERP / CMMS / SCADA integration.
-3. No vehicle pull-out, metro night windows, e-bus charging, or road routing.
-4. No labour-law rostering or ТК РФ certification.
-5. GREED, FIFO, ALNS, RHC are not optimal.
-6. Checker proves declared hard constraints, not MUS/IIS and not economic effect.
-   A deletion-minimal set of operation ids explains one domain code. It is not an MUS or an IIS.
-7. ISO 16290 TRL 4 (laboratory). Not TRL 5/6, not a paid pilot.
-8. Do not write “used by the Department of Transport” or “cuts repair time by X%”.
-9. A soft `due_date` miss is the KPI `DUE_MISSED`. A hard finish is
-   `Job.deadline` (`DEADLINE_MISSED`) or `Operation.latest_finish`
-   (`WINDOW_BROKEN`).
-10. Spares remain a blocking availability check. The exchange pool is a separate
-    stock ledger (`EXCHANGE_POOL_STOCKOUT`, hard only when `pool.hard` is true).
-    `repairflow inspect` inserts one revealed branch and keeps every already issued slot.
-    It does not yet model `POST_DOWN`, `PART_DELAY`, or a catalogue of route variants.
-11. `optimal` does not mean “optimal repair plan” when the compiler changed the card.
-    The report scope is the compiled chain/windows. More than one fixpoint iteration
-    caps the claim at `verified`.
-12. A dependency lock is `locked` only when every recorded component already has
-    a wheel or sdist SHA-256. Editable installs stay `incomplete`. The lock does
-    not carry a signature: this build has no release key, and a signature status
-    other than `absent` is not produced.
-13. CP-SAT is a lab capability boundary, not evidence that a real instance of
-    that size solves. `plan` and kernel repair refuse a request with more than
-    `CPSAT_OPS_CAP` operations (100). The refusal is a recorded result: empty
-    assignments, hard `CPSAT_OPS_CAP`, exit 2, not `verified` and not `optimal`.
-    The exact solver is not called, and a domain list solver is not substituted.
-    FIFO, GREED, EDD and ATC are outside this cap. One hundred is the last size
-    at which CPSAT-10 returned a checked plan on a synthetic one-skill card
-    with published shifts. One hundred and twenty operations on that card
-    timed out with an empty plan. This is not a claim that a shop of 100
-    operations reaches `optimal`.
-14. `repairflow verify-plan` checks a shop CSV without calling the kernel.
-    A clean result is `claim_status=domain_verified` and `verified_feasible=false`.
-    It is not `verified` and it is not `optimal`.
-15. A non-empty crew or auxiliary shift is compiled into the kernel. An attended
-    calendar with no windows, a skill pool whose crews do not share one shift,
-    and a preemptive operation on a published shift stay
-    `KERNEL_CALENDAR_UNSUPPORTED`. The kernel's empty calendar means 24/7, so
-    it is not used for a closed resource. List solvers that ignore an auxiliary
-    shift are still rejected by the checker.
+Если страница спорит с этим списком, верен список.
+
+1. Синтетические примеры не являются данными СВАРЗ и не являются выгрузкой Мосгортранса.
+2. Обмена с EAM, ERP, CMMS и SCADA нет.
+3. Нет выпуска техники на линию, ночных окон метро, зарядки электробусов и дорожной маршрутизации.
+4. Нет составления графика по трудовому праву и нет сертификации по ТК РФ.
+5. GREED, FIFO, ALNS и RHC не дают оптимум.
+6. Нотариус проверяет заявленные жёсткие ограничения. Это не MUS и не IIS и не экономический эффект.
+   Минимальный по удалению набор идентификаторов операций объясняет один доменный код. Это не MUS и не IIS.
+7. По ISO 16290 это лабораторный TRL 4. Не TRL 5 и не TRL 6, и не оплаченный пилот.
+8. Не пишите «используется Департаментом транспорта» и не пишите «сокращает ремонт на столько-то процентов».
+9. Срыв мягкого `due_date` — показатель `DUE_MISSED`. Жёсткое окончание — это `Job.deadline`
+   (`DEADLINE_MISSED`) или `Operation.latest_finish` (`WINDOW_BROKEN`).
+10. Запчасти остаются проверкой доступности, которая может остановить план. Обменный фонд — отдельная
+    книга остатков (`EXCHANGE_POOL_STOCKOUT`, жёстко только когда `pool.hard` истинно).
+    `repairflow inspect` вставляет одну вскрытую ветку и сохраняет уже выданные слоты.
+    Типов `POST_DOWN`, `PART_DELAY` и каталога вариантов маршрута пока нет.
+11. `optimal` не значит «лучший ремонтный план», если компилятор изменил карту.
+    Отчёт относится к собранной цепочке и окнам. Больше одной итерации неподвижной точки
+    оставляет максимум `verified`.
+12. Замок зависимостей считается `locked`, только когда у каждой записанной компоненты уже есть
+    SHA-256 колеса или sdist. Редактируемая установка остаётся `incomplete`. Подписи в замке нет:
+    ключа выпуска в этой сборке нет, и статус подписи, отличный от `absent`, не появляется.
+13. CP-SAT — граница лаборатории, не доказательство, что цеховой экземпляр такого размера решается.
+    `plan` и ремонт ядра отказывают, если операций больше `CPSAT_OPS_CAP` (100). Отказ записан:
+    пустые назначения, жёсткий `CPSAT_OPS_CAP`, код выхода 2, не `verified` и не `optimal`.
+    Точный решатель не вызывается, и вместо него не подставляется списочный.
+    FIFO, GREED, EDD и ATC этим пределом не связаны. Сто операций — последний размер,
+    на котором CPSAT-10 вернул проверенный план на синтетической карте с одним навыком
+    и опубликованными сменами. Сто двадцать операций на той же карте ушли в тайм-аут с пустым планом.
+    Это не утверждение, что цех из 100 операций доходит до `optimal`.
+14. `repairflow verify-plan` проверяет цеховой CSV, не вызывая ядро.
+    Чистый результат — `claim_status=domain_verified` и `verified_feasible=false`.
+    Это не `verified` и не `optimal`.
+15. Непустая смена бригады или оснастки компилируется в ядро. Календарь с персоналом, но без окон,
+    пул навыков, чьи бригады не делят одну смену, и прерываемая операция на опубликованной смене
+    остаются `KERNEL_CALENDAR_UNSUPPORTED`. Пустой календарь в ядре значит круглосуточную работу,
+    поэтому закрытый ресурс так не кодируют. Списочные решатели, которые игнорируют смену оснастки,
+    нотариус всё равно отвергает.

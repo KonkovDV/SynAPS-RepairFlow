@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Public pages are rewritten in plain language. Commands, verdict words, and
+  the generated evidence table stay as they are. No score is copied.
 - The evidence manifest attests main `93320f1` / push run `38629025631`,
   including `test-slow`. This commit does not attest itself.
 - The boundary diagram runs top to bottom, so the node labels stay inside

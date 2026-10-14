@@ -1,89 +1,89 @@
-# RepairFlow evidence protocol
+# Протокол доказательств
 
-## Purpose
+## Зачем он
 
-RepairFlow is a domain adapter for auditable repair scheduling. The mathematical class is established: flexible job-shop / resource-constrained scheduling with sequence-dependent setup times, auxiliary resources and skills. The project must therefore compete on **correctness, auditability, reproducibility and pilot discipline**, not on an unsupported claim of a new solver.
+RepairFlow — доменный адаптер для планирования ремонта, которое можно перепроверить. Класс задачи известный: гибкое цеховое планирование и планирование с ограниченными ресурсами, переналадка зависит от последовательности, есть вспомогательные ресурсы и допуски. Спорить здесь есть о чём другом: верно ли проверен план, можно ли повторить прогон и не сказано ли лишнего. Нового решателя этот репозиторий не обещает.
 
-Academic anchors:
+Опоры в статьях:
 
-- worker-constrained FJSP with sequence-dependent setup times: https://doi.org/10.1007/s00291-018-0537-z
-- multi-resource CP/ALNS scheduling: https://doi.org/10.1016/j.ejor.2024.08.010
-- FJSP with preventive maintenance and setup times: https://doi.org/10.1109/WSC57314.2022.10015273
-- rolling-stock maintenance under uncertain durations: https://doi.org/10.1016/j.jrtpm.2020.100177
-- technician routing and scheduling: https://doi.org/10.1007/978-3-031-12914-8_30
-- infeasibility certificates: https://doi.org/10.1016/j.orl.2008.08.003
+- FJSP с ограничением по рабочим и переналадкой от последовательности: https://doi.org/10.1007/s00291-018-0537-z
+- многоресурсное планирование CP/ALNS: https://doi.org/10.1016/j.ejor.2024.08.010
+- FJSP с предупредительным обслуживанием и переналадкой: https://doi.org/10.1109/WSC57314.2022.10015273
+- обслуживание подвижного состава при неточной длительности: https://doi.org/10.1016/j.jrtpm.2020.100177
+- маршруты и график техников: https://doi.org/10.1007/978-3-031-12914-8_30
+- сертификаты невыполнимости: https://doi.org/10.1016/j.orl.2008.08.003
 
-## Evidence hierarchy
+## Четыре ярлыка
 
-Every result must carry four independent labels:
+У каждого результата четыре независимых ярлыка:
 
-1. **data provenance** — `synthetic`, `open_data`, `customer_data`, `experiment`, `production_verified`;
-2. **solver status** — `OPTIMAL`, `FEASIBLE`, `HEURISTIC_FEASIBLE`, `PARTIAL`, `INFEASIBLE`, `NOT_VERIFIED`;
-3. **claim level** — `experiment`, `benchmark`, `pilot_candidate`, `production_verified`;
-4. **verification status** — independent checker empty, full coverage, explicit kernel status.
+1. **откуда данные** — `synthetic`, `open_data`, `customer_data`, `experiment`, `production_verified`;
+2. **статус решателя** — `OPTIMAL`, `FEASIBLE`, `HEURISTIC_FEASIBLE`, `PARTIAL`, `INFEASIBLE`, `NOT_VERIFIED`;
+3. **уровень заявления** — `experiment`, `benchmark`, `pilot_candidate`, `production_verified`;
+4. **проверка** — независимый нотариус пуст, покрытие полное, статус ядра назван явно.
 
-`OPTIMAL` is permitted only for a bounded exact run with a proven bound and an empty independent checker. `GREED`, `ALNS` and `RHC` never inherit that word.
+`OPTIMAL` допустим только у ограниченного точного прогона с доказанной границей и пустым независимым нотариусом. `GREED`, `ALNS` и `RHC` это слово не наследуют.
 
-## Benchmark ladder
+## Лестница замеров
 
-### Level A — correctness oracle
+### Уровень A. Оракул правильности
 
-Use 5–20 operation fixtures where CP-SAT or exhaustive enumeration is a reference. Test precedence, setup, skills, calendars, auxiliary resources, frozen assignments and spares. The primary safety metric is **false-accept rate**, which must be zero.
+Примеры на 5–20 операций, где опорой служит CP-SAT или полный перебор. Проверять порядок, переналадку, допуски, календари, вспомогательные ресурсы, замороженные назначения и запчасти. Главная мера безопасности — доля ложного приёма. Она должна быть нулевой.
 
-### Level B — domain fixture
+### Уровень B. Доменный пример
 
-Use the committed repair-site fixture. Compare FIFO, RepairFlow GREED and bounded CP-SAT on the same input. Report:
+Взять закреплённый пример ремонтного участка. На одном входе сравнить FIFO, RepairFlow GREED и ограниченный CP-SAT. Писать:
 
-- hard violations;
-- coverage;
-- time-to-first-feasible;
-- makespan;
-- tardiness;
-- setup minutes;
-- unassigned operations;
-- checker time;
-- result and input hashes.
+- жёсткие нарушения;
+- покрытие;
+- время до первого допустимого;
+- общий срок;
+- просрочку;
+- минуты переналадки;
+- операции без назначения;
+- время нотариуса;
+- хеши результата и входа.
 
-### Level C — external scheduling instances
+### Уровень C. Чужие примеры планирования
 
-Use public FJSP/RCPSP instances only as algorithmic sanity checks. They do not prove transport applicability. Report upper/lower bounds, gap and runtime under the same hardware and time budget. Do not merge coverage, feasibility and optimality into one score.
+Публичные экземпляры FJSP и RCPSP годятся только как проверка, что алгоритм не развалился. Применимость к транспорту они не доказывают. Писать верхнюю и нижнюю границы, зазор и время на том же железе и с тем же бюджетом времени. Покрытие, допустимость и оптимальность в одну оценку не склеивать.
 
-### Level D — disruption replay
+### Уровень D. Повтор сбоя
 
-Apply post outage, crew unavailability, spare delay and duration extension. Measure:
+Поломка поста, отсутствие бригады, задержка запчасти, удлинение операции. Мерить:
 
-- repair latency;
-- changed assignments;
-- frozen assignments preserved;
-- hard violations after repair;
-- plan churn.
+- задержку пересчёта;
+- изменённые назначения;
+- сохранённые замороженные назначения;
+- жёсткие нарушения после пересчёта;
+- насколько план «нервничает».
 
-A shorter makespan is not sufficient if the plan is unstable for the planner.
+Короткий общий срок ничего не стоит, если планировщику с таким планом нельзя жить.
 
-## Domain correctness gates
+## Ворота правильности домена
 
-Same-job predecessor edges must point strictly backwards in `sequence`. Cross-job edges stay legal dependencies. The compiler may publish a chain for the kernel; the checker still judges the original edges. A result whose proof is only `compiled_windows` is not `optimal`.
+Рёбра-предшественники внутри одного заказа должны смотреть строго назад по `sequence`. Рёбра между заказами остаются законными зависимостями. Компилятор может отдать ядру цепочку; нотариус всё равно судит исходные рёбра. Результат, чьё доказательство — только `compiled_windows`, не является `optimal`.
 
-Every accepted assignment must name a concrete crew when a skill is required. A skill pool alone is not an operational assignment.
+Каждое принятое назначение называет конкретную бригаду, если нужен допуск. Пула навыков мало, чтобы считать назначение операционным.
 
-Missing `idle → first_state` setup is a hard rejection. Missing setup cells are not silently interpreted as zero when policy is `reject`.
+Пропавшая переналадка `idle → first_state` — жёсткий отказ. Пустые клетки переналадки не читаются молча как ноль, когда политика равна `reject`.
 
-## Pilot evidence
+## Доказательства для пилота
 
-Before any customer claim, freeze:
+Прежде чем говорить языком заказчика, заморозить:
 
-- one contour and one process owner;
-- an anonymised `repairflow.problem.v1` extract;
-- a constraint catalogue agreed by a domain engineer;
-- a historical baseline;
-- a holdout interval;
-- an operator accept/reject log;
-- a written fallback procedure.
+- один участок и одного владельца процесса;
+- обезличенную выгрузку `repairflow.problem.v1`;
+- каталог ограничений, с которым согласился доменный инженер;
+- историческую базу;
+- отложенный интервал;
+- журнал, где оператор принимает или отвергает план;
+- записанную процедуру отката.
 
-The first pilot is read-only/shadow. No write-back is allowed. Success is a measured gap on one contour, not a city-wide KPI.
+Первый пилот только читает и остаётся теневым. Запись обратно в рабочие системы запрещена. Успех — измеренный зазор на одном участке, не городской показатель.
 
-## What the project may claim now
+## Что можно сказать сейчас
 
-> RepairFlow is a reproducible laboratory domain package that builds candidate repair schedules and independently checks declared hard constraints.
+> RepairFlow — воспроизводимый лабораторный доменный пакет. Он строит кандидатные графики ремонта и отдельно проверяет заявленные жёсткие ограничения.
 
-It may not claim industrial savings, live SVARZ or Mosgortrans use, replacement of EAM/ERP/CMMS, certified labour-law compliance, complete explainability, or optimality of heuristic schedules.
+Сейчас нельзя говорить о промышленной экономии, о живом использовании на СВАРЗ или в Мосгортрансе, о замене EAM, ERP или CMMS, о сертифицированном соблюдении трудового права, о полном объяснении невыполнимости и об оптимальности эвристических графиков.

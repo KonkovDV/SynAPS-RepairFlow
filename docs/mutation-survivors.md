@@ -1,12 +1,12 @@
-# Mutation survivors
+# Выжившие мутанты
 
-`mutmut` 3.8.0 needs `os.fork`, so it does not run on the Windows host. The Ubuntu WSL install on this machine has Python 3.14 only, and the project is tested on 3.12. The job is in `.github/workflows/ci.yml`, on `ubuntu-latest` and Python 3.12, for `schedule` or `workflow_dispatch`. It mutates `checker.py`, `capacity.py`, `ledger.py`, and `lane_setup.py`, then runs `pytest -m "not slow"`. The score below is from that Linux job. It is not copied into the README.
+`mutmut` 3.8.0 нуждается в `os.fork`, поэтому на этой машине Windows он не идёт. В Ubuntu WSL здесь только Python 3.14, а проект проверяется на 3.12. Задание лежит в `.github/workflows/ci.yml`, на `ubuntu-latest` и Python 3.12, по расписанию или по ручному запуску. Оно мутирует `checker.py`, `capacity.py`, `ledger.py` и `lane_setup.py`, затем гоняет `pytest -m "not slow"`. Счёт ниже снят с этого линуксового задания. В README он не копируется.
 
 Run `37696570417` mutated the four files and then stopped while collecting tests. The sandbox is `mutants/`, and that run copied only those four files. `tests/test_agent_bus.py` imports `tools`, which was not in the sandbox, and mutmut stops at the first collection error. No mutant was executed. No score.
 
 The package now copies as `source_paths = ["src/repairflow"]`. `only_mutate` stays the four notary modules, so planner and CLI are present for imports and are not mutated. `also_copy` adds `tools`, `docs`, `benchmark`, `schemas`, and the files the fast suite opens. It does not add `src/repairflow`: that directory is the mutated tree.
 
-## Run 37697094085
+## Прогон 37697094085
 
 Linux `workflow_dispatch` [37697094085](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/runs/37697094085) on `4167df4`, mutmut 3.8.0, `pytest -m "not slow"`. The job succeeded. This is not an attestation of main, and `8a2b282` is not the commit that was mutated.
 
@@ -40,7 +40,7 @@ The other 788 survivors, in `checker.py` and `ledger.py`, are not marked equival
 
 `continue` changed to `break` drops every later row in that loop. Tests in `tests/test_skip_does_not_hide_next.py` require the later finding: an unknown operation does not hide the next unknown post, a mutable freeze does not hide the next frozen rows, and one predecessor does not hide the next. Those tests are not part of run `37697094085`. The unknown operation and the unknown post also keep the visit start, end, and operation id.
 
-## Run 37743200619
+## Прогон 37743200619
 
 The four notary modules are unchanged from `4167df4` through `13dbb9d`. Mutant ids are the same keys. Exit 1 is killed. Exit 0 is survived. No other exit code appears.
 
@@ -77,7 +77,7 @@ Still alive on `37743200619`, and not marked equivalent:
 
 Tests added after that run require the later finding: an unknown operation does not hide a short receipt, a release violation, spare overuse, or setup on the same post; a spare with no receipts does not hide a short receipt; a spare that has receipts does not hide a later availability or a consumable overuse; an unknown auxiliary does not hide a closed auxiliary calendar. Those tests are on `de135ae`. Run `37759423830` is the measurement of that commit.
 
-## Run 37759423830
+## Прогон 37759423830
 
 Linux `workflow_dispatch` [37759423830](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/runs/37759423830) on `de135ae` killed 1227 and left 694. Score 1227/1921. Exit codes are only 0 and 1. The other jobs on that run, including `test-slow`, succeeded. The four notary modules are still the same text as `4167df4`. This is not an attestation of main. `7be8040` is not the mutated commit.
 
@@ -107,7 +107,7 @@ Inside `_violation`, four edits do not change a returned finding. Default severi
 
 `tests/test_violation_identity.py` requires the visit, the ids, and the exact sentence on the findings those loops emit. `tests/test_boundary_survivors.py` pins the edges those loops compare with `<` and `>`. Neither file is in 1227/1921 or in the score below. A later dispatch can upload the uncapped campaign when `run_nightly` is true. That input defaults to false. `run_mutation` defaults to true, so the nightly upload can be requested without a second mutmut job. Dispatch `37810297431` is that upload.
 
-## Run 37797011451
+## Прогон 37797011451
 
 Linux `workflow_dispatch` [37797011451](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/runs/37797011451) on `e54e33a` killed 1261 and left 660. Score 1261/1921. Exit codes are only 0 and 1. `test-slow` on that run succeeded. This is not an attestation of main. The mutated tree does not contain `tests/test_violation_identity.py` or `tests/test_boundary_survivors.py`.
 
@@ -130,7 +130,7 @@ Read from the mutant bodies of that artifact, not from the names:
 
 `tests/test_more_survivors.py` requires the unknown-policy sentence, a missing return lag of zero, a spare that is rotable by `mode` alone, two returns at one moment against a demand of two, one return against that demand, a job with no operations, a later return after an incomplete job, preemptive work that ignores a closed unattended calendar and an unused auxiliary, a preemptive unknown post and crew, sort order by operation id and by resource id, and a subset that ignores a missing predecessor. Those tests are not in 1261/1921.
 
-## Run 37829096222
+## Прогон 37829096222
 
 Linux `workflow_dispatch` [37829096222](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/runs/37829096222) on `e027edd` killed 1562 and left 359. Score 1562/1921. Exit codes are only 0 and 1. `test-slow` on that run succeeded. The mutation job succeeded; it was not skipped. The tree contains `tests/test_violation_identity.py` and `tests/test_boundary_survivors.py`. It does not contain `tests/test_more_survivors.py`. This is not an attestation of main.
 
@@ -144,7 +144,7 @@ Linux `workflow_dispatch` [37829096222](https://github.com/KonkovDV/SynAPS-Repai
 
 Against run `37797011451`, 301 mutants died and none were born. `capacity.py` and `lane_setup.py` did not move. Checker went from 917 killed to 1199. Ledger went from 180 killed to 199. The eight ledger suggestion deletions died (`_exchange_pool_violations` 44 and 51, `_rotable_spare_violations` 26, 32, 64, 74, 101, and 110), and `_violation` 42 died. Those were the ids the previous note said were not equivalent. `_completion_times` 12, 14, and 27 died. Mutant 27 changes `if complete and ends` into `if complete or ends`. Boundary tests that keep every job and pass only one or two operations leave the other jobs with no sinks. `complete` stays true, `ends` stays empty, and `max` of that empty list raises. Mutant 24, `complete = False` changed to `True`, is still alive. The sink loop walks a set, so that one is not marked equivalent. The README evidence table does not copy 1562/1921.
 
-## Run 38228010896
+## Прогон 38228010896
 
 Four scheduled runs on `b7c8c29` finished with mutation success and `test-slow` success: [37908445280](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/runs/37908445280), [38037961461](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/runs/38037961461), [38126032914](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/runs/38126032914), and [38228010896](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/runs/38228010896). Their `exit_code_by_key` maps are identical. The score below is that map. Killed 1587, survived 334, total 1921. Exit codes are only 0 and 1. The tree contains `tests/test_more_survivors.py` as well as the identity and boundary tests. `b7c8c29` attests `6f34389` and does not attest itself. These scheduled runs are not an attestation of main. The README evidence table does not copy 1587/1921.
 
@@ -178,7 +178,7 @@ A recount of the four artifact directories agrees: the `exit_code_by_key` maps a
 
 `_attended_masks` 14, 24, and 34 stayed alive because a different post, a different crew, or a dropped auxiliary calendar still left the open-minute count unchanged in the tests that existed. Tests now require the assigned post, the assigned crew, and a partial auxiliary window. A negative `return_lag_min` must be invalid (`_rotable_spare_violations` 16 changes `or` to `and`). A shop resource that declares `always_open` and has no calendar must stay silent (`_named_calendar_fit` 6 drops the `not`). An unknown operation outside the horizon must not raise. These tests are not in 1587/1921.
 
-## Reading the 272
+## Как читались 272
 
 The paragraph above left 272 survivors without an equivalent reason. Reading those mutant bodies, not their names, gives 45 a reason. They are still alive in 1587/1921. The score does not change. `_spare_receipts` 23 was already one of them.
 
@@ -190,7 +190,7 @@ Observed on the installed Pydantic: `model_dump(mode=None)` and `model_dump(mode
 
 227 of the 272 still have no equivalent reason. `_completion_times` 24 is one of them. It sets `complete = True` when a sink is missing. It is not equivalent. Sinks are now sorted by operation id, which does not change a complete card or a card with any sink missing: the original still withholds the return. The sort makes the partial return observable, and `test_an_unfinished_later_sink_does_not_return_the_unit` requires the stockout. That test is not in 1587/1921. Dispatch `38555693129` checks out `eef52f8` and does not contain the sort. The other 226 are what `tests/test_kernel_binding.py` and `tests/test_open_edges.py` assert, together with the tests already on main for the assigned post, the assigned crew, the partial auxiliary window, the negative return lag, the always-open shop post, the unknown operation outside the horizon, and a rotable that also has receipts. Those assertions are not in 1587/1921. A later mutmut on a tree that contains them is the measurement. This section is not that measurement. Phase 1 stays open. The README does not copy the score.
 
-## Dispatch 38555693129
+## Диспетчерский прогон 38555693129
 
 `workflow_dispatch` [38555693129](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/runs/38555693129) on `eef52f8` finished with mutation success and `test-slow` success. It is not an attestation of main. The tree contains `tests/test_kernel_binding.py` and `tests/test_open_edges.py`. It does not contain the later sink sort. Exit codes are only 0 and 1.
 
@@ -204,7 +204,7 @@ Observed on the installed Pydantic: `model_dump(mode=None)` and `model_dump(mode
 
 Against `38228010896`, 211 mutants died and none were born. None of the 62 earlier equivalents died. None of the 45 reasons read from the 272 died. Of those 272, 61 are still alive: the 45 reasons, plus 16 without one. `_capacity_overlaps` 9 sets `start = None` and the next line replaces it, because every caller passes `include_setup=True`. Equivalent. The other 15 are not equivalent and this dispatch did not kill them: `_normalize_assignments` 42, 49, and 50; `_precedence` 69 through 73 and 78 through 82 (the max-lag finding); `_spare_receipts` 11; `_completion_times` 24. The max-lag test added after this dispatch is not in 1798/1921. The sink sort is not in it either. Phase 1 stays open. The README does not copy 1798/1921.
 
-## Dispatch 38565194050
+## Диспетчерский прогон 38565194050
 
 `workflow_dispatch` [38565194050](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/runs/38565194050) on `04ad612` finished with mutation success and `test-slow` success. It is not an attestation of main. The tree contains the sink sort and the max-lag test. Exit codes are only 0 and 1. Sorting the sinks added one mutant, so the ledger ids are not the same numbers as in 1798/1921.
 
@@ -220,7 +220,7 @@ In `checker.py` the mutant ids did not move. Ten died, all on the max-lag findin
 
 In `ledger.py` the edit `complete = False` to `complete = True` is now mutant 25, and it died. Mutant 24 is now `complete = None` inside the missing-sink arm. `if complete and ends` is false for `None` and for `False`, so that one stays equivalent. Mutant 30, `max(ends)` to `max(None)`, is the new node and it died. Four survivors still have no equivalent reason: the three normalize ids and `_spare_receipts` 11. Phase 1 stays open. The README does not copy 1810/1922. Tests added after this dispatch call `check_plan` with a kernel row, so a dropped crew or auxiliary is visible, and a rotable draw before its receipt must not be reported as a consumable stockout. Those tests are not in 1810/1922.
 
-## Dispatch 38618458299
+## Диспетчерский прогон 38618458299
 
 `workflow_dispatch` [38618458299](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/runs/38618458299) on `a4e4e90` finished with mutation success and `test-slow` success. It is not an attestation of main. The four notary modules are the same text as on `04ad612`, so the mutant ids did not move. Exit codes are only 0 and 1.
 

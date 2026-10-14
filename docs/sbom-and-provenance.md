@@ -1,24 +1,24 @@
-# SBOM and provenance
+# Состав поставки и происхождение
 
-`repairflow.sbom.build_sbom` writes a CycloneDX 1.5 document for the direct runtime components: `synaps-repairflow`, `synaps`, `pydantic`, and `ortools`. OR-Tools must be `9.15.6755`. `tools/write_sbom.py` is the CLI.
+`repairflow.sbom.build_sbom` пишет документ CycloneDX 1.5 по прямым компонентам запуска: `synaps-repairflow`, `synaps`, `pydantic` и `ortools`. OR-Tools обязан быть `9.15.6755`. Команда — `tools/write_sbom.py`.
 
-The document now includes `runtime_binding` (`repairflow.runtime_binding.v1`). For every direct component, the binding records the installed version, every existing file advertised by the distribution metadata, the SHA-256 of each file, and a sorted aggregate `manifest_sha256`. The aggregate is computed from relative path plus file digest, so an unchanged installed tree can be checked offline without contacting a package index. The CycloneDX component properties repeat the aggregate hash and file count for table-oriented consumers.
+В документ входит `runtime_binding` (`repairflow.runtime_binding.v1`). Для каждого прямого компонента привязка записывает установленную версию, каждый существующий файл, который объявляют метаданные дистрибутива, SHA-256 этого файла и отсортированный сводный `manifest_sha256`. Свод считается из относительного пути и дайджеста файла, поэтому неизменное установленное дерево можно проверить без сети и без индекса пакетов. Свойства компонента CycloneDX повторяют сводный хеш и число файлов для тех, кто читает таблицу.
 
-This is an installed-distribution file manifest, not a wheel archive hash. It is not signed, it does not establish provenance of a downloaded artifact, and it does not replace license review or a complete transitive dependency inventory. Missing distributions are explicit as `absent`; distributions with no readable files are explicit as `empty` rather than silently treated as bound.
+Это опись файлов установленного дистрибутива, не хеш архива колеса. Подписи нет. Происхождение скачанного архива она не устанавливает и не заменяет разбор лицензий или полный список транзитивных зависимостей. Пропавшие дистрибутивы явно помечены `absent`. Дистрибутивы без читаемых файлов явно помечены `empty`, а не молча считаются привязанными.
 
-`repairflow.dependency_lock.v1` is a separate lock over that record. It is `locked` only when every component archive status is `present` with a SHA-256. Otherwise it is `incomplete`. Its signature status is `absent`.
+`repairflow.dependency_lock.v1` — отдельный замок поверх этой записи. Он `locked`, только когда у архива каждого компонента статус `present` и есть SHA-256. Иначе он `incomplete`. Статус подписи — `absent`.
 
-`repairflow.artifact_record.v1` is a separate record. It identifies a local wheel or sdist by the SHA-256 of the archive bytes, and it reads a PEP 610 `direct_url.json` hash when one is already on disk. An editable checkout stays `editable` with no archive digest. A hash that is not `sha256` stays `unsupported_hash`. Every signature field is `absent`. `lockfile_status` is `absent`, and `closure_status` is `installed_environment_not_a_lock`: the installed environment is not a closed transitive lock. The record points at `repairflow.runtime_binding.v1` as the installed-file manifest and marks that role as neither a wheel hash nor a signature.
+`repairflow.artifact_record.v1` — отдельная запись. Она узнаёт локальное колесо или sdist по SHA-256 байтов архива и читает хеш PEP 610 из `direct_url.json`, если тот уже лежит на диске. Редактируемая выгрузка остаётся `editable`, без дайджеста архива. Хеш, который не `sha256`, остаётся `unsupported_hash`. Каждое поле подписи — `absent`. `lockfile_status` равен `absent`, а `closure_status` равен `installed_environment_not_a_lock`: установленное окружение не является замкнутым транзитивным замком. Запись указывает на `repairflow.runtime_binding.v1` как на опись установленных файлов и помечает эту роль: это не хеш колеса и не подпись.
 
-Each plan result stores `input_hash`, `config_hash`, and `result_hash`. The config payload includes a runtime manifest (Python, platform, RepairFlow version, SynAPS commit, OR-Tools, Pydantic). `repairflow check --verify-hashes` recomputes those hashes and exits 1 on a mismatch.
+Каждый результат плана хранит `input_hash`, `config_hash` и `result_hash`. В полезную нагрузку настройки входит манифест запуска: Python, платформа, версия RepairFlow, коммит SynAPS, OR-Tools, Pydantic. `repairflow check --verify-hashes` пересчитывает эти хеши и при расхождении выходит с кодом 1.
 
-A pilot package that claims supply-chain attestation still needs:
+Пакету пилота, который заявляет аттестацию цепочки поставки, всё ещё нужны:
 
-- source commit and repository URL;
-- complete dependency names, versions, licenses, and artifact hashes;
-- wheel or source-artifact hash obtained before installation;
-- build timestamp in UTC;
-- benchmark preset, seed, solver, time limit, and status;
-- a signature or another approved integrity mechanism.
+- ревизия исходников и адрес репозитория;
+- полные имена зависимостей, версии, лицензии и хеши артефактов;
+- хеш колеса или архива исходников, снятый до установки;
+- время сборки в UTC;
+- пресет замера, зерно, решатель, предел времени и статус;
+- подпись или другой принятый способ проверить целостность.
 
-Until that gate exists, call the package a reproducible laboratory artifact. No customer, production, safety, savings, sponsor, or optimality claim follows from this manifest.
+Пока этих ворот нет, пакет называют воспроизводимым лабораторным артефактом. Заказчик, производство, безопасность, экономия, спонсор или оптимальность из этой описи не следуют.

@@ -1,24 +1,24 @@
-# Jury demo
+# Показ для жюри
 
-Synthetic site produced by `repairflow demo`. Not SVARZ. Do not recite counts from memory. Read them from the files the command writes, or from the generated evidence table in the README.
+`repairflow demo` собирает синтетический участок. Это не СВАРЗ. Числа по памяти не зачитывайте. Откройте файл, который написала команда, или таблицу в README, которую собирает `tools/attest.py`.
 
-## What the demo does now
+## Что делает текущая команда
 
-1. **Input.** `repairflow demo --out out` writes `out/repair-site-mvp.json`.
-2. **FIFO.** `out/fifo.json`. The readiness line treats FIFO as a failing plan: violations are present and the exit is not success. Say what the file shows.
-3. **GREED.** `out/greed.json` is the checked candidate. Say that the system built a candidate from the declared rules and that the checker accepted or rejected it. Do not say that AI solved it.
-4. **CP-SAT.** On the tiny preset, `out/cpsat.json`, only when the demo does not skip it. Call the run exact only when that file's claim says so.
-5. **Disruption.** `out/replan.json` and `out/replan-diff.json`. Speak about frozen work only when `broken_frozen_assignments` in the diff is empty. The demo moves one operation. It does not model a typed post failure.
-6. **Broken candidate.** `out/broken.json` is the GREED plan after a deliberate corruption. The readiness check requires a failing exit.
+1. **Вход.** `repairflow demo --out out` пишет `out/repair-site-mvp.json`.
+2. **FIFO.** Файл `out/fifo.json`. Для готовности это плохой план: нарушения есть, код выхода не успешный. Говорите то, что лежит в файле.
+3. **GREED.** `out/greed.json` — кандидат, который уже прошёл проверку. Можно сказать, что график собран по заявленным правилам и нотариус его принял или отверг. Не говорите, что задачу «решил интеллект».
+4. **CP-SAT.** На маленьком пресете появляется `out/cpsat.json`, если демо его не пропустило. Называйте прогон точным только когда в этом файле так и написано.
+5. **Сбой.** `out/replan.json` и `out/replan-diff.json`. Про замороженную работу говорите только если `broken_frozen_assignments` в разнице пуст. Демо двигает одну операцию. Типовой поломки поста там нет.
+6. **Испорченный кандидат.** `out/broken.json` — план GREED после намеренной порчи. Проверка готовности требует неуспешный код выхода.
 
-## Later beats, not part of this command
+## Что в эту команду не входит
 
-The submission script adds three beats `repairflow demo` does not perform:
+В сценарий подачи можно добавить три такта, которых `repairflow demo` не делает:
 
-- a shop sheet through `repairflow verify-plan` (a clean sheet is `domain_verified`, not `verified`);
-- an explanation of an infeasible card (today: a deletion-minimal witness, not MUS/MCS);
-- an operator log line and `repairflow log verify` (that log command is not implemented).
+- цеховой лист через `repairflow verify-plan` (чистый лист — это `domain_verified`, не `verified`);
+- объяснение невыполнимой карты (сейчас это минимальный по удалению свидетель, не MUS и не MCS);
+- строку журнала оператора и `repairflow log verify` (такой команды журнала нет).
 
-The fault campaign is not a step of this demo. Its counts live only in `docs/fault-campaign.json`.
+Кампания порчи планов — не шаг демо. Её счётчики лежат только в `docs/fault-campaign.json`.
 
-No figure on this page is a result. Results stay in the output files and in `docs/evidence-manifest.json`.
+На этой странице нет ни одной цифры-результата. Результаты остаются в выходных файлах и в `docs/evidence-manifest.json`.

@@ -1,48 +1,46 @@
-# RepairFlow documentation map
+# Карта документов
 
-Read the contract, then the evidence, then the pilot boundary.
+Сначала договор о том, что программа обещает. Потом, чем это подтверждено. Потом, где проходит граница пилота.
 
-## Start here
+## С чего начать
 
-1. [`../README.md`](../README.md): public scope, CLI, claims, and non-claims.
-2. [`evidence-protocol.md`](evidence-protocol.md): what counts as evidence.
-3. [`limitations.md`](limitations.md): explicit technical and business limits.
-4. [`red-team-remediation.md`](red-team-remediation.md): what the checker closes, and what is still external.
-5. [`traceability-matrix.md`](traceability-matrix.md): requirement, status, and evidence.
+1. [`../README.md`](../README.md) — для кого эта программа, команды, какие слова в ответе честные.
+2. [`evidence-protocol.md`](evidence-protocol.md) — что считается доказательством.
+3. [`limitations.md`](limitations.md) — чего программа не обещает.
+4. [`red-team-remediation.md`](red-team-remediation.md) — что нотариус закрывает и что остаётся снаружи.
+5. [`traceability-matrix.md`](traceability-matrix.md) — требование, статус и где лежит подтверждение.
 
-## Engineering review
+## Для инженерного разбора
 
-- [`domain-assumptions.md`](domain-assumptions.md): model assumptions.
-- [`core-compat.md`](core-compat.md): pinned SynAPS commit and the API this package calls.
-- [`SYNAPS_REPAIRFLOW_MVP_SKELETON.md`](SYNAPS_REPAIRFLOW_MVP_SKELETON.md): architecture and MVP plan.
-- [`adr/0002-dag-over-chain-kernel.md`](adr/0002-dag-over-chain-kernel.md): convergent cards compiled onto a chain kernel.
-- [`adr/0004-exchange-pool-ledger.md`](adr/0004-exchange-pool-ledger.md): exchange stock is a ledger.
-- [`adr/0005-inspection-rewrites-the-card.md`](adr/0005-inspection-rewrites-the-card.md): inspection freezes issued slots.
-- [`literature-2026.md`](literature-2026.md): positioning and the benchmark agenda.
-- [`benchmark-protocol.md`](benchmark-protocol.md): reproducibility rules for synthetic comparisons.
-- [`atc-baseline-contract.md`](atc-baseline-contract.md): bounded local ATC ordering contract and integration boundary.
-- [`sbom-and-provenance.md`](sbom-and-provenance.md): what the SBOM covers, and what it does not.
-- [`threat-model.md`](threat-model.md): offline deployment boundary.
-- [`data-mapping-1c-toir.md`](data-mapping-1c-toir.md): mapping template, not an integration.
+- [`domain-assumptions.md`](domain-assumptions.md) — допущения модели.
+- [`core-compat.md`](core-compat.md) — закреплённый коммит SynAPS и вызовы, которыми пользуется пакет.
+- [`SYNAPS_REPAIRFLOW_MVP_SKELETON.md`](SYNAPS_REPAIRFLOW_MVP_SKELETON.md) — устройство и план MVP.
+- [`adr/0002-dag-over-chain-kernel.md`](adr/0002-dag-over-chain-kernel.md) — сходящаяся карта собирается в цепочки для ядра.
+- [`adr/0004-exchange-pool-ledger.md`](adr/0004-exchange-pool-ledger.md) — обменный фонд считается книгой остатков.
+- [`adr/0005-inspection-rewrites-the-card.md`](adr/0005-inspection-rewrites-the-card.md) — дефектовка замораживает уже выданные слоты.
+- [`literature-2026.md`](literature-2026.md) — обзор работ и что ещё нужно для статьи.
+- [`benchmark-protocol.md`](benchmark-protocol.md) — как повторять синтетическое сравнение.
+- [`atc-baseline-contract.md`](atc-baseline-contract.md) — локальное правило ATC и где оно кончается.
+- [`sbom-and-provenance.md`](sbom-and-provenance.md) — что покрывает опись состава и чего в ней нет.
+- [`threat-model.md`](threat-model.md) — граница автономной установки.
+- [`data-mapping-1c-toir.md`](data-mapping-1c-toir.md) — карта полей, не интеграция.
 
-## Pilot and jury review
+## Для пилота и жюри
 
-- [`../APPLICATION.md`](../APPLICATION.md): application-safe summary.
-- [`jury-demo.md`](jury-demo.md): demo script.
-- [`pilot-protocol.md`](pilot-protocol.md): 90-day shadow protocol.
-- [`pilot-kpi-template.md`](pilot-kpi-template.md): KPI definitions without invented results.
-- [`operator-decision-log.md`](operator-decision-log.md): human acceptance record. The writer is not implemented.
-- [`osint-and-pilot-gates.md`](osint-and-pilot-gates.md): public sources and entry requirements.
-- [`release-checklist.md`](release-checklist.md): laboratory release versus a pilot submission.
-- [`adr/0003-release-boundary.md`](adr/0003-release-boundary.md): shadow output is not an instruction to a control system.
+- [`../APPLICATION.md`](../APPLICATION.md) — текст заявки.
+- [`jury-demo.md`](jury-demo.md) — что говорить на показе.
+- [`pilot-protocol.md`](pilot-protocol.md) — теневой протокол на 90 дней.
+- [`pilot-kpi-template.md`](pilot-kpi-template.md) — определения показателей, без придуманных результатов.
+- [`operator-decision-log.md`](operator-decision-log.md) — запись решения человека. Писателя пока нет.
+- [`osint-and-pilot-gates.md`](osint-and-pilot-gates.md) — открытые источники и что нужно для входа.
+- [`release-checklist.md`](release-checklist.md) — лабораторный выпуск и подача на пилот — разные ворота.
+- [`adr/0003-release-boundary.md`](adr/0003-release-boundary.md) — теневой план не является командой системе управления.
 
-## Governance
+## Как устроена работа с текстом
 
-- [`AI_USE.md`](AI_USE.md): assisted-development disclosure.
-- [`../SECURITY.md`](../SECURITY.md): vulnerability reporting.
-- [`BANNED_CLAIMS.txt`](BANNED_CLAIMS.txt): phrases that must not appear in a public claim.
-- [`../LICENSES.md`](../LICENSES.md): direct dependency licenses.
+- [`AI_USE.md`](AI_USE.md) — где в разработке мог помочь автомат и почему его вывод не доказательство.
+- [`../SECURITY.md`](../SECURITY.md) — куда сообщать об уязвимости.
+- [`BANNED_CLAIMS.txt`](BANNED_CLAIMS.txt) — фразы, которых не должно быть в публичном заявлении.
+- [`../LICENSES.md`](../LICENSES.md) — лицензии прямых зависимостей.
 
-## Reviewer rule
-
-A claim is publishable only when the exact source, commit, input, solver configuration, checker output, and denominator are available. Otherwise label it as an assumption, a hypothesis, or a roadmap item.
+Утверждение можно публиковать, когда на месте источник, ревизия, вход, настройка решателя, вывод нотариуса и знаменатель. Иначе это допущение, гипотеза или пункт плана.

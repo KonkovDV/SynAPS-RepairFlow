@@ -1,22 +1,24 @@
-# OSINT and pilot gates, 2026-09-30
+# Открытые источники и ворота пилота
 
-## Verified public signals
+Срез 2026-09-30.
 
-- FTIM's [pilot program](https://ftim.ru/pilotirovanie/) describes testing on Moscow Transport infrastructure with internal business customers and asks for a product ready for that testing, a measurable hypothesis, and a pilot feasible in 90 days. Applications are reviewed individually.
-- The official [SVARZ profile](https://www.mosgortrans.ru/about/branches/filial-sokolnicheskii-vagonoremontno-stroitelnyi-zavod-svarz-gup-mosgortrans/) confirms the plant repairs transport components. That page does not establish an Excel planning process or a RepairFlow sponsor.
-- The [MIC pilot page](https://i.moscow/pilot) states a recommended TRL of at least 6, a legal entity in Moscow, rights to the relevant intellectual property, and a recommended pilot of up to three months. RepairFlow declares TRL 4. The [grant page](https://i.moscow/pilot/grant) has marked grant applications closed.
-- Published scheduling work supports a constraint-programming position: Sciau et al., 2024, [DOI 10.1016/j.jairtraman.2024.102537](https://doi.org/10.1016/j.jairtraman.2024.102537); Bleukx et al., CP 2025, [DOI 10.4230/LIPIcs.CP.2025.6](https://doi.org/10.4230/LIPIcs.CP.2025.6).
+## Что удалось проверить по открытым страницам
 
-## Required framing
+- [Программа пилотов ФТИМ](https://ftim.ru/pilotirovanie/) описывает испытания на инфраструктуре Московского транспорта с внутренними заказчиками. Просят продукт, готовый к таким испытаниям, измеримую гипотезу и пилот, который укладывается в 90 дней. Заявки смотрят по одной.
+- [Официальный профиль СВАРЗ](https://www.mosgortrans.ru/about/branches/filial-sokolnicheskii-vagonoremontno-stroitelnyi-zavod-svarz-gup-mosgortrans/) подтверждает, что завод ремонтирует узлы транспорта. Про планирование в таблицах и про спонсорство RepairFlow на этой странице ничего нет.
+- [Страница пилотов кластера](https://i.moscow/pilot) называет рекомендуемый TRL не ниже 6, юридическое лицо в Москве, права на нужную интеллектуальную собственность и рекомендуемый пилот до трёх месяцев. RepairFlow заявляет TRL 4. На [странице гранта](https://i.moscow/pilot/grant) приём заявок на грант отмечен закрытым.
+- Опубликованные работы поддерживают ставку на ограничительное программирование: Sciau и соавторы, 2024, [DOI 10.1016/j.jairtraman.2024.102537](https://doi.org/10.1016/j.jairtraman.2024.102537); Bleukx и соавторы, CP 2025, [DOI 10.4230/LIPIcs.CP.2025.6](https://doi.org/10.4230/LIPIcs.CP.2025.6).
 
-Use offline, shadow-only decision support for one repair contour, on synthetic or anonymized data, until a data agreement exists. Measure feasibility, replanning latency, manual edits, tardiness, resource use, and operator acceptance against an agreed baseline.
+## Как это можно подавать
 
-## Submission checklist
+Пока нет договора о данных, только теневая подсказка по одному ремонтному участку, без сети, на синтетике или на обезличенном срезе. Мерить выполнимость, время пересчёта, ручные правки, просрочку, использование ресурсов и то, принимает ли план человек. База должна быть согласована заранее.
 
-- legal entity or IP owner, and the rights chain
-- named process owner and data owner
-- one signed data slice and anonymization rules
-- baseline export and KPI definitions
-- 90-day protocol with rollback to the current process
-- offline threat model and the installation package
-- evidence bundle with commit, solver version, seed, input hash, and checker output
+## Что собрать до подачи
+
+- юридическое лицо или владелец прав и цепочка этих прав
+- названные владелец процесса и владелец данных
+- один подписанный срез и правила обезличивания
+- выгрузка базы и определения показателей
+- протокол на 90 дней с откатом к текущему процессу
+- модель угроз для автономной установки и сам пакет установки
+- пакет доказательств: ревизия, версия решателя, зерно, хеш входа, вывод нотариуса

@@ -1,14 +1,14 @@
-# Data request (pilot, anonymised)
+# Что попросить для пилота
 
-Minimum contour for a shadow study:
+Минимум по одному участку, для теневого разбора. Данные обезличены.
 
-- repair orders with due/release dates (no personal data);
-- technology card: operation sequence, duration, required skills;
-- posts / stands and eligibility;
-- crew qualifications (role-level, not named individuals);
-- tooling with concurrent capacity;
-- blocking spare availability (article + available_from);
-- agreed frozen slots, if any;
-- calendars / shift windows.
+- заказы на ремонт со сроком и датой выпуска (без персональных данных);
+- технологическая карта: порядок операций, длительность, нужные допуски;
+- посты и кто на каком посту может работать;
+- квалификации бригад (уровень роли, не фамилии);
+- оснастка и сколько её может быть занято одновременно;
+- запчасти, без которых работу не начать (артикул и `available_from`);
+- согласованные замороженные слоты, если они есть;
+- календари и окна смен.
 
-All timestamps with timezone offset. Label provenance `customer_data` only after a written data-handling note. Until then keep `synthetic`.
+Все метки времени с часовым поясом. Ярлык `customer_data` ставить только после письменной заметки о том, как с данными обращаются. До тех пор оставлять `synthetic`.

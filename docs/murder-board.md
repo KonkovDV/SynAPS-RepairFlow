@@ -1,36 +1,36 @@
-# Murder board
+# Неудобные вопросы
 
-## Product
+## Про продукт
 
-- Deployed? No. The repository is a TRL 4 laboratory artifact.
-- A replacement for 1C, EAM, or CMMS? No. It is a read-only planning layer.
-- Is SVARZ a confirmed customer? No evidence in this repository. Public pages describe the plant's repair profile.
-- A measured saving? No. Synthetic benchmarks are engineering evidence.
-- Does the system control vehicle release? No. Shadow output only.
+- Уже стоит в цехе? Нет. Репозиторий — лабораторный артефакт TRL 4.
+- Это вместо учётной системы? Нет. Слой только для чтения.
+- СВАРЗ — подтверждённый заказчик? В репозитории таких свидетельств нет. Открытые страницы описывают ремонтный профиль завода.
+- Есть измеренная экономия? Нет. Синтетические замеры — инженерное свидетельство.
+- Программа выпускает технику на линию? Нет. Наружу выходит теневая подсказка.
 
-## Technical
+## Про технику
 
-- `claim_status=verified` means full operation coverage and an empty hard notary, including heuristic plans that pass `recheck`.
-- `claim_status=domain_verified` is the shop-CSV notary. The kernel is not called. `verified_feasible` stays false.
-- `optimal` means CP-SAT `OPTIMAL`, an empty hard notary, and one compiled pass. A later fixpoint iteration stays at `verified`.
-- An incomplete plan is `PARTIAL`, exit 2. `allow_partial_plan` does not grant exit 0.
-- A calendar with zero windows is unavailable (`CALENDAR_BROKEN`). A missing `calendar_id` means the resource is open across the horizon. A `calendar_id` that is not in `calendars` is an invalid instance.
-- Convergent repair cards are compiled by `dag_compiler`. The kernel still sees chains. The domain checker judges the original edges. Cycles are rejected.
-- The checker imports `checker_primitives`, not `repairflow.adapter`.
-- MUS/MCS explanations, `POST_DOWN`, `PART_DELAY`, and a route-variant catalogue are not implemented.
-- The operator decision log is a JSONL contract. There is no writer.
+- `claim_status=verified` значит полное покрытие операций и пустой жёсткий нотариус, в том числе у эвристики, которая прошла `recheck`.
+- `claim_status=domain_verified` — нотариус цехового CSV. Ядро не вызывалось. `verified_feasible` остаётся ложным.
+- `optimal` значит CP-SAT `OPTIMAL`, пустой жёсткий нотариус и один проход компилятора. Следующая итерация неподвижной точки остаётся на `verified`.
+- Неполный план — `PARTIAL`, код выхода 2. `allow_partial_plan` нулевой код выхода не дарит.
+- Календарь без окон недоступен (`CALENDAR_BROKEN`). Пропавший `calendar_id` значит, что ресурс открыт на весь горизонт. `calendar_id`, которого нет в `calendars`, делает экземпляр неверным.
+- Сходящиеся карты собирает `dag_compiler`. Ядро по-прежнему видит цепочки. Доменный нотариус судит исходные рёбра. Циклы отвергаются.
+- Нотариус импортирует `checker_primitives`, не `repairflow.adapter`.
+- Объяснений MUS и MCS, событий `POST_DOWN` и `PART_DELAY` и каталога вариантов маршрута нет.
+- Журнал решений оператора — договор о формате JSONL. Писателя нет.
 
-## Notary score
+## Про счёт нотариуса
 
-- Is 1814/1922 a closed phase? The dispatch `38618458299` on `a4e4e90` killed 1814 and left 108. The four survivors that had no equivalent reason died, and none were born. Every remaining survivor already has a written reason. The dispatch is not an attestation, and the README does not copy the score.
-- Does that score attest main? No. The manifest attests `93320f1` from push `38629025631`, including `test-slow`. Dispatches `38555693129`, `38565194050`, and `38618458299` are not attestations. This note does not attest itself.
-- Did the edge tests fail to kill what they named? The 25 deaths against dispatch `37829096222` are those tests. On `04ad612` the max-lag finding's ten mutants died, and `complete = True` on a missing sink died as ledger mutant 25.
-- Did any recorded equivalent die in these runs? No. The 62 named equivalents are still alive. The eight ledger suggestion deletions and `_violation` 42 did die earlier, and the note at that time said they were not equivalent.
-- Is `_job_of` 6 equivalent? No. An unknown operation outside the horizon calls it. `_op` 3 is the same path. `_spare_receipts` 23 is equivalent: the changed operation id sorts only among order-0 additions.
-- Is the score stable? The four scheduled artifacts from 9 October through 12 October have the same `exit_code_by_key`. The four notary modules did not change between `e54e33a` and `b7c8c29`. That is not a proof about a future source change.
+- Закрыта ли фаза счётом 1814/1922? Диспетчерский прогон `38618458299` на `a4e4e90` убил 1814 и оставил 108. Четыре выживших, у которых не было причины эквивалентности, умерли, новых не родилось. У каждого оставшегося выжившего причина уже записана. Этот прогон — не аттестация, и README счёт не копирует.
+- Аттестует ли этот счёт `main`? Нет. Манифест аттестует `93320f1` по push-прогону `38629025631`, включая `test-slow`. Прогоны `38555693129`, `38565194050` и `38618458299` аттестациями не являются. Эта заметка сама себя не аттестует.
+- Не убили ли краевые тесты то, что сами назвали? 25 смертей против прогона `37829096222` — как раз эти тесты. На `04ad612` умерли десять мутантов находки про максимальный лаг, а `complete = True` на пропавшем стоке умер как мутант ledger 25.
+- Умер ли хоть один записанный эквивалент в этих прогонах? Нет. 62 названных эквивалента живы. Восемь стираний подсказки в ledger и `_violation` 42 умерли раньше, и заметка того времени говорила, что они не эквивалентны.
+- Эквивалентен ли `_job_of` 6? Нет. Его вызывает неизвестная операция вне горизонта. `_op` 3 — тот же путь. `_spare_receipts` 23 эквивалентен: изменённый идентификатор операции сортируется только среди добавлений порядка 0.
+- Счёт устойчив? Четыре ночных артефакта с 9 по 12 октября имеют один и тот же `exit_code_by_key`. Четыре модуля нотариуса между `e54e33a` и `b7c8c29` не менялись. Про будущую правку исходников это ничего не доказывает.
 
-## Pilot
+## Про пилот
 
-- Smallest safe pilot: one contour, an anonymized extract, offline replay, shadow output, a human decision, and rollback.
-- Credible result: a fixed data contract, a baseline, a denominator, the exact environment, the independent checker, and archived decisions.
-- Still outside the repository: rights chain, named process and data owners, information-security review, and a data agreement.
+- Самый осторожный пилот: один участок, обезличенная выгрузка, повтор без сети, теневой результат, решение человека и откат.
+- Чему можно верить: зафиксированный договор о данных, база, знаменатель, точное окружение, независимый нотариус и сохранённые решения.
+- В репозитории этого всё ещё нет: цепочка прав, названные владельцы процесса и данных, разбор информационной безопасности и договор о данных.

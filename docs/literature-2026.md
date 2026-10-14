@@ -1,24 +1,24 @@
-# Literature review, 2026
+# Обзор работ
 
-## Problem class
+## Какая это задача
 
-RepairFlow is a constrained multi-resource maintenance scheduler: precedence, alternative posts, qualified crews, tooling, setup times, calendars, spares, an exchange-pool ledger, and disruption replanning. A repair card may be a convergent DAG. The pinned SynAPS kernel accepts a chain inside an order, so `dag_compiler` splits the card into chain segments and the domain checker still judges the original edges. See ADR-0002.
+RepairFlow планирует ремонт с несколькими ресурсами сразу: порядок операций, сменные посты, бригады с допуском, оснастка, переналадка, календари, запчасти, книга обменного фонда и пересчёт после сбоя. Карта может сходиться: разборка расходится на ветки, сборка ждёт все. Ядро SynAPS по закреплённому пину принимает цепочку внутри заказа, поэтому `dag_compiler` режет карту на отрезки цепочек, а доменный нотариус по-прежнему судит исходные рёбра. Подробности в ADR-0002.
 
-## Evidence-backed positioning
+## На что опирались
 
-- Constraint programming is a credible industrial approach for operational maintenance scheduling with precedence, deadlines, resources, and lexicographic objectives. See Sciau et al., 2024, [DOI 10.1016/j.jairtraman.2024.102537](https://doi.org/10.1016/j.jairtraman.2024.102537).
-- Independent validation is the trust boundary between heuristics and exact solvers. A 2026 technician-constrained maintenance benchmark uses a validator that shares no code with the methods under test. See [SSRN 7095162](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=7095162).
-- MUS/MCS-style explanations are a credible next step for disrupted industrial schedules. See Bleukx et al., CP 2025, [DOI 10.4230/LIPIcs.CP.2025.6](https://doi.org/10.4230/LIPIcs.CP.2025.6). RepairFlow does not compute MUS or MCS.
-- Learned dispatching is a research direction. It is not a reason to claim an AI planner.
+- Ограничительное программирование для оперативного планирования обслуживания, с порядком работ, сроками, ресурсами и лексикографической целью, уже используют в промышленности. Sciau и соавторы, 2024, [DOI 10.1016/j.jairtraman.2024.102537](https://doi.org/10.1016/j.jairtraman.2024.102537).
+- Отдельная проверка — это граница доверия между эвристикой и точным решателем. В бенчмарке обслуживания с ограничением по техникам за 2026 валидатор не делит код с проверяемыми методами. [SSRN 7095162](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=7095162).
+- Объяснения в духе MUS и MCS выглядят естественным следующим шагом для сорванного промышленного графика. Bleukx и соавторы, CP 2025, [DOI 10.4230/LIPIcs.CP.2025.6](https://doi.org/10.4230/LIPIcs.CP.2025.6). RepairFlow MUS и MCS не считает.
+- Обученный диспетчер в статьях — отдельная линия. В этом репозитории её нет, и поводом для отдельного заявления она не служит.
 
-## Open schedulers compared
+## Открытые планировщики
 
-Timefold's maintenance quickstart (Apache-2.0, `timefold-quickstarts` `java/maintenance-scheduling`) treats crew overlap, a minimum start, and a maximum end as hard, and an ideal end as soft. Those hard checks are already the crew-capacity, earliest-start, and latest-finish findings. The ideal end stays a KPI here (`DUE_MISSED`), which matches their soft band. Their tag penalty is not a RepairFlow constraint. RosterSpec's published verification notes treat a schedule verdict as deterministic: it must not depend on hash or iteration order. Python does not promise set order, so exchange-pool sinks are sorted by operation id. The return is still withheld until every sink of the card is placed, and a complete card still returns at the latest sink. Their solvers, scores, and models are not imported.
+У быстрого примера обслуживания Timefold (Apache-2.0, `timefold-quickstarts`, каталог `java/maintenance-scheduling`) наложение бригад, самый ранний старт и самый поздний конец — жёсткие, а желаемый конец — мягкий. Жёсткие проверки у нас уже есть: ёмкость бригады, ранний старт, поздний конец. Желаемый конец остаётся показателем `DUE_MISSED`, это та же мягкая полка. Их штраф за метку ограничением RepairFlow не является. В опубликованных заметках RosterSpec вердикт графика должен быть детерминированным и не зависеть от хеша или порядка обхода. Python порядок множества не обещает, поэтому стоки обменного фонда сортируются по идентификатору операции. Возврат по-прежнему не происходит, пока не поставлен каждый сток карты, а у полной карты возврат по-прежнему в момент последнего стока. Их решатели, счёты и модели сюда не копировались.
 
-## What this project claims
+## Что здесь своё
 
-The contribution is the domain contract, deterministic compilation into a pinned engine, an independent fail-closed checker, reproducible hashes, and a human-reviewed shadow workflow. It is not a new optimization algorithm and not a measured customer effect.
+Своё — договор о домене, детерминированная сборка в закреплённое ядро, отдельный нотариус, который при сомнении отказывает, повторяемые хеши и теневой разбор человеком. Нового алгоритма оптимизации здесь нет. Измеренного эффекта у заказчика тоже нет.
 
-## Benchmark plan
+## Как устроен замер
 
-The CI default is FIFO versus GREED on `tiny` seeds 1/42/99 and `repair-site-mvp` seeds 42/7/13. A paper-grade study would add the instance generator, an environment manifest, EDD, a CP-SAT reference, rolling-horizon disruptions, and intervals across seeds. That wider matrix is opt-in. It is not the CI default.
+В CI по умолчанию FIFO сравнивается с GREED на `tiny` с зёрнами 1, 42 и 99 и на `repair-site-mvp` с зёрнами 42, 7 и 13. Для статьи не хватает генератора примеров, манифеста окружения, EDD, опоры CP-SAT, сбоев на скользящем горизонте и интервалов по зёрнам. Эта широкая матрица включается отдельно. В CI по умолчанию её нет.
