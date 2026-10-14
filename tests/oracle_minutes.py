@@ -166,7 +166,7 @@ def _duration_and_windows(
             codes.add("INVALID_DURATION")
         if operation.latest_finish is not None and assignment.end > operation.latest_finish:
             codes.add("WINDOW_BROKEN")
-        if operation.earliest_start is not None and assignment.start < operation.earliest_start:
+        if operation.earliest_start is not None and _occupancy_start(assignment) < operation.earliest_start:
             codes.add("WINDOW_BROKEN")
         start = _occupancy_start(assignment)
         horizon = problem.planning_horizon
@@ -291,15 +291,17 @@ def _calendar_fit(
     if calendar is None or not calendar.windows:
         return {"CALENDAR_BROKEN"}
     occ_start = _occupancy_start(assignment)
-    if preemptive:
-        if assignment.start <= occ_start:
-            return set()
-        contained = any(
-            occ_start >= window.start and assignment.start <= window.end for window in calendar.windows
-        )
-        return set() if contained else {"CALENDAR_BROKEN"}
-    contained = any(occ_start >= window.start and assignment.end <= window.end for window in calendar.windows)
-    return set() if contained else {"CALENDAR_BROKEN"}
+    # Minute semantics: every minute of the half-open occupancy must be open. Touching
+    # windows [a, b) and [b, c) therefore cover [a, c) without a separate merge step.
+    end = assignment.start if preemptive else assignment.end
+    if end <= occ_start:
+        return set()
+    minute = occ_start
+    while minute < end:
+        if not any(window.start <= minute < window.end for window in calendar.windows):
+            return {"CALENDAR_BROKEN"}
+        minute += timedelta(minutes=1)
+    return set()
 
 
 def _masks(
@@ -413,9 +415,19 @@ def _lane_setup(
     lanes: list[tuple[datetime, str]] = []
     ordered = sorted(rows, key=lambda row: (_occupancy_start(row), row.end, row.operation_id))
     codes: set[str] = set()
+    given = [row.lane for row in rows]
+    if capacity > 1 and any(lane is not None for lane in given):
+        if any(lane is None for lane in given):
+            return {"SETUP_MISMATCH"}
+        return _explicit_lane_setup(problem, center_id, ordered, capacity, operations)
     for row in ordered:
         occ_start = _occupancy_start(row)
         reusable = [(index, lane) for index, lane in enumerate(lanes) if lane[0] <= occ_start]
+        states = {lane[1] for _index, lane in reusable}
+        if reusable and len(lanes) < capacity:
+            states.add("idle")
+        if len(states) > 1:
+            codes.add("SETUP_MISMATCH")
         if reusable:
             lane_index, (_free, previous_state) = min(reusable, key=lambda item: (item[1][0], item[0]))
         elif len(lanes) < capacity:
@@ -430,10 +442,36 @@ def _lane_setup(
         lanes[lane_index] = (row.end, state)
         written = int(row.setup_minutes)
         if expected is None:
-            if not (problem.policy.missing_setup == "zero" and written == 0):
+            if not (problem.policy.missing_setup == "zero" and written == 0 and previous_state != "idle"):
                 codes.add("MISSING_SETUP")
         elif written != expected:
             codes.add("SETUP_MISMATCH")
+    return codes
+
+
+def _explicit_lane_setup(
+    problem: RepairFlowProblem,
+    center_id: str,
+    ordered: list[PlannedAssignment],
+    capacity: int,
+    operations: dict[str, Operation],
+) -> set[str]:
+    codes: set[str] = set()
+    state: dict[int, tuple[datetime | None, str]] = {}
+    for row in ordered:
+        lane = int(row.lane or 0)
+        free, previous_state = state.get(lane, (None, "idle"))
+        if lane >= capacity or (free is not None and free > _occupancy_start(row)):
+            codes.add("CENTER_OVERLAP")
+            continue
+        expected = _setup_cell(problem, center_id, previous_state, operations[row.operation_id].setup_state)
+        written = int(row.setup_minutes)
+        if expected is None:
+            if not (problem.policy.missing_setup == "zero" and written == 0 and previous_state != "idle"):
+                codes.add("MISSING_SETUP")
+        elif written != expected:
+            codes.add("SETUP_MISMATCH")
+        state[lane] = (row.end, operations[row.operation_id].setup_state)
     return codes
 
 
@@ -491,7 +529,7 @@ def _spares_and_dates(
         if operation is None:
             continue
         job = jobs[operation.job_id]
-        if job.release_date is not None and assignment.start < job.release_date:
+        if job.release_date is not None and _occupancy_start(assignment) < job.release_date:
             codes.add("RELEASE_VIOLATION")
         previous = latest.get(job.id)
         if previous is None or assignment.end > previous:

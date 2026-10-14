@@ -9,7 +9,7 @@ closed.
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -35,6 +35,22 @@ def declares_open_horizon(attributes: Mapping[str, Any]) -> bool:
 
 def held_minutes(start: datetime, end: datetime) -> int:
     return int((end - start).total_seconds() // 60)
+
+
+def is_whole_minutes(start: datetime, end: datetime) -> bool:
+    """True when ``end - start`` has no sub-minute remainder; held_minutes floors seconds."""
+    return (end - start) % timedelta(minutes=1) == timedelta(0)
+
+
+def merge_windows(windows: Iterable[Any]) -> list[tuple[datetime, datetime]]:
+    """Coalesce touching or overlapping windows (objects with ``start``/``end``)."""
+    merged: list[tuple[datetime, datetime]] = []
+    for window in sorted(windows, key=lambda row: (row.start, row.end)):
+        if merged and window.start <= merged[-1][1]:
+            merged[-1] = (merged[-1][0], max(merged[-1][1], window.end))
+        else:
+            merged.append((window.start, window.end))
+    return merged
 
 
 def open_minutes(start: datetime, end: datetime, masks: list[list[Window]]) -> int:
