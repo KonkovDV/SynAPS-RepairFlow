@@ -3,15 +3,18 @@
   "instance_id": "tiny-repair",
   "status": "HEURISTIC_FEASIBLE",
   "verified_feasible": true,
-  "input_hash": "05cc7d86fba4fd261ddbc6a190caed0cce922585c543d8cac5d658afc4fe7433",
-  "config_hash": "07b4ab0e06531c3e68e5c2dd55790277784559d5e1439d5456db3af892bc7b36",
-  "result_hash": "a14181994feef11322c478c440b9e285811f2eddf0f95c69afa068001d84f523",
+  "input_hash": "ad52954ea11c7a111e188de7d4ae8d045f12e1b3a09e6c918f8421712d961459",
+  "config_hash": "d2c039e606b9b1aa05cf3c95957a260b3aa4a3e879af370b398380ec3c309d66",
+  "result_hash": "bbe1823693eb24450fd301f96c9e32f3d5c22533e84c3a25cd7ade512709152a",
+  "schedule_hash": "68fa703a9e3987828d0cfe4adba14c8a773ae5d81563c210c911211fb4ceeb39",
   "repairflow_version": "0.1.0",
-  "synaps_commit": "6178c93b705ff58be21fa74a98651883a2da1169",
+  "synaps_commit": "f939727cd9369fd9b36438bfac7198f0c39c6d3b",
   "claim_level": "experiment",
   "data_provenance": "synthetic",
   "kernel_status": "feasible",
   "solver_config": "GREED",
+  "claim_status": "verified",
+  "solver_class": "heuristic",
   "exit_code": 0,
   "assignments": [
     {
@@ -108,25 +111,74 @@
   "rejected": [],
   "violations": [],
   "objective": {
-    "makespan_minutes": 330.0,
-    "total_setup_minutes": 0.0,
+    "makespan_minutes": 690.0,
+    "total_setup_minutes": 75,
     "total_tardiness_minutes": 0.0,
     "coverage": 1.0,
-    "unscheduled_operations": 0
+    "unscheduled_operations": 0,
+    "post_capacity_lanes": 2,
+    "post_processing_utilization": 0.070312,
+    "post_setup_utilization": 0.013021,
+    "post_utilization": 0.083333,
+    "post_utilization_denominator": "sum_work_center_max_parallel * horizon_minutes",
+    "origin": "horizon_start"
   },
   "metadata": {
     "repairflow_version": "0.1.0",
-    "synaps_commit": "6178c93b705ff58be21fa74a98651883a2da1169",
+    "synaps_commit": "f939727cd9369fd9b36438bfac7198f0c39c6d3b",
     "claim_level": "experiment",
     "iso16290_trl": 4,
     "data_provenance": "synthetic",
-    "input_hash": "05cc7d86fba4fd261ddbc6a190caed0cce922585c543d8cac5d658afc4fe7433",
-    "config_hash": "07b4ab0e06531c3e68e5c2dd55790277784559d5e1439d5456db3af892bc7b36",
+    "input_hash": "ad52954ea11c7a111e188de7d4ae8d045f12e1b3a09e6c918f8421712d961459",
+    "config_hash": "d2c039e606b9b1aa05cf3c95957a260b3aa4a3e879af370b398380ec3c309d66",
     "metric_tag": "synthetic_experiment",
     "solver_config": "GREED",
     "kernel_status": "feasible",
     "coverage_class": "full",
     "hard_violation_count": 0,
-    "engine_violations": []
+    "engine_violations": [],
+    "claim_status": "verified",
+    "fixpoint": {
+      "strategy": "split_release_fixpoint",
+      "iterations": 0,
+      "converged": true,
+      "cross_edges": 0,
+      "optimality_scope": "original_chain"
+    },
+    "optimality_scope": "original_chain",
+    "config_payload": {
+      "solver_config": "GREED",
+      "synaps_commit": "f939727cd9369fd9b36438bfac7198f0c39c6d3b",
+      "kwargs": {
+        "apply_frozen": true,
+        "random_seed": 1
+      },
+      "runtime": {
+        "python": "3.12.10",
+        "implementation": "CPython",
+        "platform": "Windows-11-10.0.26200-SP0",
+        "repairflow": "0.1.0",
+        "synaps_commit": "f939727cd9369fd9b36438bfac7198f0c39c6d3b",
+        "ortools": "9.15.6755",
+        "pydantic": "2.13.5"
+      }
+    },
+    "solver_objective": {
+      "makespan_minutes": 330.0,
+      "total_setup_minutes": 0.0,
+      "total_tardiness_minutes": 0.0,
+      "coverage": 1.0,
+      "unscheduled_operations": 0
+    },
+    "solver": {
+      "solver_config": "GREED",
+      "seed": 1,
+      "time_limit_s": null,
+      "warm_start": null,
+      "kernel": {
+        "constructive": "repairflow_list_schedule",
+        "metric_tag": "synthetic_experiment"
+      }
+    }
   }
 }

@@ -13,6 +13,7 @@
       "asset_code": "GEA-001",
       "unit_type": "gearbox",
       "due_date": "2026-01-12T18:00:00Z",
+      "deadline": null,
       "release_date": "2026-01-12T06:00:00Z",
       "priority": 400,
       "domain_attributes": {}
@@ -23,6 +24,7 @@
       "asset_code": "COM-002",
       "unit_type": "compressor",
       "due_date": "2026-01-13T00:00:00Z",
+      "deadline": null,
       "release_date": "2026-01-12T06:00:00Z",
       "priority": 401,
       "domain_attributes": {}
@@ -33,6 +35,7 @@
       "asset_code": "ELE-003",
       "unit_type": "electrical",
       "due_date": "2026-01-13T06:00:00Z",
+      "deadline": null,
       "release_date": "2026-01-12T06:00:00Z",
       "priority": 402,
       "domain_attributes": {}
@@ -45,6 +48,7 @@
       "sequence": 1,
       "duration_min": 30,
       "predecessor_ids": [],
+      "predecessors": [],
       "eligible_work_center_ids": [
         "POST-U1",
         "POST-TEST"
@@ -54,6 +58,7 @@
       ],
       "required_aux_ids": [],
       "required_spare_ids": [],
+      "required_spares": [],
       "setup_state": "gearbox",
       "earliest_start": null,
       "latest_finish": null,
@@ -67,6 +72,7 @@
       "predecessor_ids": [
         "JOB-01-01"
       ],
+      "predecessors": [],
       "eligible_work_center_ids": [
         "POST-U1",
         "POST-TEST"
@@ -78,6 +84,7 @@
       "required_spare_ids": [
         "SP-BEARING"
       ],
+      "required_spares": [],
       "setup_state": "gearbox",
       "earliest_start": null,
       "latest_finish": null,
@@ -91,6 +98,7 @@
       "predecessor_ids": [
         "JOB-01-02"
       ],
+      "predecessors": [],
       "eligible_work_center_ids": [
         "POST-TEST"
       ],
@@ -99,6 +107,7 @@
       ],
       "required_aux_ids": [],
       "required_spare_ids": [],
+      "required_spares": [],
       "setup_state": "gearbox",
       "earliest_start": null,
       "latest_finish": null,
@@ -110,6 +119,7 @@
       "sequence": 1,
       "duration_min": 30,
       "predecessor_ids": [],
+      "predecessors": [],
       "eligible_work_center_ids": [
         "POST-U1",
         "POST-TEST"
@@ -119,6 +129,7 @@
       ],
       "required_aux_ids": [],
       "required_spare_ids": [],
+      "required_spares": [],
       "setup_state": "compressor",
       "earliest_start": null,
       "latest_finish": null,
@@ -132,6 +143,7 @@
       "predecessor_ids": [
         "JOB-02-01"
       ],
+      "predecessors": [],
       "eligible_work_center_ids": [
         "POST-U1",
         "POST-TEST"
@@ -143,6 +155,7 @@
       "required_spare_ids": [
         "SP-SEAL"
       ],
+      "required_spares": [],
       "setup_state": "compressor",
       "earliest_start": null,
       "latest_finish": null,
@@ -156,6 +169,7 @@
       "predecessor_ids": [
         "JOB-02-02"
       ],
+      "predecessors": [],
       "eligible_work_center_ids": [
         "POST-TEST"
       ],
@@ -164,6 +178,7 @@
       ],
       "required_aux_ids": [],
       "required_spare_ids": [],
+      "required_spares": [],
       "setup_state": "compressor",
       "earliest_start": null,
       "latest_finish": null,
@@ -175,6 +190,7 @@
       "sequence": 1,
       "duration_min": 30,
       "predecessor_ids": [],
+      "predecessors": [],
       "eligible_work_center_ids": [
         "POST-U1",
         "POST-TEST"
@@ -184,6 +200,7 @@
       ],
       "required_aux_ids": [],
       "required_spare_ids": [],
+      "required_spares": [],
       "setup_state": "electrical",
       "earliest_start": null,
       "latest_finish": null,
@@ -197,6 +214,7 @@
       "predecessor_ids": [
         "JOB-03-01"
       ],
+      "predecessors": [],
       "eligible_work_center_ids": [
         "POST-U1",
         "POST-TEST"
@@ -208,6 +226,7 @@
       "required_spare_ids": [
         "SP-BEARING"
       ],
+      "required_spares": [],
       "setup_state": "electrical",
       "earliest_start": null,
       "latest_finish": null,
@@ -221,6 +240,7 @@
       "predecessor_ids": [
         "JOB-03-02"
       ],
+      "predecessors": [],
       "eligible_work_center_ids": [
         "POST-TEST"
       ],
@@ -229,6 +249,7 @@
       ],
       "required_aux_ids": [],
       "required_spare_ids": [],
+      "required_spares": [],
       "setup_state": "electrical",
       "earliest_start": null,
       "latest_finish": null,
@@ -272,6 +293,7 @@
       "skills": [
         "test"
       ],
+      "skill_valid_until": {},
       "calendar_id": "CAL-DAY",
       "max_parallel": 1,
       "domain_attributes": {}
@@ -282,6 +304,7 @@
       "skills": [
         "diagnostics"
       ],
+      "skill_valid_until": {},
       "calendar_id": "CAL-DAY",
       "max_parallel": 1,
       "domain_attributes": {}
@@ -292,6 +315,7 @@
       "skills": [
         "mechanical"
       ],
+      "skill_valid_until": {},
       "calendar_id": "CAL-DAY",
       "max_parallel": 1,
       "domain_attributes": {}
@@ -302,6 +326,7 @@
       "skills": [
         "electrical"
       ],
+      "skill_valid_until": {},
       "calendar_id": "CAL-DAY",
       "max_parallel": 1,
       "domain_attributes": {}
@@ -701,6 +726,7 @@
       "code": "SP-BEARING",
       "quantity": 8,
       "available_from": "2026-01-12T00:00:00Z",
+      "receipts": [],
       "domain_attributes": {}
     },
     {
@@ -708,14 +734,19 @@
       "code": "SP-SEAL",
       "quantity": 8,
       "available_from": "2026-01-12T00:00:00Z",
+      "receipts": [],
       "domain_attributes": {}
     }
   ],
+  "exchange_pools": [],
   "policy": {
     "unknown_fields": "reject",
     "missing_setup": "reject",
     "unsupported_dag": "reject",
-    "allow_partial_plan": false
+    "allow_partial_plan": false,
+    "dag_strategy": "split_release_fixpoint",
+    "max_fixpoint_iter": 8,
+    "nervousness_warn_ratio": 0.1
   },
   "domain_attributes": {
     "seed": 1,

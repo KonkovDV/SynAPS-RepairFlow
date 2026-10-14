@@ -49,7 +49,11 @@ def write_schemas() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     for name, document in generated_schemas().items():
         path = OUT / f"{name}.json"
-        path.write_text(json.dumps(document, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        path.write_text(
+            json.dumps(document, indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8",
+            newline="\n",
+        )
 
 
 def _load(path: Path) -> dict[str, Any]:

@@ -10,7 +10,7 @@ from __future__ import annotations
 from typing import Literal
 
 from repairflow.checker import check_domain_assignments
-from repairflow.evidence import evidence_stamp, fingerprint_payload, runtime_manifest
+from repairflow.evidence import evidence_stamp, fingerprint_payload, runtime_manifest, seal_result_hashes
 from repairflow.metrics import compute_metrics
 from repairflow.model import PlannedAssignment, RepairFlowProblem, RepairFlowResult, ResultStatus, Violation
 from repairflow.versions import CLAIM_LEVEL, REPAIRFLOW_VERSION, SYNAPS_COMMIT
@@ -84,5 +84,5 @@ def verify_domain_plan(
         objective=compute_metrics(problem, assignments),
         metadata=stamp,
     )
-    payload.result_hash = fingerprint_payload(payload.model_dump(mode="json", exclude={"result_hash"}))
+    seal_result_hashes(payload)
     return payload

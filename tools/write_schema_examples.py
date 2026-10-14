@@ -17,13 +17,18 @@ OUT = ROOT / "schemas" / "examples"
 def main() -> int:
     OUT.mkdir(parents=True, exist_ok=True)
     problem = synthesize("tiny", seed=1)
-    (OUT / "tiny.problem.json").write_text(problem.model_dump_json(indent=2), encoding="utf-8")
+    (OUT / "tiny.problem.json").write_text(
+        problem.model_dump_json(indent=2) + "\n", encoding="utf-8", newline="\n"
+    )
     fifo = plan(problem, solver_config="FIFO")
     greed = plan(problem, solver_config="GREED")
-    (OUT / "tiny.greed.result.json").write_text(greed.result.model_dump_json(indent=2), encoding="utf-8")
+    (OUT / "tiny.greed.result.json").write_text(
+        greed.result.model_dump_json(indent=2) + "\n", encoding="utf-8", newline="\n"
+    )
     (OUT / "tiny.diff.json").write_text(
-        json.dumps(diff_plans(problem, fifo.result, greed.result), indent=2, default=str),
+        json.dumps(diff_plans(problem, fifo.result, greed.result), indent=2, default=str) + "\n",
         encoding="utf-8",
+        newline="\n",
     )
     sys.stdout.write(f"wrote {OUT}\n")
     return 0

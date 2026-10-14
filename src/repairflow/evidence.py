@@ -89,6 +89,41 @@ def evidence_stamp(
     return payload
 
 
+def compute_schedule_hash(result: RepairFlowResult) -> str:
+    """Fingerprint the schedule. The runtime manifest is not an input."""
+
+    assignments = [
+        row.model_dump(mode="json")
+        for row in sorted(
+            result.assignments,
+            key=lambda row: (
+                row.operation_id,
+                row.start.isoformat(),
+                row.end.isoformat(),
+                row.work_center_id,
+                row.crew_id or "",
+            ),
+        )
+    ]
+    payload = {
+        "assignments": assignments,
+        "claim_status": result.claim_status,
+        "exit_code": result.exit_code,
+        "input_hash": result.input_hash,
+        "solver_config": result.solver_config,
+        "synaps_commit": result.synaps_commit,
+        "violation_codes": sorted(row.code for row in result.violations),
+    }
+    return fingerprint_payload(payload)
+
+
+def seal_result_hashes(result: RepairFlowResult) -> None:
+    """Set schedule_hash, then result_hash over the body that includes it."""
+
+    result.schedule_hash = compute_schedule_hash(result)
+    result.result_hash = fingerprint_payload(result.model_dump(mode="json", exclude={"result_hash"}))
+
+
 def verify_plan_hashes(problem: RepairFlowProblem, result: RepairFlowResult) -> list[str]:
     """Return human-readable mismatches. Empty means the stored hashes still match."""
 
@@ -104,4 +139,6 @@ def verify_plan_hashes(problem: RepairFlowProblem, result: RepairFlowResult) -> 
         errors.append("config_payload is missing; config_hash cannot be checked")
     elif result.config_hash != fingerprint_payload(stored):
         errors.append("config_hash does not match config_payload")
+    if result.schedule_hash != compute_schedule_hash(result):
+        errors.append("schedule_hash does not match the schedule")
     return errors

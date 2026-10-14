@@ -212,10 +212,10 @@
   "unchanged_frozen_assignments": [],
   "broken_frozen_assignments": [],
   "metrics": {
-    "baseline_violations": 29,
+    "baseline_violations": 21,
     "candidate_violations": 0,
-    "baseline_makespan": 135.0,
-    "candidate_makespan": 330.0,
+    "baseline_makespan": 495.0,
+    "candidate_makespan": 690.0,
     "baseline_tardiness": 0.0,
     "candidate_tardiness": 0.0,
     "baseline_coverage": 1.0,
