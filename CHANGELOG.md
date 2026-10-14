@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Dispatch `38555693129` on `eef52f8` killed 1798 of 1921 and left 123.
+  Against the previous artifact, 211 died and none were born. Fifteen of
+  those survivors still have no equivalent reason. `_capacity_overlaps` 9
+  is equivalent because setup always replaces the start. This dispatch is
+  not an attestation, and the README does not copy the score.
 - Exchange-pool sinks are sorted by operation id. A complete card still
   returns at the latest sink, and any missing sink still withholds the
   return. The order no longer depends on set iteration. This is not in
