@@ -204,6 +204,22 @@ Observed on the installed Pydantic: `model_dump(mode=None)` and `model_dump(mode
 
 Against `38228010896`, 211 mutants died and none were born. None of the 62 earlier equivalents died. None of the 45 reasons read from the 272 died. Of those 272, 61 are still alive: the 45 reasons, plus 16 without one. `_capacity_overlaps` 9 sets `start = None` and the next line replaces it, because every caller passes `include_setup=True`. Equivalent. The other 15 are not equivalent and this dispatch did not kill them: `_normalize_assignments` 42, 49, and 50; `_precedence` 69 through 73 and 78 through 82 (the max-lag finding); `_spare_receipts` 11; `_completion_times` 24. The max-lag test added after this dispatch is not in 1798/1921. The sink sort is not in it either. Phase 1 stays open. The README does not copy 1798/1921.
 
+## Dispatch 38565194050
+
+`workflow_dispatch` [38565194050](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/runs/38565194050) on `04ad612` finished with mutation success and `test-slow` success. It is not an attestation of main. The tree contains the sink sort and the max-lag test. Exit codes are only 0 and 1. Sorting the sinks added one mutant, so the ledger ids are not the same numbers as in 1798/1921.
+
+| Module | Killed | Survived | Total |
+| --- | ---: | ---: | ---: |
+| `capacity.py` | 62 | 4 | 66 |
+| `checker.py` | 1411 | 95 | 1506 |
+| `lane_setup.py` | 102 | 3 | 105 |
+| `ledger.py` | 235 | 10 | 245 |
+| Total | 1810 | 112 | 1922 |
+
+In `checker.py` the mutant ids did not move. Ten died, all on the max-lag finding: `_precedence` 69, 70, 71, 72, 73, 78, 79, 80, 81, and 82. None were born. `_normalize_assignments` 42, 49, and 50 are still alive, and so is `_spare_receipts` 11. They are not equivalent. `_capacity_overlaps` 9 is still alive and remains equivalent.
+
+In `ledger.py` the edit `complete = False` to `complete = True` is now mutant 25, and it died. Mutant 24 is now `complete = None` inside the missing-sink arm. `if complete and ends` is false for `None` and for `False`, so that one stays equivalent. Mutant 30, `max(ends)` to `max(None)`, is the new node and it died. Four survivors still have no equivalent reason: the three normalize ids and `_spare_receipts` 11. Phase 1 stays open. The README does not copy 1810/1922.
+
 Accepted before the run, not as a pass:
 
 - No `# pragma: no mutate` in those four modules.
