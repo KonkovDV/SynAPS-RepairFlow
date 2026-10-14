@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- The evidence manifest attests main `f7a8a2e` / push run `38634344366`,
+  including `test-slow`. This commit does not attest itself.
 - Public pages are rewritten in plain language. Commands, verdict words, and
   the generated evidence table stay as they are. No score is copied.
 - The evidence manifest attests main `93320f1` / push run `38629025631`,
