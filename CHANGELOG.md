@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- The evidence manifest attests main `0aa2ecf` / push run `38647110145`,
+  including `test-slow`. This commit does not attest itself.
 - The evidence manifest attests main `246a850` / push run `38645887703`,
   including `test-slow`. This commit does not attest itself.
 - The evidence manifest attests main `f7a8a2e` / push run `38634344366`,
