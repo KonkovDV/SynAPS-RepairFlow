@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- `POST_DOWN`, `PART_DELAY`, `CREW_ABSENT`, `DURATION_OVERRUN`, and `URGENT_JOB`
+  change the card and recheck the issued plan. `replan_disruption` freezes
+  visits the event missed, including those that start inside the next 8 hours.
+  On tiny seeds 1–30 the five types gave `false_accept` 0. A packed lane can
+  still return `PARTIAL` when the hole is early; the demo takes the latest visit.
+  Dispatch `37702688921` checked `6d7325d` on Linux, including `test-slow`.
+  That run is not an attestation of main, and this note is not part of it.
 - Public pages are rewritten in plain language. Commands, verdict words, and
   the generated evidence table stay as they are. No score is copied.
 - The evidence manifest attests main `93320f1` / push run `38629025631`,

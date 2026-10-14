@@ -34,7 +34,8 @@
 | Подписанный артефакт | blocked | статус подписи остаётся `absent`; ключа выпуска в этой сборке нет |
 | Граница «без сети, теневой режим» | documented | модель угроз, ADR-0003, протокол пилота |
 | Журнал приёмки оператором | documented | договор JSONL; писателя нет |
-| `POST_DOWN`, `PART_DELAY`, каталог вариантов маршрута | blocked | `docs/limitations.md` |
+| `POST_DOWN`, `PART_DELAY`, `CREW_ABSENT`, `DURATION_OVERRUN`, `URGENT_JOB` | implemented | `tests/test_disruption_events.py`, `docs/disruption-campaign.json` |
+| Каталог вариантов маршрута | blocked | `docs/limitations.md` |
 | Лаг возврата оборотной внутри модели ядра | documented | власть у доменной книги; молчание ядра не даёт `verified` |
 | Минимальный по удалению свидетель одного жёсткого кода | implemented | `explanations.py`; это не CP-MUS и не MCS |
 | Объяснения MUS и MCS | blocked | в `docs/literature-2026.md` названы как следующая работа |
