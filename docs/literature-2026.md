@@ -11,6 +11,10 @@ RepairFlow is a constrained multi-resource maintenance scheduler: precedence, al
 - MUS/MCS-style explanations are a credible next step for disrupted industrial schedules. See Bleukx et al., CP 2025, [DOI 10.4230/LIPIcs.CP.2025.6](https://doi.org/10.4230/LIPIcs.CP.2025.6). RepairFlow does not compute MUS or MCS.
 - Learned dispatching is a research direction. It is not a reason to claim an AI planner.
 
+## Open schedulers compared
+
+Timefold's maintenance quickstart (Apache-2.0, `timefold-quickstarts` `java/maintenance-scheduling`) treats crew overlap, a minimum start, and a maximum end as hard, and an ideal end as soft. Those hard checks are already the crew-capacity, earliest-start, and latest-finish findings. The ideal end stays a KPI here (`DUE_MISSED`), which matches their soft band. Their tag penalty is not a RepairFlow constraint. RosterSpec's published verification notes treat a schedule verdict as deterministic: it must not depend on hash or iteration order. Python does not promise set order, so exchange-pool sinks are sorted by operation id. The return is still withheld until every sink of the card is placed, and a complete card still returns at the latest sink. Their solvers, scores, and models are not imported.
+
 ## What this project claims
 
 The contribution is the domain contract, deterministic compilation into a pinned engine, an independent fail-closed checker, reproducible hashes, and a human-reviewed shadow workflow. It is not a new optimization algorithm and not a measured customer effect.

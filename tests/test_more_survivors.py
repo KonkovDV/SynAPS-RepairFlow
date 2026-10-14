@@ -123,6 +123,27 @@ def test_an_incomplete_earlier_job_does_not_drop_the_next_return() -> None:
     assert not _stockouts(exchange_pool_violations(loaded, [row]))
 
 
+def test_an_unfinished_later_sink_does_not_return_the_unit() -> None:
+    problem = synthesize("tiny", seed=1)
+    job = problem.jobs[0]
+    base = next(row for row in problem.operations if row.job_id == job.id)
+    cleared = {"predecessor_ids": [], "predecessors": []}
+    earlier = base.model_copy(update={"id": "SINK-A", "sequence": 1, **cleared})
+    later = base.model_copy(update={"id": "SINK-B", "sequence": 2, **cleared})
+    end = problem.planning_horizon.start + timedelta(hours=9)
+    pool = ExchangePool(
+        unit_type="SINK-POOL",
+        initial_serviceable=0,
+        demand=[PoolDemand(at=end + timedelta(minutes=1), qty=1)],
+        hard=True,
+    )
+    pool_job = {"unit_type": "SINK-POOL"}
+    jobs = [row.model_copy(update=pool_job) if row.id == job.id else row for row in problem.jobs]
+    loaded = _reload(problem, jobs=jobs, operations=[later, earlier], exchange_pools=[pool])
+    row = _visit(earlier, end - timedelta(minutes=20), end=end)
+    assert _stockouts(exchange_pool_violations(loaded, [row]))
+
+
 def test_preemptive_unattended_work_ignores_a_closed_calendar() -> None:
     problem, op, center_id, start = _preemptive_center(unattended=True, window_covers_visit=False)
     row = _visit(op, start, end=start + timedelta(minutes=60), work_center_id=center_id)
