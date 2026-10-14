@@ -257,6 +257,65 @@ def test_an_aux_missing_from_the_map_stays_unknown() -> None:
     assert hit.message == f"assignment aux {unknown} has kind unknown, expected crew or aux"
 
 
+def test_a_skilled_kernel_crew_stays_bound() -> None:
+    problem = synthesize("tiny", seed=1)
+    schedule, id_map = to_schedule_problem(problem)
+    op_key = next(key for key in id_map if key.startswith("op:"))
+    crew_key = next(key for key in id_map if key.startswith("crew:"))
+    domain_op = op_key.split(":", 1)[1]
+    domain_crew = crew_key.split(":", 1)[1]
+    crew = next(row for row in problem.crews if row.id == domain_crew)
+    skills = list(crew.skills) or ["SKILL-A"]
+    crews = [
+        row.model_copy(update={"skills": skills}) if row.id == domain_crew else row for row in problem.crews
+    ]
+    operations = [
+        row.model_copy(update={"required_skills": skills, "required_aux_ids": []})
+        if row.id == domain_op
+        else row
+        for row in problem.operations
+    ]
+    loaded = RepairFlowProblem.model_validate(
+        problem.model_copy(update={"crews": crews, "operations": operations}).model_dump(mode="python")
+    )
+    row = _kernel(loaded, id_map, operation_key=op_key, aux=[id_map[crew_key]])
+    found = check_plan(
+        loaded,
+        schedule_problem=schedule,
+        assignments=[row],
+        id_map=id_map,
+        kernel_status="feasible",
+    )
+    assert not any(item.code == ReasonCode.CREW_UNBOUND for item in found)
+
+
+def test_a_kernel_aux_on_the_visit_is_not_missing() -> None:
+    problem = synthesize("tiny", seed=1)
+    schedule, id_map = to_schedule_problem(problem)
+    op_key = next(key for key in id_map if key.startswith("op:"))
+    aux_key = next(key for key in id_map if key.startswith("aux:"))
+    domain_op = op_key.split(":", 1)[1]
+    domain_aux = aux_key.split(":", 1)[1]
+    operations = [
+        row.model_copy(update={"required_aux_ids": [domain_aux], "required_skills": []})
+        if row.id == domain_op
+        else row
+        for row in problem.operations
+    ]
+    loaded = RepairFlowProblem.model_validate(
+        problem.model_copy(update={"operations": operations}).model_dump(mode="python")
+    )
+    row = _kernel(loaded, id_map, operation_key=op_key, aux=[id_map[aux_key]])
+    found = check_plan(
+        loaded,
+        schedule_problem=schedule,
+        assignments=[row],
+        id_map=id_map,
+        kernel_status="feasible",
+    )
+    assert not any(item.code == ReasonCode.AUX_MISSING for item in found)
+
+
 def test_one_kernel_crew_is_kept_on_the_assignment() -> None:
     problem = synthesize("tiny", seed=1)
     _schedule, id_map = to_schedule_problem(problem)

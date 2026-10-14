@@ -218,7 +218,7 @@ Against `38228010896`, 211 mutants died and none were born. None of the 62 earli
 
 In `checker.py` the mutant ids did not move. Ten died, all on the max-lag finding: `_precedence` 69, 70, 71, 72, 73, 78, 79, 80, 81, and 82. None were born. `_normalize_assignments` 42, 49, and 50 are still alive, and so is `_spare_receipts` 11. They are not equivalent. `_capacity_overlaps` 9 is still alive and remains equivalent.
 
-In `ledger.py` the edit `complete = False` to `complete = True` is now mutant 25, and it died. Mutant 24 is now `complete = None` inside the missing-sink arm. `if complete and ends` is false for `None` and for `False`, so that one stays equivalent. Mutant 30, `max(ends)` to `max(None)`, is the new node and it died. Four survivors still have no equivalent reason: the three normalize ids and `_spare_receipts` 11. Phase 1 stays open. The README does not copy 1810/1922.
+In `ledger.py` the edit `complete = False` to `complete = True` is now mutant 25, and it died. Mutant 24 is now `complete = None` inside the missing-sink arm. `if complete and ends` is false for `None` and for `False`, so that one stays equivalent. Mutant 30, `max(ends)` to `max(None)`, is the new node and it died. Four survivors still have no equivalent reason: the three normalize ids and `_spare_receipts` 11. Phase 1 stays open. The README does not copy 1810/1922. Tests added after this dispatch call `check_plan` with a kernel row, so a dropped crew or auxiliary is visible, and a rotable draw before its receipt must not be reported as a consumable stockout. Those tests are not in 1810/1922.
 
 Accepted before the run, not as a pass:
 
