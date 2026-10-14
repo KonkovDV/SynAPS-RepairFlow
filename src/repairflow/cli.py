@@ -221,7 +221,7 @@ def main(argv: list[str] | None = None) -> int:
             return _log(args)
         parser.print_help()
         return 0
-    except (OSError, ValueError, TypeError, json.JSONDecodeError, KeyError) as exc:
+    except (OSError, ValueError, TypeError, json.JSONDecodeError, KeyError, RecursionError) as exc:
         sys.stderr.write(f"repairflow: {exc}\n")
         return 1
 

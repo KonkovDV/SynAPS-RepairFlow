@@ -77,7 +77,7 @@ include = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["src"]
+pythonpath = ["src", "."]
 timeout = 120
 markers = [
   "slow: CP-SAT and full demo guards",

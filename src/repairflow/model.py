@@ -36,6 +36,7 @@ from repairflow.scheduling_contract import (
     declares_open_horizon,
     held_minutes,
     is_unattended,
+    merge_windows,
     open_minutes,
     policy_of,
 )
@@ -236,11 +237,20 @@ class Operation(RepairFlowModel):
         return links
 
     def spare_demand(self) -> dict[str, int]:
-        """Consumable quantity by spare. An explicit need replaces the implicit 1."""
+        """Consumable quantity by spare. Explicit needs replace the implicit 1 per listing.
 
-        demand = {spare_id: 1 for spare_id in self.required_spare_ids}
+        Duplicate listings are summed, never overwritten: ``[S, S]`` is two units, and two
+        ``SpareNeed(S, 1)`` rows are two units.
+        """
+
+        implicit: dict[str, int] = defaultdict(int)
+        for spare_id in self.required_spare_ids:
+            implicit[spare_id] += 1
+        explicit: dict[str, int] = defaultdict(int)
         for need in self.required_spares:
-            demand[need.spare_id] = need.qty
+            explicit[need.spare_id] += need.qty
+        demand = dict(implicit)
+        demand.update(explicit)
         return demand
 
 
@@ -338,6 +348,11 @@ class PlannedAssignment(RepairFlowModel):
     aux_ids: list[str] = Field(default_factory=list)
     setup_minutes: int = Field(default=0, ge=0)
     reason: str = ""
+    lane: int | None = Field(
+        default=None,
+        ge=0,
+        description="Optional lane index on a parallel work center; removes lane ambiguity.",
+    )
 
 
 class Violation(RepairFlowModel):
@@ -439,6 +454,9 @@ class RepairFlowProblem(RepairFlowModel):
             for spare_id in operation.required_spare_ids:
                 if spare_id not in spare_set:
                     issues.append(f"operation {operation.id} references unknown spare {spare_id}")
+            for need in operation.required_spares:
+                if need.spare_id not in spare_set:
+                    issues.append(f"operation {operation.id} references unknown spare {need.spare_id}")
             if not operation.setup_state:
                 issues.append(f"operation {operation.id} is missing setup_state")
 
@@ -761,18 +779,18 @@ def _frozen_calendar(
     occ = row.start - timedelta(minutes=row.setup_minutes)
     targets: list[Calendar] = []
     center = centers.get(row.work_center_id)
-    if center is not None and center.calendar_id is not None:
+    if center is not None and center.calendar_id is not None and not is_unattended(center.domain_attributes):
         calendar = calendars.get(center.calendar_id)
         if calendar is not None:
             targets.append(calendar)
     if row.crew_id is not None:
         crew = crews.get(row.crew_id)
-        if crew is not None and crew.calendar_id is not None:
+        if crew is not None and crew.calendar_id is not None and not is_unattended(crew.domain_attributes):
             calendar = calendars.get(crew.calendar_id)
             if calendar is not None:
                 targets.append(calendar)
     for calendar in targets:
-        fits = any(occ >= window.start and row.end <= window.end for window in calendar.windows)
+        fits = any(occ >= left and row.end <= right for left, right in merge_windows(calendar.windows))
         if not calendar.windows or not fits:
             issues.append(f"frozen {row.operation_id} is outside calendar {calendar.id}")
     _ = problem

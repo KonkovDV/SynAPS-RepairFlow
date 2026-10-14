@@ -50,6 +50,20 @@
           "default": "",
           "title": "Reason",
           "type": "string"
+        },
+        "lane": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Optional lane index on a parallel work center; removes lane ambiguity.",
+          "title": "Lane"
         }
       },
       "required": [

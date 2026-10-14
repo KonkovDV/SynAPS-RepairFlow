@@ -6,7 +6,7 @@ import math
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import Any, Literal
-from uuid import UUID
+from uuid import NAMESPACE_URL, UUID, uuid5
 
 from synaps.model import Assignment, ObjectiveValues, ScheduleProblem, ScheduleResult, SolverStatus
 from synaps.portfolio import PortfolioValidationError, repair_schedule, solve_schedule
@@ -44,7 +44,7 @@ from repairflow.kernel_compat import (
     unsupported_auxiliary_calendars,
 )
 from repairflow.kernel_report import kernel_hard_violations
-from repairflow.lane_setup import LanePlacement, lane_local_setup_placements
+from repairflow.lane_setup import LanePlacement, lane_local_setup_placements, stamp_canonical_lanes
 from repairflow.limits import CPSAT_OPS_CAP
 from repairflow.metrics import compute_metrics
 from repairflow.model import (
@@ -131,6 +131,11 @@ def plan(
         refused = _kernel_calendar_refusal(problem, solver_config=solver_config, compiled=compiled)
         if refused is not None:
             return refused
+        if solver_config.upper().startswith("CPSAT"):
+            # Reproducibility: a single CP-SAT worker with a fixed seed is deterministic
+            # up to the wall-clock limit; the kernel default (8 workers) is not.
+            kwargs.setdefault("num_workers", 1)
+            kwargs.setdefault("random_seed", 42)
         if solver_config.upper().startswith("CPSAT") and "warm_start_assignments" not in kwargs:
             kwargs["warm_start_assignments"] = _as_kernel_assignments(domain_greed(problem), id_map)
             kwargs["auto_greedy_warm_start"] = False
@@ -522,6 +527,7 @@ def recheck(
         kwargs_for_hash={"verification_origin": "independent_recheck"},
         kernel_status_override=kernel_status,
         domain_assignments=submitted if len(submitted) == len(assignments) else None,
+        stamp_lanes=False,
     )
     outcome.result.metadata["verification_origin"] = "independent_recheck"
     return outcome
@@ -541,6 +547,7 @@ def wrap(
     extra_violations: list[Violation] | None = None,
     bind_crews: bool = False,
     domain_assignments: list[PlannedAssignment] | None = None,
+    stamp_lanes: bool = True,
 ) -> PlanOutcome:
     kernel_status = result.status.value if result.status is not None else None
     if kernel_status_override is not ...:
@@ -552,6 +559,8 @@ def wrap(
         planned, binding_issues = _planned_from_kernel(problem, result.assignments, id_map)
     if bind_crews:
         planned = bind_concrete_crews(problem, planned)
+    if stamp_lanes:
+        planned = stamp_canonical_lanes(problem, planned)
     domain_violations = check_plan(
         problem,
         schedule_problem=schedule_problem,
@@ -627,7 +636,9 @@ def wrap(
             "optimality_scope": fixpoint_info.get("optimality_scope"),
             "config_payload": config_payload,
             "solver_objective": solver_objective,
-            "solver": _solver_record(solver_config, kwargs_for_hash or {}, result.metadata),
+            "solver": _solver_record(
+                solver_config, kwargs_for_hash or {}, result.metadata, status=kernel_status
+            ),
         },
     )
     payload = RepairFlowResult(
@@ -1543,6 +1554,8 @@ def _solver_record(
     solver_config: str,
     kwargs: dict[str, Any],
     kernel_metadata: dict[str, Any] | None,
+    *,
+    status: str | None = None,
 ) -> dict[str, Any]:
     kernel: dict[str, Any] = {}
     for key, value in (kernel_metadata or {}).items():
@@ -1550,7 +1563,18 @@ def _solver_record(
             kernel[str(key)] = value
     seed = kwargs.get("random_seed")
     limit = kwargs.get("time_limit_s")
+    workers = kwargs.get("num_workers")
+    is_cpsat = solver_config.upper().startswith("CPSAT")
+    # Reproducible = rerunning the same input and config gives the same plan.
+    # Domain list schedulers are deterministic. CP-SAT is reproducible only with one
+    # worker, a fixed seed and a proved OPTIMAL (a FEASIBLE stop depends on wall time).
+    if is_cpsat:
+        reproducible = workers == 1 and isinstance(seed, int) and (status or "").strip().lower() == "optimal"
+    else:
+        reproducible = not solver_config.upper().startswith(("RHC", "ALNS", "LBBD"))
     return {
+        "num_workers": workers if isinstance(workers, int) else None,
+        "reproducible": reproducible,
         "solver_config": solver_config,
         "seed": seed if isinstance(seed, int) else None,
         "time_limit_s": limit if isinstance(limit, int | float) else None,
@@ -1615,8 +1639,8 @@ def _as_kernel_assignments(
             aux_ids.append(id_map[f"crew:{row.crew_id}"])
         out.append(
             Assignment(
-                operation_id=id_map[f"op:{row.operation_id}"],
-                work_center_id=id_map[f"wc:{row.work_center_id}"],
+                operation_id=_mapped_or_placeholder(id_map, f"op:{row.operation_id}"),
+                work_center_id=_mapped_or_placeholder(id_map, f"wc:{row.work_center_id}"),
                 start_time=row.start,
                 end_time=row.end,
                 setup_minutes=row.setup_minutes,
@@ -1624,6 +1648,18 @@ def _as_kernel_assignments(
             )
         )
     return out
+
+
+def _mapped_or_placeholder(id_map: dict[str, UUID], key: str) -> UUID:
+    """Map a domain id to its kernel UUID; unknown ids get a stable placeholder.
+
+    An unknown operation or work center must reach the domain checker, which reports
+    UNKNOWN_OPERATION / UNKNOWN_RESOURCE, instead of crashing recheck with a KeyError.
+    """
+    known = id_map.get(key)
+    if known is not None:
+        return known
+    return uuid5(NAMESPACE_URL, f"repairflow:unknown:{key}")
 
 
 def _status_from_text(value: str | None) -> SolverStatus:

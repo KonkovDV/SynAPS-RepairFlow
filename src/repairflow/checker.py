@@ -26,6 +26,8 @@ from repairflow.scheduling_contract import (
     declares_open_horizon,
     held_minutes,
     is_unattended,
+    is_whole_minutes,
+    merge_windows,
     open_minutes,
     policy_of,
 )
@@ -618,7 +620,7 @@ def _calendars_windows_horizon(
                     end=asn.end,
                 )
             )
-        if op is not None and op.earliest_start is not None and asn.start < op.earliest_start:
+        if op is not None and op.earliest_start is not None and occ_start < op.earliest_start:
             out.append(
                 _violation(
                     ReasonCode.WINDOW_BROKEN,
@@ -691,7 +693,9 @@ def _duration_violation(
 ) -> list[Violation]:
     policy = policy_of(op.domain_attributes)
     held = held_minutes(asn.start, asn.end)
-    if policy == "invalid":
+    if not is_whole_minutes(asn.start, asn.end):
+        message = "held interval is not a whole number of minutes"
+    elif policy == "invalid":
         message = "duration_policy must be exact, min, or preemptive"
     elif policy == "min" and held < op.duration_min:
         message = f"scheduled {held} min is shorter than duration_min={op.duration_min}"
@@ -826,8 +830,8 @@ def _calendar_fit(
     if preemptive:
         if assignment.start <= occ_start:
             return []
-        for window in calendar.windows:
-            if occ_start >= window.start and assignment.start <= window.end:
+        for left, right in merge_windows(calendar.windows):
+            if occ_start >= left and assignment.start <= right:
                 return []
         return [
             _violation(
@@ -839,8 +843,8 @@ def _calendar_fit(
                 end=assignment.start,
             )
         ]
-    for window in calendar.windows:
-        if occ_start >= window.start and assignment.end <= window.end:
+    for left, right in merge_windows(calendar.windows):
+        if occ_start >= left and assignment.end <= right:
             return []
     return [
         _violation(
@@ -913,7 +917,8 @@ def _due_release_spares(
         if op is None:
             continue
         job = jobs[op.job_id]
-        if job.release_date is not None and asn.start < job.release_date:
+        occ_start = asn.start - timedelta(minutes=int(asn.setup_minutes or 0))
+        if job.release_date is not None and occ_start < job.release_date:
             out.append(
                 _violation(
                     ReasonCode.RELEASE_VIOLATION,
@@ -929,7 +934,20 @@ def _due_release_spares(
             by_job_end[job.id] = asn
         for spare_id, _qty in op.spare_demand().items():
             spare = spares.get(spare_id)
-            if spare is None or spare_is_rotable(spare) or spare.receipts:
+            if spare is None:
+                out.append(
+                    _violation(
+                        ReasonCode.UNKNOWN_RESOURCE,
+                        f"operation {op.id} needs unknown spare {spare_id}",
+                        operation_id=op.id,
+                        job_id=job.id,
+                        resource_id=spare_id,
+                        start=asn.start,
+                        end=asn.end,
+                    )
+                )
+                continue
+            if spare_is_rotable(spare) or spare.receipts:
                 continue
             if spare.quantity <= 0:
                 out.append(
@@ -963,7 +981,9 @@ def _due_release_spares(
             continue
         for spare_id, qty in op.spare_demand().items():
             spare = spares.get(spare_id)
-            if spare is not None and (spare_is_rotable(spare) or spare.receipts):
+            if spare is None:
+                continue  # reported as UNKNOWN_RESOURCE above
+            if spare_is_rotable(spare) or spare.receipts:
                 continue
             used[spare_id] += qty
     for spare_id, count in used.items():
@@ -1022,12 +1042,34 @@ def _setup(problem: RepairFlowProblem, assignments: list[PlannedAssignment]) -> 
             if op is None or placed is None:
                 continue
             expected = item.expected_setup_minutes
+            # policy.missing_setup="zero" fills absent cells with 0, except the first
+            # transition out of "idle": that cell is the lane's initial state and stays
+            # fail-closed (tests/test_setup_idle.py).
+            if expected is None and problem.policy.missing_setup == "zero" and item.previous_state != "idle":
+                expected = 0
             details = {
                 "from_state": item.previous_state,
                 "to_state": op.setup_state,
                 "lane_index": item.lane_index,
                 "previous_operation_id": item.previous_operation_id,
             }
+            if item.ambiguous:
+                out.append(
+                    _violation(
+                        ReasonCode.SETUP_MISMATCH,
+                        (
+                            f"lane assignment on {center_id} is ambiguous or inconsistent: "
+                            "supply one valid, non-overlapping lane id for every visit"
+                        ),
+                        operation_id=op.id,
+                        job_id=op.job_id,
+                        resource_id=center_id,
+                        start=placed.start,
+                        end=placed.end,
+                        details={**details, "ambiguous_lane": True},
+                    )
+                )
+                continue
             if expected is None:
                 out.append(
                     _violation(
@@ -1090,6 +1132,7 @@ def _frozen(problem: RepairFlowProblem, assignments: list[PlannedAssignment]) ->
             placed.work_center_id != frozen.work_center_id
             or placed.start != frozen.start
             or placed.end != frozen.end
+            or int(placed.setup_minutes or 0) != int(frozen.setup_minutes)
             or not crew_ok
         ):
             out.append(
