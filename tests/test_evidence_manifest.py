@@ -27,8 +27,8 @@ def test_evidence_manifest_matches_the_pinned_kernel() -> None:
     assert SYNAPS_COMMIT in versions
     # The manifest lands in a later docs commit than the one it names.
     assert payload["stale"] is True
-    assert payload["attests_commit"] == "93320f14a67e01986d0a6d871f0d656f1474f845"
-    assert payload["ci_run_id"] == "38629025631"
+    assert payload["attests_commit"] == "f7a8a2e1309344c6c1e51fd1d82d84e2250eb1bc"
+    assert payload["ci_run_id"] == "38634344366"
     assert payload["synaps_repo"] == SYNAPS_REPO
     assert len(SYNAPS_COMMIT) == 40
     assert payload["ci_result"] == "success"
@@ -103,14 +103,16 @@ def test_committed_benchmark_rows_carry_hashes() -> None:
         assert len(row["input_hash"]) == 64
         assert len(row["config_hash"]) == 64
         assert len(row["result_hash"]) == 64
+        assert len(row["schedule_hash"]) == 64
     tiny = next(
         row for row in rows if row["preset"] == "tiny" and row["seed"] == 1 and row["solver"] == "GREED"
     )
     fresh = plan(synthesize("tiny", seed=1), solver_config="GREED")
     # result_hash includes runtime_manifest, so it identifies the snapshot
-    # machine. The schedule itself is what must match on every runner.
+    # machine. schedule_hash does not, and must match on every runner.
     objective = fresh.result.objective
     assert fresh.result.input_hash == tiny["input_hash"]
+    assert fresh.result.schedule_hash == tiny["schedule_hash"]
     assert fresh.result.status.value == tiny["status"]
     assert fresh.result.exit_code == tiny["exit_code"]
     assert fresh.result.verified_feasible is True

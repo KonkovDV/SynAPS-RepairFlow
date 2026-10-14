@@ -21,12 +21,13 @@
 | Независимый поминутный оракул | implemented | `tests/oracle_minutes.py`, `tests/test_oracle_minutes.py`; кампания v2 им пользуется; книгу обменного фонда не судили |
 | Мутационное тестирование нотариуса | measured, not closed | ночные прогоны `37908445280`, `38037961461`, `38126032914` и `38228010896` на `b7c8c29`: убито 1587, живо 334, коды выхода совпали, пересчёт сошёлся; прогон `38618458299` на `a4e4e90`: убито 1814, живо 108, всего 1922; четыре выживших без объяснения умерли, новых не родилось; это не аттестация `main`; `docs/mutation-survivors.md` |
 | Цеховой план без вызова ядра | implemented | `repairflow verify-plan`; заявление `domain_verified`; `tests/test_shop_plan.py` |
+| Манифест загрузки CSV, ночная смена, псевдоним бригады | implemented | `src/repairflow/ingest.py`, `tests/test_ingest_manifest.py`; образа Astra нет |
 | Блокирующие запчасти | implemented | тесты запчастей нотариуса |
 | Обменный фонд как книга остатков | implemented | `src/repairflow/ledger.py`, ADR-0004 |
 | Дефектовка, которая замораживает уже выданную работу | implemented | `repairflow inspect`, ADR-0005 |
 | Мягкий срок против жёсткого | implemented | `DUE_MISSED` против `DEADLINE_MISSED` |
 | Пересчёт после сбоя с замороженными слотами | implemented | тесты пересчёта |
-| Канонические метрики и проверка хешей | implemented | `src/repairflow/metrics.py`, `repairflow check --verify-hashes` |
+| Канонические метрики и проверка хешей | implemented | `src/repairflow/metrics.py`, `repairflow check --verify-hashes`; в `schedule_hash` нет манифеста запуска, `result_hash` его сохраняет |
 | Пин коммита SynAPS | implemented | `tools/verify_lock.py` |
 | Пин OR-Tools и прямая опись состава | implemented | `ortools==9.15.6755`, `repairflow.sbom` |
 | Узнавание установленного колеса или sdist, отдельно от описи файлов | implemented | `repairflow.artifact_record`; подпись остаётся `absent` |
@@ -34,8 +35,9 @@
 | Хеш-замок requirements | implemented | `requirements-lock.txt`; pydantic `2.13.5`; `tests/test_lock_hashes.py` |
 | Подписанный артефакт | blocked | статус подписи остаётся `absent`; ключа выпуска в этой сборке нет |
 | Граница «без сети, теневой режим» | documented | модель угроз, ADR-0003, протокол пилота |
-| Журнал приёмки оператором | documented | договор JSONL; писателя нет |
-| `POST_DOWN`, `PART_DELAY`, каталог вариантов маршрута | blocked | `docs/limitations.md` |
+| Журнал приёмки оператором | implemented | `repairflow decide`, `repairflow log verify`, хеш-цепочка; без подписи |
+| `POST_DOWN`, `PART_DELAY`, `CREW_ABSENT`, `DURATION_OVERRUN`, `URGENT_JOB` | implemented | `tests/test_disruption_events.py`, `docs/disruption-campaign.json` |
+| Каталог вариантов маршрута | blocked | `docs/limitations.md` |
 | Лаг возврата оборотной внутри модели ядра | documented | власть у доменной книги; молчание ядра не даёт `verified` |
 | Минимальный по удалению свидетель одного жёсткого кода | implemented | `explanations.py`; это не CP-MUS и не MCS |
 | Объяснения MUS и MCS | blocked | в `docs/literature-2026.md` названы как следующая работа |
