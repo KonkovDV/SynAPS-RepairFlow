@@ -60,6 +60,7 @@ class BenchmarkRow:
     input_hash: str
     config_hash: str
     result_hash: str
+    schedule_hash: str
     tardiness_min: float | None = None
     setup_min: float | None = None
     unscheduled: int | None = None
@@ -206,6 +207,7 @@ def run_benchmark(
                     input_hash=result.input_hash,
                     config_hash=result.config_hash,
                     result_hash=result.result_hash,
+                    schedule_hash=result.schedule_hash,
                 )
             )
 

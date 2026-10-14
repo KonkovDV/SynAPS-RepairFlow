@@ -31,7 +31,13 @@ from repairflow.events import (
     apply_disruption,
     apply_inspection,
 )
-from repairflow.evidence import evidence_stamp, fingerprint_payload, runtime_manifest, to_canonical
+from repairflow.evidence import (
+    evidence_stamp,
+    fingerprint_payload,
+    runtime_manifest,
+    seal_result_hashes,
+    to_canonical,
+)
 from repairflow.kernel_compat import (
     KERNEL_CALENDAR_UNSUPPORTED,
     assert_kernel_calendar_compatibility,
@@ -468,7 +474,7 @@ def _attach_replan_notes(
     metadata = dict(outcome.result.metadata)
     metadata["nervousness"] = nervousness
     updated = outcome.result.model_copy(update={"violations": violations, "metadata": metadata})
-    updated.result_hash = fingerprint_payload(updated.model_dump(mode="json", exclude={"result_hash"}))
+    seal_result_hashes(updated)
     outcome.result = updated
     return outcome
 
@@ -644,7 +650,7 @@ def wrap(
         objective=unified,
         metadata=stamp,
     )
-    payload.result_hash = fingerprint_payload(payload.model_dump(mode="json", exclude={"result_hash"}))
+    seal_result_hashes(payload)
     return PlanOutcome(
         problem=problem,
         schedule_problem=schedule_problem,

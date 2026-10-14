@@ -21,6 +21,9 @@
   hashes and will not accept a non-zero exit. `repairflow log verify` catches
   a swapped or edited line, and a truncated tail when the tip hash is known.
   A legacy log without the chain is read-only.
+- `schedule_hash` identifies a plan without the machine runtime.
+  `result_hash` and `config_hash` still include that runtime.
+  `repairflow check --verify-hashes` checks the new field.
 - Public pages are rewritten in plain language. Commands, verdict words, and
   the generated evidence table stay as they are. No score is copied.
 - The evidence manifest attests main `93320f1` / push run `38629025631`,

@@ -27,7 +27,7 @@
 | Дефектовка, которая замораживает уже выданную работу | implemented | `repairflow inspect`, ADR-0005 |
 | Мягкий срок против жёсткого | implemented | `DUE_MISSED` против `DEADLINE_MISSED` |
 | Пересчёт после сбоя с замороженными слотами | implemented | тесты пересчёта |
-| Канонические метрики и проверка хешей | implemented | `src/repairflow/metrics.py`, `repairflow check --verify-hashes` |
+| Канонические метрики и проверка хешей | implemented | `src/repairflow/metrics.py`, `repairflow check --verify-hashes`; в `schedule_hash` нет манифеста запуска, `result_hash` его сохраняет |
 | Пин коммита SynAPS | implemented | `tools/verify_lock.py` |
 | Пин OR-Tools и прямая опись состава | implemented | `ortools==9.15.6755`, `repairflow.sbom` |
 | Узнавание установленного колеса или sdist, отдельно от описи файлов | implemented | `repairflow.artifact_record`; подпись остаётся `absent` |
