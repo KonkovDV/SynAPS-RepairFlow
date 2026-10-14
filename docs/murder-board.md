@@ -23,10 +23,11 @@
 ## Notary score
 
 - Is 1587/1921 a closed phase? No. 334 mutants survived the four identical scheduled runs on `b7c8c29`. 272 of them have no equivalent reason.
-- Does that score attest main? No. The manifest attests `6f34389` from push `37831512163`. The mutation runs are scheduled jobs on the later commit `b7c8c29`.
-- Did the edge tests fail to kill what they named? The 25 deaths against dispatch `37829096222` are those tests. `_attended_masks` 14, 24, and 34 survived them. `_completion_times` 24 survived every run on this source.
-- Did any recorded equivalent die in these runs? No. The eight ledger suggestion deletions and `_violation` 42 did die, and the earlier note said they were not equivalent.
-- Is the score stable? The four scheduled artifacts from 9 October through 12 October have the same `exit_code_by_key`. That is not a proof about a future source change.
+- Does that score attest main? No. The manifest attests `d3cb6d1` from push `38300105511`, including `test-slow`. The mutation runs are scheduled jobs on the earlier commit `b7c8c29`. `b7c8c29` attests `6f34389` and does not attest itself.
+- Did the edge tests fail to kill what they named? The 25 deaths against dispatch `37829096222` are those tests, and a recount of the artifacts matches that list exactly. `_attended_masks` 14, 24, and 34 survived them because the open-minute count did not change. `_completion_times` 24 survived every run on this source.
+- Did any recorded equivalent die in these runs? No. The 62 named equivalents are still alive. The eight ledger suggestion deletions and `_violation` 42 did die earlier, and the note at that time said they were not equivalent.
+- Is `_job_of` 6 equivalent? No. An unknown operation outside the horizon calls it. `_op` 3 is the same path. `_spare_receipts` 23 is equivalent: the changed operation id sorts only among order-0 additions.
+- Is the score stable? The four scheduled artifacts from 9 October through 12 October have the same `exit_code_by_key`. The four notary modules did not change between `e54e33a` and `b7c8c29`. That is not a proof about a future source change.
 
 ## Pilot
 

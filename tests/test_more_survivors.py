@@ -1,7 +1,7 @@
-"""Edges the 1261/1921 run did not measure.
+"""Edges the recorded mutation scores did not measure.
 
-These tests are not part of that score. Dispatch 37829096222 is on the
-previous main and does not include this file.
+The first tests in this file are not in 1261/1921. Dispatch 37829096222
+does not contain the file. The later tests are not in 1587/1921 either.
 """
 
 from __future__ import annotations
@@ -20,6 +20,7 @@ from repairflow.model import (
     PoolDemand,
     PredecessorLink,
     RepairFlowProblem,
+    SpareReceipt,
     Violation,
 )
 from repairflow.reasons import ReasonCode
@@ -244,6 +245,186 @@ def test_subset_mode_ignores_a_missing_predecessor() -> None:
     assert not any(item.message == message for item in subset)
 
 
+def test_an_unknown_operation_outside_the_horizon_does_not_raise() -> None:
+    problem = synthesize("tiny", seed=1)
+    op = problem.operations[0]
+    start = problem.planning_horizon.start - timedelta(hours=1)
+    row = _visit(op, start, end=problem.planning_horizon.start, operation_id="OP-NOPE")
+    messages = [item.message for item in check_domain_assignments(problem, [row])]
+    assert any("outside the planning horizon" in message for message in messages)
+
+
+def test_a_negative_return_lag_is_invalid() -> None:
+    problem = synthesize("tiny", seed=1)
+    loaded = _rotable(problem, {"kind": "rotable", "return_lag_min": -1})
+    messages = [row.message for row in exchange_pool_violations(loaded, [])]
+    assert any("invalid return_lag" in message for message in messages)
+
+
+def test_preemptive_duration_uses_the_assigned_post() -> None:
+    problem = synthesize("tiny", seed=1)
+    op = next(row for row in problem.operations if not row.required_aux_ids)
+    start = problem.planning_horizon.start + timedelta(hours=8)
+    assigned = op.eligible_work_center_ids[0]
+    other = next(row.id for row in problem.work_centers if row.id != assigned)
+    shut = Calendar(id="CAL-SHUT", code="CAL-SHUT", windows=[])
+    centers = []
+    for row in problem.work_centers:
+        if row.id == other:
+            centers.append(row.model_copy(update={"calendar_id": "CAL-SHUT", "domain_attributes": {}}))
+        elif row.id == assigned:
+            centers.append(row.model_copy(update={"domain_attributes": {"attendance": "unattended"}}))
+        else:
+            centers.append(row)
+    centers.sort(key=lambda row: row.id != other)
+    attrs = {**op.domain_attributes, "duration_policy": "preemptive"}
+    edited = op.model_copy(update={"domain_attributes": attrs, "required_aux_ids": [], "duration_min": 60})
+    loaded = _reload(
+        _with_op(problem, edited),
+        calendars=[*problem.calendars, shut],
+        work_centers=centers,
+    )
+    row = _visit(edited, start, end=start + timedelta(minutes=60), work_center_id=assigned)
+    messages = [item.message for item in check_domain_assignments(loaded, [row])]
+    assert not any("open minutes" in message for message in messages)
+
+
+def test_preemptive_duration_uses_the_assigned_crew() -> None:
+    problem = synthesize("tiny", seed=1)
+    op = next(row for row in problem.operations if not row.required_aux_ids)
+    start = problem.planning_horizon.start + timedelta(hours=8)
+    assigned_center = op.eligible_work_center_ids[0]
+    closed, assigned = problem.crews[0], problem.crews[1]
+    shut = Calendar(id="CAL-SHUT", code="CAL-SHUT", windows=[])
+    crews = []
+    for row in problem.crews:
+        if row.id == closed.id:
+            crews.append(row.model_copy(update={"calendar_id": "CAL-SHUT", "domain_attributes": {}}))
+        elif row.id == assigned.id:
+            crews.append(row.model_copy(update={"domain_attributes": {"attendance": "unattended"}}))
+        else:
+            crews.append(row)
+    crews.sort(key=lambda row: row.id != closed.id)
+    centers = [
+        row.model_copy(update={"domain_attributes": {"attendance": "unattended"}})
+        if row.id == assigned_center
+        else row
+        for row in problem.work_centers
+    ]
+    attrs = {**op.domain_attributes, "duration_policy": "preemptive"}
+    edited = op.model_copy(
+        update={"domain_attributes": attrs, "required_aux_ids": [], "required_skills": [], "duration_min": 60}
+    )
+    loaded = _reload(
+        _with_op(problem, edited),
+        calendars=[*problem.calendars, shut],
+        work_centers=centers,
+        crews=crews,
+    )
+    row = _visit(
+        edited,
+        start,
+        end=start + timedelta(minutes=60),
+        work_center_id=assigned_center,
+        crew_id=assigned.id,
+    )
+    messages = [item.message for item in check_domain_assignments(loaded, [row])]
+    assert not any("open minutes" in message for message in messages)
+
+
+def test_a_partial_aux_window_counts_for_preemptive_duration() -> None:
+    problem = synthesize("tiny", seed=1)
+    op = next(row for row in problem.operations if not row.required_aux_ids)
+    start = problem.planning_horizon.start + timedelta(hours=8)
+    window = CalendarWindow(start=start, end=start + timedelta(minutes=60))
+    part = Calendar(id="CAL-PART", code="CAL-PART", windows=[window])
+    center_id = op.eligible_work_center_ids[0]
+    centers = [
+        row.model_copy(update={"domain_attributes": {"attendance": "unattended"}})
+        if row.id == center_id
+        else row
+        for row in problem.work_centers
+    ]
+    auxes = [
+        row.model_copy(update={"calendar_id": "CAL-PART"}) if row.id == "AUX-JIG" else row
+        for row in problem.aux_resources
+    ]
+    attrs = {**op.domain_attributes, "duration_policy": "preemptive"}
+    edited = op.model_copy(update={"domain_attributes": attrs, "required_aux_ids": [], "duration_min": 60})
+    loaded = _reload(
+        _with_op(problem, edited),
+        calendars=[*problem.calendars, part],
+        work_centers=centers,
+        aux_resources=auxes,
+    )
+    row = _visit(
+        edited,
+        start,
+        end=start + timedelta(minutes=120),
+        work_center_id=center_id,
+        aux_ids=["AUX-JIG"],
+    )
+    messages = [item.message for item in check_domain_assignments(loaded, [row])]
+    assert not any("open minutes" in message for message in messages)
+
+
+def test_a_rotable_with_receipts_is_not_a_consumable_stockout() -> None:
+    problem = synthesize("tiny", seed=1)
+    users = [row for row in problem.operations if "SP-BEARING" in row.required_spare_ids][:2]
+    start = problem.planning_horizon.start + timedelta(hours=8)
+    spare = next(row for row in problem.spares if row.id == "SP-BEARING")
+    edited = spare.model_copy(
+        update={
+            "quantity": 1,
+            "domain_attributes": {"kind": "rotable"},
+            "receipts": [SpareReceipt(at=start, qty=1)],
+        }
+    )
+    spares = [edited if row.id == spare.id else row for row in problem.spares]
+    loaded = _reload(problem, spares=spares)
+    rows = [
+        _visit(users[0], start, end=start + timedelta(minutes=20)),
+        _visit(users[1], start, end=start + timedelta(minutes=20)),
+    ]
+    messages = [row.message for row in check_domain_assignments(loaded, rows)]
+    assert not any("stock is short" in message for message in messages)
+
+
+def test_an_always_open_shop_post_needs_no_calendar() -> None:
+    problem = synthesize("tiny", seed=1)
+    op = problem.operations[0]
+    center_id = op.eligible_work_center_ids[0]
+    open_attrs = {"availability": "always_open"}
+    centers = [
+        row.model_copy(update={"calendar_id": None, "domain_attributes": open_attrs})
+        if row.id == center_id
+        else row
+        for row in problem.work_centers
+    ]
+    crews = [
+        row.model_copy(update={"domain_attributes": {**row.domain_attributes, **open_attrs}})
+        if row.calendar_id is None
+        else row
+        for row in problem.crews
+    ]
+    auxes = [
+        row.model_copy(update={"domain_attributes": {**row.domain_attributes, **open_attrs}})
+        if row.calendar_id is None
+        else row
+        for row in problem.aux_resources
+    ]
+    loaded = _reload(
+        problem,
+        data_provenance="open_data",
+        work_centers=centers,
+        crews=crews,
+        aux_resources=auxes,
+    )
+    start = problem.planning_horizon.start + timedelta(hours=8)
+    messages = [item.message for item in check_domain_assignments(loaded, [_visit(op, start)])]
+    assert not any("calendar is not declared" in message for message in messages)
+
+
 def _two_returns() -> tuple[RepairFlowProblem, list[PlannedAssignment], object]:
     problem = synthesize("tiny", seed=1)
     first, second = problem.jobs[0], problem.jobs[1]
@@ -296,7 +477,7 @@ def _preemptive_center(
     return loaded, edited, center_id, start
 
 
-def _rotable(problem: RepairFlowProblem, attributes: dict[str, str]) -> RepairFlowProblem:
+def _rotable(problem: RepairFlowProblem, attributes: dict[str, object]) -> RepairFlowProblem:
     spare = next(row for row in problem.spares if row.id == "SP-BEARING")
     spares = [
         spare.model_copy(update={"quantity": 1, "domain_attributes": attributes})
