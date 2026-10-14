@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- The evidence manifest attests main `93320f1` / push run `38629025631`,
+  including `test-slow`. This commit does not attest itself.
+- The boundary diagram runs top to bottom, so the node labels stay inside
+  the repository column.
 - The README gained a problem statement, a contents list, exit codes, a
   working cycle with the artifact of each command, a Mermaid boundary
   diagram, a reason-code table, a comparison with open schedulers, a

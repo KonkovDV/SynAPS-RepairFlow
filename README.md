@@ -106,21 +106,12 @@ repairflow report out/tiny.json out/greed.json --md out/greed.md --html out/gree
 ## Как устроено
 
 ```mermaid
-flowchart LR
-    subgraph input["Вход"]
-        P["Формальный экземпляр JSON"]
-        S["Цеховой CSV"]
-    end
-    subgraph search["Поиск"]
-        K["Ядро SynAPS по пину"]
-    end
-    subgraph notary["Проверка, без кода поиска"]
-        N["Независимый нотариус"]
-        D["Доменный нотариус verify-plan"]
-    end
-    P --> V["Схема и доменная валидация"] --> K --> N
-    S --> D
-    N --> E["Пакет доказательств: вердикт, причины, хеши, отчёт"]
+flowchart TB
+    P["Формальный экземпляр JSON"] --> V["Схема и доменная валидация"]
+    V --> K["Ядро SynAPS по пину"]
+    K --> N["Независимый нотариус"]
+    S["Цеховой CSV"] --> D["Доменный нотариус verify-plan"]
+    N --> E["Пакет доказательств"]
     D --> E
     E --> H["Решение человека"]
 ```
@@ -166,8 +157,8 @@ false_accept_rate = invalid_plans_accepted_as_verified / invalid_plans_presented
 <!-- evidence:begin -->
 | Факт | Значение |
 |---|---|
-| Проверенный `main` | [`04ad612`](https://github.com/KonkovDV/SynAPS-RepairFlow/commit/04ad612851f1c39c96457a77cea03c358072f9a5) |
-| CI для этого `main` | [Actions run 38563996424](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/runs/38563996424), success, включая `test-slow` |
+| Проверенный `main` | [`93320f1`](https://github.com/KonkovDV/SynAPS-RepairFlow/commit/93320f14a67e01986d0a6d871f0d656f1474f845) |
+| CI для этого `main` | [Actions run 38629025631](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/runs/38629025631), success, включая `test-slow` |
 | Sweep-line commit | [`a3621fd`](https://github.com/KonkovDV/SynAPS-RepairFlow/commit/a3621fd538019f4dcc0c681d5634c022260382e9) |
 | SynAPS pin | [`f939727`](https://github.com/KonkovDV/SynAPS/commit/f939727cd9369fd9b36438bfac7198f0c39c6d3b) |
 | Solver | `ortools==9.15.6755` |
