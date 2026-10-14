@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Reading the 272 survivors that had no equivalent reason: 45 now have
+  one, taken from the mutant body, including equal `model_dump` modes and
+  the two `_named_calendar_fit` returns that validation never reaches. 227
+  still do not. `_completion_times` 24 is one of them and is not equivalent.
+  `tests/test_kernel_binding.py` and `tests/test_open_edges.py` assert the
+  other 226. Those tests are not in 1587/1921. This is not an attestation
+  of main, and the README does not copy the score.
 - A recount of the four scheduled mutmut artifacts matches the recorded
   score: 1587 killed, 334 alive, identical exit codes, 62 equivalents still
   alive, 272 without a reason. `_job_of` 6 and `_op` 3 are not equivalent.
