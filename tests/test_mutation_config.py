@@ -31,7 +31,7 @@ def test_mutmut_targets_are_the_notary_modules() -> None:
 def test_mutation_job_runs_on_linux_outside_pull_requests() -> None:
     text = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
     job = text.split("  mutation:", 1)[1]
-    assert "runs-on: ubuntu-latest" in job
+    assert "runs-on: ubuntu-24.04" in job
     assert "timeout-minutes: 360" in job
     assert "mutmut==3.8.0" in job
     assert "github.event_name == 'schedule'" in job

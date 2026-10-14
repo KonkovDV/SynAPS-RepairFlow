@@ -1,0 +1,2 @@
+# Build backend only. Runtime dependencies stay in pyproject.toml.
+hatchling==1.32.4

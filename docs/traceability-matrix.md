@@ -32,6 +32,7 @@
 | Пин OR-Tools и прямая опись состава | implemented | `ortools==9.15.6755`, `repairflow.sbom` |
 | Узнавание установленного колеса или sdist, отдельно от описи файлов | implemented | `repairflow.artifact_record`; подпись остаётся `absent` |
 | Замок зависимостей по SHA-256 архивов | implemented | `repairflow.dependency_lock`; `locked` только когда каждый хеш на месте |
+| Хеш-замок requirements | implemented | `requirements-lock.txt`; pydantic `2.13.5`; `tests/test_lock_hashes.py` |
 | Подписанный артефакт | blocked | статус подписи остаётся `absent`; ключа выпуска в этой сборке нет |
 | Граница «без сети, теневой режим» | documented | модель угроз, ADR-0003, протокол пилота |
 | Журнал приёмки оператором | implemented | `repairflow decide`, `repairflow log verify`, хеш-цепочка; без подписи |
