@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Operator decisions are a hash chain. `repairflow decide` checks the plan
+  hashes and will not accept a non-zero exit. `repairflow log verify` catches
+  a swapped or edited line, and a truncated tail when the tip hash is known.
+  A legacy log without the chain is read-only.
 - Public pages are rewritten in plain language. Commands, verdict words, and
   the generated evidence table stay as they are. No score is copied.
 - The evidence manifest attests main `93320f1` / push run `38629025631`,

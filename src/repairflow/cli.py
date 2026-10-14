@@ -1,4 +1,4 @@
-"""CLI: version / synthesize / solve / check / verify-plan / compare / report / demo / disrupt / benchmark."""
+"""CLI for the repair-flow experiment, including decide and the operator log."""
 
 from __future__ import annotations
 
@@ -9,6 +9,13 @@ from pathlib import Path
 from typing import Any
 
 from repairflow.benchmark import run_benchmark
+from repairflow.decision_log import (
+    Decision,
+    format_decision_stats,
+    read_decision_log,
+    record_checked_decision,
+    verify_decision_log,
+)
 from repairflow.diff import diff_plans
 from repairflow.domain_verify import verify_domain_plan
 from repairflow.events import InspectionEvent
@@ -121,6 +128,25 @@ def main(argv: list[str] | None = None) -> int:
         help="Filter default matrix by seed. Combined with --preset, runs that cartesian product.",
     )
 
+    p_decide = sub.add_parser("decide", help="Record an operator decision against a checked plan")
+    p_decide.add_argument("--problem", type=Path, required=True)
+    p_decide.add_argument("--result", type=Path, required=True)
+    p_decide.add_argument("--operator-code", required=True)
+    p_decide.add_argument("--log", type=Path, required=True)
+    p_decide.add_argument("--reason", default="")
+    choice = p_decide.add_mutually_exclusive_group(required=True)
+    choice.add_argument("--accept", action="store_true")
+    choice.add_argument("--accept-with-edits", dest="edit_summary")
+    choice.add_argument("--reject", action="store_true")
+
+    p_log = sub.add_parser("log", help="Verify or summarize an operator decision log")
+    log_sub = p_log.add_subparsers(dest="log_command")
+    p_verify = log_sub.add_parser("verify", help="Check the hash chain")
+    p_verify.add_argument("log", type=Path)
+    p_verify.add_argument("--head", default=None)
+    p_stats = log_sub.add_parser("stats", help="Print counters without operator codes")
+    p_stats.add_argument("log", type=Path)
+
     args = parser.parse_args(argv)
     try:
         if args.command == "version":
@@ -154,11 +180,51 @@ def main(argv: list[str] | None = None) -> int:
                 presets=args.preset,
                 seeds=args.seeds,
             )
+        if args.command == "decide":
+            return _decide(args)
+        if args.command == "log":
+            return _log(args)
         parser.print_help()
         return 0
     except (OSError, ValueError, TypeError, json.JSONDecodeError, KeyError) as exc:
         sys.stderr.write(f"repairflow: {exc}\n")
         return 1
+
+
+def _decide(args: argparse.Namespace) -> int:
+    if args.reject:
+        decision = Decision.REJECTED
+        edit_summary = ""
+    elif args.edit_summary is not None:
+        decision = Decision.ACCEPTED_WITH_EDITS
+        edit_summary = str(args.edit_summary)
+    else:
+        decision = Decision.ACCEPTED
+        edit_summary = ""
+    event = record_checked_decision(
+        problem_path=args.problem,
+        result_path=args.result,
+        decision=decision,
+        operator_code=args.operator_code,
+        log_path=args.log,
+        reason=args.reason,
+        edit_summary=edit_summary,
+    )
+    sys.stdout.write(event.event_hash + "\n")
+    return 0
+
+
+def _log(args: argparse.Namespace) -> int:
+    if args.log_command == "verify":
+        version = verify_decision_log(args.log, head=args.head)
+        events = read_decision_log(args.log)
+        tip = events[-1].event_hash if events and version == "v2" else ""
+        sys.stdout.write(f"decision-log {version} events={len(events)} head={tip}\n")
+        return 0
+    if args.log_command == "stats":
+        sys.stdout.write(format_decision_stats(read_decision_log(args.log)))
+        return 0
+    raise ValueError("log command must be verify or stats")
 
 
 def _solve(input_path: Path, output: Path, solver: str) -> int:
