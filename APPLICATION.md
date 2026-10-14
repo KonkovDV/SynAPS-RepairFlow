@@ -1,17 +1,17 @@
-# APPLICATION.md
+# Заявка
 
-Contest / accelerator packet. Not a customer contract.
+Текст для конкурса или акселератора. Договором с заказчиком он не является.
 
-**Title.** SynAPS RepairFlow: проверяемое планирование ремонта узлов и агрегатов городского транспорта.
+**Название.** SynAPS RepairFlow: проверяемое планирование ремонта узлов и агрегатов городского транспорта.
 
-**Short form.** RepairFlow builds an alternative repair schedule for urban-transport units and aggregates (posts, crews, skills, tooling, precedence, setups, due dates). A separate checker proves hard constraints or names the conflict. Offline / shadow mode. No vehicle pull-out.
+**Коротко.** RepairFlow строит второй вариант графика ремонта узлов и агрегатов: посты, бригады, допуски, оснастка, порядок операций, переналадка, сроки. Отдельная проверка либо подтверждает жёсткие ограничения, либо называет конфликт. Расчёт идёт без сети, в теневом режиме. Выпуска техники на линию нет.
 
-**Hypothesis for a 90-day pilot.** On one agreed repair contour, is there a measurable gap between the current process/plan and an independently checked alternative schedule (hard violations, overdue jobs, makespan, setups, unassigned operations)?
+**Вопрос на пилот в 90 дней.** На одном согласованном участке ремонта виден ли измеримый зазор между текущим планом и вторым графиком, который проверил отдельный нотариус? Смотреть есть на что: жёсткие нарушения, просроченные заказы, общий срок, переналадки, операции без назначения.
 
-**Not claimed.** SVARZ is a customer; Excel is the current system; X% savings; industrial deployment.
+**Чего в заявке нет.** Завод не назван заказчиком. Доли экономии нет. Промышленного внедрения нет.
 
-**Buyer profile (if a contact exists).** Owner of the repair production plan, shop supervisor, ТОиР specialist, or digitalisation lead for a repair contour. Not “any Department of Transport employee”.
+**Кому это показывать, если контакт есть.** Тому, кто владеет планом ремонтного производства, мастеру участка, специалисту по ТОиР или руководителю цифровизации одного ремонтного участка. Не «любому сотруднику департамента транспорта».
 
-See `docs/README.md`, `docs/jury-demo.md`, `docs/pilot-protocol.md` and `docs/evidence-protocol.md`.
+Дальше: `docs/README.md`, `docs/jury-demo.md`, `docs/pilot-protocol.md`, `docs/evidence-protocol.md`.
 
-Laboratory numbers live in `benchmark/results/benchmark.json` and `benchmark/results/SHA256SUMS`. The checked commit and the kernel pin live in `docs/evidence-manifest.json`. Those files are the evidence; this page does not copy their digits.
+Лабораторные числа лежат в `benchmark/results/benchmark.json` и `benchmark/results/SHA256SUMS`. Проверенная ревизия и пин ядра — в `docs/evidence-manifest.json`. Это и есть доказательства. На эту страницу их цифры не переписываются.

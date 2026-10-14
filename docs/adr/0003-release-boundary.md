@@ -1,13 +1,13 @@
-# ADR-0003: release boundary for pilot readiness
+# ADR-0003. Граница выпуска
 
-## Decision
+## Решение
 
-Release only as offline, shadow decision support for one repair contour. The generated plan is a candidate for a person to review. It is not an instruction to an operational control system.
+Выпускать только как теневую подсказку по одному ремонтному участку, без сети. Собранный план — кандидат, который смотрит человек. Командой системе управления он не является.
 
-## Rationale
+## Почему так
 
-The current model is a laboratory prototype. Synthetic fixtures and, later, an anonymized extract are the supported inputs. This boundary keeps fail-closed checking in place while a named process owner, a baseline, and a pilot agreement are still absent.
+Сейчас это лабораторный прототип. На вход годятся синтетические примеры и, позже, обезличенная выгрузка. Граница оставляет нотариус, который при сомнении отказывает, пока нет названного владельца процесса, базы и договора о пилоте.
 
-## Consequences
+## Что из этого следует
 
-The README and any application distinguish a verified instance from business impact, production deployment, and customer adoption. A claim about savings, TRL above 4, or deployment needs its own cited evidence.
+README и заявка отличают проверенный экземпляр от делового эффекта, промышленной установки и принятия заказчиком. Заявление об экономии, о TRL выше 4 или о внедрении требует своего цитируемого доказательства.

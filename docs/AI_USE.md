@@ -1,5 +1,5 @@
-# AI-assisted development disclosure
+# Где в разработке помогал автомат
 
-Parts of the repository may be drafted or reviewed with automated coding assistance. Maintainers remain responsible for requirements, source review, tests, dependency review, security decisions, and release approval.
+Часть файлов репозитория могла быть набросана или перечитана с помощью автоматической подсказки. За требования, разбор исходников, тесты, зависимости, решения по безопасности и выпуск отвечают люди, которые ведут репозиторий.
 
-No model output is evidence of solver correctness, customer effect, legal compliance, or pilot acceptance. A reproducible claim needs the committed source, pinned dependencies, test output, input hash, runtime metadata, and the independent checker result.
+Вывод модели не доказывает, что решатель прав, что у заказчика есть эффект, что соблюдено право или что пилот принят. Повторяемое утверждение держится на исходниках в репозитории, закреплённых зависимостях, выводе тестов, хеше входа, сведениях о запуске и результате независимого нотариуса.

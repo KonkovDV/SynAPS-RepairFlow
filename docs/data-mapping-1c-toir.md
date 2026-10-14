@@ -1,17 +1,17 @@
-# 1C:ТОИР / EAM mapping guide
+# Карта полей учёта
 
-This is a field map. It is not an integration and not a claim that a customer extract exists.
+Это карта полей. Обмена с учётной системой здесь нет, и выгрузки заказчика тоже нет.
 
-| Source concept | RepairFlow field | Treatment |
-|---|---|---|
-| Repair order | `jobs[].id`, `jobs[].external_ref` | Replace personal identifiers with stable pseudonyms |
-| Equipment or unit | `jobs[].asset_code`, `jobs[].unit_type` | Keep the minimum needed for eligibility and the exchange pool |
-| Operation / routing step | `operations[]` | Keep duration, skills, posts, setup state, and `predecessor_ids` |
-| Work centre / post | `work_centers[]` | Capability and calendar. An empty `eligible_work_center_ids` is invalid |
-| Employee group | `crews[]` | Skill codes and anonymized ids. A calendar with no windows is unavailable |
-| Tool / fixture | `aux_resources[]` | Capacity and calendar. A non-empty shift is compiled into the kernel. A calendar with no windows stays closed and is not sent as 24/7 |
-| Material / spare | `spares[]`, `exchange_pools[]` | Blocking spares stay an availability check. Exchange stock is a dated ledger |
-| Shift calendar | `calendars[]` | UTC instants. Record the source timezone in the accompanying manifest |
-| Provenance | `data_provenance` | `synthetic` until a signed extract says otherwise |
+| Откуда | Поле RepairFlow | Как обращаться |
+| --- | --- | --- |
+| Заказ на ремонт | `jobs[].id`, `jobs[].external_ref` | Личные идентификаторы заменить устойчивыми псевдонимами |
+| Оборудование или агрегат | `jobs[].asset_code`, `jobs[].unit_type` | Оставить минимум, нужный для допуска на пост и для обменного фонда |
+| Операция, шаг карты | `operations[]` | Оставить длительность, допуски, посты, состояние переналадки и `predecessor_ids` |
+| Рабочий центр, пост | `work_centers[]` | Возможности и календарь. Пустой `eligible_work_center_ids` делает экземпляр неверным |
+| Группа сотрудников | `crews[]` | Коды допусков и обезличенные идентификаторы. Календарь без окон недоступен |
+| Оснастка | `aux_resources[]` | Ёмкость и календарь. Непустая смена компилируется в ядро. Календарь без окон остаётся закрытым и не уходит в ядро как круглосуточный |
+| Материал, запчасть | `spares[]`, `exchange_pools[]` | Блокирующие запчасти остаются проверкой доступности. Обменный запас — датированная книга |
+| Календарь смен | `calendars[]` | Мгновения в UTC. Часовой пояс источника записать в сопроводительный манифест |
+| Происхождение | `data_provenance` | `synthetic`, пока подписанная выгрузка не скажет иначе |
 
-Before a customer pilot, require a signed field-level contract, a sample extract, a timezone definition, an anonymization procedure, and a reconciliation against the source system.
+До пилота с заказчиком нужны подписанный договор на уровне полей, пример выгрузки, определение часового пояса, процедура обезличивания и сверка с системой-источником.

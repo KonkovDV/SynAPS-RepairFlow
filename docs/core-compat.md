@@ -1,53 +1,53 @@
-# Core compatibility
+# Совместимость с ядром
 
-Pinned commit: `f939727cd9369fd9b36438bfac7198f0c39c6d3b`.
+Закреплённый коммит: `f939727cd9369fd9b36438bfac7198f0c39c6d3b`.
 
-This pin is `cf10ca3e8be39d9a46e5d983de75a8066f66ca39` plus auxiliary-resource
-shift calendars. The evidence manifest attests RepairFlow `93320f1`, whose
-post-merge CI used this same pin.
+Этот пин — `cf10ca3e8be39d9a46e5d983de75a8066f66ca39` плюс календари смен
+у вспомогательных ресурсов. Манифест доказательств аттестует RepairFlow `93320f1`:
+прогон после вливания той ревизии шёл на том же пине.
 
-Checked on this pin:
+Проверено на этом пине:
 
-| Symbol | Present |
+| Символ | Есть |
 | --- | --- |
-| `solve_schedule` / `repair_schedule` | yes |
-| `ScheduleProblem` chain rule (`predecessor_op_id` follows `seq_in_order`) | yes |
-| `verify_schedule_result(problem, result)` | yes |
-| `FeasibilityChecker.check(problem, assignments, *, exhaustive=False, strict_setup_matrix=False, strict_grain=False, scope=None)` | yes |
-| `proven_hard_violations` | yes |
-| `pin_issued_plan` / `normalize_schedule_problem_data` | yes |
+| `solve_schedule` / `repair_schedule` | да |
+| `ScheduleProblem` chain rule (`predecessor_op_id` follows `seq_in_order`) | да |
+| `verify_schedule_result(problem, result)` | да |
+| `FeasibilityChecker.check(problem, assignments, *, exhaustive=False, strict_setup_matrix=False, strict_grain=False, scope=None)` | да |
+| `proven_hard_violations` | да |
+| `pin_issued_plan` / `normalize_schedule_problem_data` | да |
 | `SolveRegime` | `NOMINAL`, `RUSH_ORDER`, `BREAKDOWN`, `MATERIAL_SHORTAGE`, `INTERACTIVE`, `WHAT_IF` |
-| `AuxiliaryResource.calendar` | `list[ShiftInterval]`; empty means 24/7 |
+| `AuxiliaryResource.calendar` | `list[ShiftInterval]`; пустой список значит круглосуточно |
 
-RepairFlow calls `FeasibilityChecker.check` with `exhaustive=True` and
+RepairFlow вызывает `FeasibilityChecker.check` с `exhaustive=True` и
 `strict_setup_matrix=True`.
 
-## CP-SAT size boundary
+## Предел размера CP-SAT
 
-`CPSAT_OPS_CAP` is 100 operations on the submitted instance. A CP-SAT `plan` or
-kernel repair above that count returns a recorded refusal (`CPSAT_OPS_CAP`)
-and does not call `solve_schedule` or `repair_schedule`. On a synthetic
-one-skill card with published shifts, CPSAT-10 returned a checked plan at 100
-operations and timed out with an empty plan at 120. The cap is that checked
-count. It is not a measured limit of a real shop and not a claim that an
-instance of 100 operations reaches `optimal`. Domain list solvers are unaffected.
+`CPSAT_OPS_CAP` — 100 операций на поданном экземпляре. `plan` через CP-SAT или
+ремонт ядра выше этого числа возвращает записанный отказ (`CPSAT_OPS_CAP`)
+и не вызывает `solve_schedule` или `repair_schedule`. На синтетической карте
+с одним навыком и опубликованными сменами CPSAT-10 вернул проверенный план на 100
+операциях и ушёл в тайм-аут с пустым планом на 120. Предел равен этому проверенному
+число. Это не измеренный предел настоящего цеха и не заявление, что экземпляр
+из 100 операций доходит до `optimal`. Доменные списочные решатели пределом не задеты.
 
-## Calendar capability boundary
+## Граница календарей
 
-The domain model supports calendars on work centres, crews and auxiliary resources.
-A non-empty attended calendar is compiled to `ShiftInterval`s on the kernel
-resource. CP-SAT and `FeasibilityChecker` keep occupancy `[start - setup, end]`
-inside one of those intervals.
+Доменная модель держит календари постов, бригад и оснастки.
+Непустой календарь с персоналом компилируется в `ShiftInterval` на ресурсе ядра.
+CP-SAT и `FeasibilityChecker` держат занятость `[start - setup, end]`
+внутри одного из этих интервалов.
 
-`KERNEL_CALENDAR_UNSUPPORTED` remains for three cases the kernel still cannot
-represent without inverting the domain rule:
+`KERNEL_CALENDAR_UNSUPPORTED` остаётся в трёх случаях, которые ядро всё ещё не умеет
+изобразить, не перевернув доменное правило:
 
-- an attended calendar with zero windows (a kernel empty list would mean 24/7);
-- a fungible skill pool whose crews do not share one shift list;
-- a preemptive operation on a published crew or aux shift (the kernel requires
-  one window and does not count open minutes across a gap).
+- календарь с персоналом и без окон (пустой список в ядре значил бы круглосуточную работу);
+- пул одинаковых навыков, чьи бригады не делят один список смен;
+- прерываемая операция на опубликованной смене бригады или оснастки (ядро требует
+  одно окно и не считает открытые минуты через разрыв).
 
-`plan()` calls `assert_kernel_calendar_compatibility` before `solve_schedule`,
-and kernel disruption repair calls it before `repair_schedule`. Domain FIFO,
-GREED, EDD and ATC do not: they keep enforcing those calendars themselves.
-An unattended resource is compiled as open. A missing `calendar_id` stays open.
+`plan()` вызывает `assert_kernel_calendar_compatibility` до `solve_schedule`,
+а ремонт сбоя через ядро — до `repair_schedule`. Доменные FIFO,
+GREED, EDD и ATC так не делают: календари они держат сами.
+Ресурс без персонала компилируется как открытый. Пропавший `calendar_id` остаётся открытым.

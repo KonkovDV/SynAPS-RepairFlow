@@ -1,10 +1,10 @@
-# Operator decision log contract
+# Журнал решения оператора
 
-The solver emits a candidate. A person accepts, edits, or rejects it. RepairFlow records that decision as append-only JSONL next to the evidence bundle. The log is an audit record, not an automatic approval mechanism.
+Решатель отдаёт кандидата. Человек его принимает, правит или отвергает. RepairFlow пишет это решение в JSONL, к которому можно только дописывать, рядом с пакетом доказательств. Журнал — запись для разбора. Сам он план не утверждает.
 
-## Record shape
+## Форма записи
 
-Each line is validated by `repairflow.decision_log.DecisionEvent`:
+Каждую строку проверяет `repairflow.decision_log.DecisionEvent`:
 
 ```json
 {
@@ -21,11 +21,11 @@ Each line is validated by `repairflow.decision_log.DecisionEvent`:
 }
 ```
 
-The event and both hashes are validated before writing. Timestamps must include a timezone and are normalized to UTC. `accepted_with_edits` requires `edit_summary`; `rejected` and `manual_fallback` require `reason`.
+Событие и оба хеша проверяются до записи. У метки времени обязан быть часовой пояс, дальше она приводится к UTC. Для `accepted_with_edits` нужен `edit_summary`. Для `rejected` и `manual_fallback` нужна `reason`.
 
-## Append-only behavior
+## Только дописывать
 
-Use `append_decision(path, event)` to append one canonical JSONL record:
+`append_decision(path, event)` дописывает одну каноническую строку JSONL:
 
 ```python
 from repairflow.decision_log import DecisionEvent, append_decision
@@ -40,9 +40,9 @@ event = DecisionEvent(
 append_decision("out/decisions.jsonl", event)
 ```
 
-Before appending, RepairFlow validates every existing line. A malformed, tampered, blank, or schema-invalid line stops the append instead of extending a compromised history. `read_decision_log(path)` performs the same full validation.
+Перед дописыванием RepairFlow проверяет каждую уже лежащую строку. Кривая, подправленная, пустая или не подходящая схеме строка останавливает запись: испорченную историю программа не продолжает. `read_decision_log(path)` делает ту же полную проверку.
 
-For a shell-facing entry point:
+Из оболочки:
 
 ```text
 python tools/append_decision.py \
@@ -54,8 +54,8 @@ python tools/append_decision.py \
   --decision accepted
 ```
 
-## Privacy and scope
+## Что сюда не класть
 
-`operator_code` is a pseudonymous single-line code. The library rejects names, email-shaped values, numeric personnel identifiers, and newline injection. Do not store names, personnel numbers, email addresses, or other personal data in the planning bundle. Keep any identity mapping in the customer's controlled system.
+`operator_code` — псевдоним в одну строку. Библиотека отвергает фамилии, строки, похожие на почту, числовые табельные номера и подстановку перевода строки. Имена, табельные номера, почту и другие личные данные в пакет плана не кладут. Соответствие псевдонима человеку остаётся в системе, которой управляет заказчик.
 
-The log does not decide whether a plan is feasible, does not modify `verified_feasible`, and does not create a customer, pilot, production, safety, savings, or optimality claim. Rollback references are operator-provided pointers to an external controlled record.
+Журнал не решает, допустим ли план, не меняет `verified_feasible` и сам по себе не создаёт заявления о заказчике, пилоте, производстве, безопасности, экономии или оптимальности. Ссылка на откат — это указатель, который дал оператор, на внешнюю контролируемую запись.

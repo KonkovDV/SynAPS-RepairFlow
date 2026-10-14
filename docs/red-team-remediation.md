@@ -1,76 +1,76 @@
-# Red-team remediation
+# Что закрыли после разбора на прочность
 
-Date: 2026-09-30. This page describes `main`. It does not describe an import-time patch of the checker.
+Дата: 2026-09-30. Страница описывает `main`. Подмены нотариуса при импорте здесь нет.
 
-## Closed in the checker and the model
+## Закрыто в нотариусе и в модели
 
-- **Auxiliary calendars.** Setup plus processing must sit inside one window of the aux calendar. A referenced calendar with zero windows is unavailable. The same rule applies to posts and crews. A non-empty shift is compiled into `AuxiliaryResource.calendar`. A zero-window attended calendar is not compiled as the kernel's 24/7 empty list.
-- **Coverage.** `allow_partial_plan` does not hide a missing operation. The status is `PARTIAL` and the exit code is 2.
-- **Checker primitives.** `reverse_ids` and `lookup_setup_minutes` used by the notary live in `checker_primitives.py`. `bind_concrete_crews` is a planner publication step, not a checker repair. `checker.py` does not import `repairflow.adapter`. A missing matrix cell, including a same-state cell, is `None`. The checker reports `MISSING_SETUP`. The kernel compile inserts 0 only when `policy.missing_setup` is `zero`.
-- **Deadlines.** `due_date` is the KPI `DUE_MISSED`. `Job.deadline` is `DEADLINE_MISSED`. `Operation.latest_finish` is `WINDOW_BROKEN`.
-- **DAG.** Acyclic cards compile. Cycles and an empty eligible-post list are validation errors.
-- **Evidence.** Unified metrics, `check --verify-hashes`, runtime manifest inside `config_hash`, OR-Tools `9.15.6755`, and a direct CycloneDX SBOM.
+- **Календари оснастки.** Переналадка вместе с обработкой должна лежать в одном окне календаря оснастки. Календарь, на который сослались, с нулём окон недоступен. То же правило у постов и бригад. Непустая смена компилируется в `AuxiliaryResource.calendar`. Календарь с персоналом и без окон не компилируется в пустой круглосуточный список ядра.
+- **Покрытие.** `allow_partial_plan` не прячет пропавшую операцию. Статус `PARTIAL`, код выхода 2.
+- **Примитивы нотариуса.** `reverse_ids` и `lookup_setup_minutes`, которыми пользуется нотариус, лежат в `checker_primitives.py`. `bind_concrete_crews` — шаг публикации планировщика, не починка нотариуса. `checker.py` не импортирует `repairflow.adapter`. Пустая клетка матрицы, в том числе для того же состояния, равна `None`. Нотариус сообщает `MISSING_SETUP`. Сборка ядра подставляет 0 только когда `policy.missing_setup` равен `zero`.
+- **Сроки.** `due_date` — показатель `DUE_MISSED`. `Job.deadline` — `DEADLINE_MISSED`. `Operation.latest_finish` — `WINDOW_BROKEN`.
+- **Граф.** Карты без циклов собираются. Цикл и пустой список допустимых постов — ошибки проверки.
+- **Доказательства.** Общие метрики, `check --verify-hashes`, манифест запуска внутри `config_hash`, OR-Tools `9.15.6755` и прямая опись CycloneDX.
 
 Regression tests: `tests/test_verdict_safety.py`, `tests/test_dag_compiler.py`, `tests/test_exchange_and_inspection.py`, `tests/test_metrics_and_hashes.py`.
 
-## Still outside this repository
+## Что по-прежнему вне репозитория
 
-1. A writer for the operator decision log.
-2. MUS/MCS explanations, `POST_DOWN`, `PART_DELAY`, and a route-variant catalogue.
-3. A hash lock of every transitive wheel, and a signed release artifact.
-4. A kernel encoding of a closed calendar, a mixed skill-pool shift, or preemptive open-minute counting. Non-empty shifts are compiled. The domain checker still enforces the rest.
-5. A named business owner, a legal entity and IP basis, and a signed data agreement for any real pilot.
+1. Писатель журнала решений оператора.
+2. Объяснения MUS и MCS, события `POST_DOWN` и `PART_DELAY` и каталог вариантов маршрута.
+3. Хеш-замок на каждое транзитивное колесо и подписанный архив выпуска.
+4. Кодировка в ядре закрытого календаря, смешанной смены пула навыков или подсчёта открытых минут у прерываемой операции. Непустые смены компилируются. Остальное по-прежнему держит доменный нотариус.
+5. Названный владелец процесса, юридическое лицо и основание прав, подписанный договор о данных для настоящего пилота.
 
-`claim_status=verified` means full coverage and an empty hard notary. It does not mean optimality, a safety certificate, legal compliance, deployment, or a customer effect.
+`claim_status=verified` значит полное покрытие и пустой жёсткий нотариус. Оптимальности, сертификата безопасности, юридического соответствия, установки в цехе и эффекта у заказчика из этого слова не следует.
 
-## Minute oracle (2026-10-08)
+## Поминутный оракул (2026-10-08)
 
-`tests/oracle_minutes.py` does not import the checker. Hand tests, not a diff against checker output, are the evidence so far.
+`tests/oracle_minutes.py` нотариус не импортирует. Пока свидетельство — ручные примеры, не разница с выводом нотариуса.
 
-Closed on those hand cases: one-minute overlap versus a shared endpoint, setup time inside occupancy, skill expiry at the visit end, hard deadline versus soft due date, a closed calendar, precedence lags, frozen position, setup cell, consumable receipts, rotable return lag, a preemptive gap, two lanes versus a third, and refusal of an eight-day-plus horizon or a sub-minute timestamp.
+На этих ручных примерах закрыто: наложение в одну минуту против общего конца, переналадка внутри занятости, истечение допуска к концу визита, жёсткий срок против мягкого, закрытый календарь, лаги порядка, замороженная позиция, клетка переналадки, приходы расходных запчастей, лаг возврата оборотной, разрыв у прерываемой операции, две полосы против третьей и отказ горизонту длиннее восьми суток или метке короче минуты.
 
-Accepted limit: the exchange-pool ledger is not judged.
+Принятая граница: книгу обменного фонда оракул не судит.
 
-## Fault campaign v2 (2026-10-08)
+## Кампания порчи планов, версия 2 (2026-10-08)
 
-The oracle labels each mutation. `false_accept` means the checker verified a plan the oracle rejected. `false_reject` means the checker rejected a plan the oracle accepted. An unchanged plan is not counted. The oracle module was not edited to match the checker.
+Оракул метит каждую порчу. `false_accept` — нотариус принял план, который оракул отверг. `false_reject` — нотариус отверг план, который оракул принял. Неизменённый план в счёт не идёт. Модуль оракула под нотариус не подгоняли.
 
-Committed matrix in `docs/fault-campaign.json`: `tiny` and `repair-site-mvp`, seeds 1–30, GREED, EDD and ATC, 56 mutations per verified baseline. checked 10080, false_accept 0, false_reject 0, must_reject 9321, may_pass 759. The reason string in that file is the false_reject explanation: the checker rejected no oracle-accepted plan in this matrix.
+Закреплённая матрица в `docs/fault-campaign.json`: `tiny` и `repair-site-mvp`, зёрна 1–30, GREED, EDD и ATC, 56 порч на каждую проверенную базу. Проверено 10080, false_accept 0, false_reject 0, must_reject 9321, may_pass 759. Строка причины в том файле объясняет false_reject: нотариус не отверг ни одного плана, который оракул принял.
 
-The 759 `may_pass` rows in the 56-prefix are real agreements, not invalid plans. They are later shifts (`shift+1`, `shift+5`, `shift+30`, `shift+240`) and some post changes. On that prefix every negative shift was a hard violation for both sides.
+759 строк `may_pass` в префиксе из 56 — согласия обеих сторон. Планы при этом годные. Это поздние сдвиги (`shift+1`, `shift+5`, `shift+30`, `shift+240`) и часть смен поста. На этом префиксе каждый отрицательный сдвиг был жёстким нарушением для обеих сторон.
 
-The uncapped local run is `docs/fault-campaign-nightly.json`: checked 109665, false_accept 0, false_reject 0, must_reject 102105, may_pass 7560. Same `input_hash` and kernel pin as the prefix. It ran on this Windows host for about 89 minutes. The CI job uploads that file on the nightly schedule, or on a dispatch with `run_nightly` set. Dispatch `37810297431` on `e364f34` uploaded `fault-campaign-nightly` with the same counts and the same `input_hash`. mutmut was skipped. The committed copy remains the Windows run. Neither that file nor the artifact is an attestation of main. Negative shifts are no longer all `must_reject`: `shift-1`, `shift-5` and `shift-30` each have 315 `may_pass`, and `shift-240` has 444. Those rows are agreements. `false_accept` on each of them is 0.
+Полный локальный прогон — `docs/fault-campaign-nightly.json`: проверено 109665, false_accept 0, false_reject 0, must_reject 102105, may_pass 7560. Тот же `input_hash` и тот же пин ядра, что у префикса. На этой машине Windows он шёл около 89 минут. Задание CI выкладывает файл по ночному расписанию или по ручному запуску с `run_nightly`. Прогон `37810297431` на `e364f34` выложил `fault-campaign-nightly` с теми же счётчиками и тем же `input_hash`. mutmut там был пропущен. Закреплённая копия остаётся виндоусским прогоном. Ни файл, ни артефакт не аттестуют `main`. Отрицательные сдвиги больше не все `must_reject`: у `shift-1`, `shift-5` и `shift-30` по 315 `may_pass`, у `shift-240` их 444. Это согласия. `false_accept` на каждом из них равен 0.
 
-Sampling: mutator families are round-robin, so the 56-prefix contains every family that applies on that baseline. A one-variant family appears once (`spare_overuse` 180, `rotable_clash` 180, `shift_frozen` 90 because only the repair-site preset freezes a row). `drop_aux` is 336 because `tiny` has no aux. Before this order, a prefix of 56 would have been the first operations' shifts and would have dropped spare, rotable and frozen.
+Выборка идёт по кругу семейств, поэтому префикс из 56 содержит каждое семейство, которое применимо к этой базе. Семейство из одного варианта встречается один раз (`spare_overuse` 180, `rotable_clash` 180, `shift_frozen` 90, потому что строку замораживает только пресет ремонтного участка). `drop_aux` равен 336, потому что у `tiny` оснастки нет. До этого порядка префикс из 56 был бы сдвигами первых операций и выкинул бы запчасти, оборотные и заморозку.
 
-A full pass of `tiny` seed 1 (GREED, EDD, ATC) and of `repair-site-mvp` seed 1 (GREED) also disagreed nowhere. That probe is not part of the committed denominator.
+Полный проход `tiny` с зерном 1 (GREED, EDD, ATC) и `repair-site-mvp` с зерном 1 (GREED) тоже нигде не разошёлся. Этот зонд в закреплённый знаменатель не входит.
 
-`exit_horizon` sets the visit end to one minute past the planning horizon. The problem horizon stays two or seven days, so the oracle's eight-day refusal does not apply. A mutation that raised `OracleLimit` would have aborted the run. None did.
+`exit_horizon` ставит конец визита на минуту позже горизонта планирования. Горизонт задачи остаётся двое или семеро суток, поэтому отказ оракула на восьми сутках не срабатывает. Порча, которая подняла бы `OracleLimit`, оборвала бы прогон. Таких не было.
 
-Accepted limits, not a pass:
+Принятые границы, не зачёт:
 
-- The exchange-pool ledger is still not judged.
-- 10080 is a prefix. The uncapped matrix on the same mutators checked 109665, with false_accept 0. A cap of 100000 was rejected because it would drop later operations. The slow pytest still re-runs only the prefix.
-- `false_reject` 0 is this matrix only. The `may_pass` rows are slack moves, so a checker rule those moves never touch is unmeasured.
-- Run `37696570417` died while collecting tests. Run `37697094085` on `4167df4` finished: 1120 killed, 801 survived, score 1120/1921. Run `37742695440` on `e8f6efa` finished: 1126 killed, 795 survived. Run `37743200619` on `13dbb9d` finished: 1161 killed, 760 survived, score 1161/1921, and the rest of that workflow including `test-slow` succeeded. The four notary sources did not change, so the 41 deaths are tests. Four capacity survivors stay equivalent. Two lane survivors stay a dead store. Spare-receipt skips, an unknown auxiliary, and a same-post setup skip were still alive on `13dbb9d`. Dispatch `37759423830` on `de135ae` finished: 1227 killed, 694 survived, score 1227/1921, and `test-slow` on that same run succeeded. Eight named skips died there. Exchange-pool and rotable skips are tested on `7be8040`, which this run did not mutate. `_colour_lanes` 52 is equivalent for every caller: only the first overflow is read. Thirty survivors that blank `suggested_relaxation` are equivalent because `_violation` restores the same sentence. The other field edits are not equivalent; `tests/test_violation_identity.py` pins the visit and the ids and is not in 1227/1921. 694 survivors are not all triaged, so phase 1 stays open. Checker suggestion deletions stay equivalent, including nine call sites found after the first pass. Eight ledger suggestion deletions are not equivalent, because those functions build `Violation` directly. `_violation` mutants 2, 4, 5, and 38–41 are equivalent; mutant 42 is not. `_spare_receipts` 22, 25, and 28 are equivalent because an empty operation id still sorts before a draw. `tests/test_boundary_survivors.py` pins the remaining edges and the ledger sentences. It is not a new score. The uncapped campaign uploads on the schedule or when a dispatch sets `run_nightly`. That input defaults to false. These dispatches are not an attestation of main, and `e89eefd` was not mutated. Run `37797011451` on `e54e33a` finished: 1261 killed, 660 survived, score 1261/1921. Thirty-four ledger mutants died and none were born. Checker, capacity, and lane setup did not move. That run does not include the identity tests or the boundary tests. 660 survivors are not all triaged, so phase 1 stays open. `_precedence` 1, `_duration_violation` 38, `spare_is_rotable` 12 and 16, and the `PYTHON` dump are equivalent after reading the mutant bodies. `tests/test_more_survivors.py` pins the next edges and is not in that score. Dispatch `37829096222` on `e027edd` finished: 1562 killed, 359 survived. It measured the identity and boundary tests and did not contain `tests/test_more_survivors.py`. Four later scheduled runs on `b7c8c29` have identical exit codes: 1587 killed, 334 survived. A recount of the four artifacts matches that map. 62 of those 334 have an equivalent reason and are still alive. 272 do not, so phase 1 stays open. `_completion_times` 24 is still alive and is not equivalent. `_job_of` 6 and `_op` 3 are not equivalent. `_spare_receipts` 23 is. The tests that name the assigned post, the assigned crew, a partial auxiliary window, a negative return lag, and an unknown operation outside the horizon are not in 1587/1921. These runs are not an attestation of main. Dispatch `38618458299` on `a4e4e90` killed 1814 of 1922. The four ids that had no equivalent reason died, and none were born. Every remaining survivor already has a written reason. The dispatch is not an attestation. See `docs/mutation-survivors.md`.
+- Книгу обменного фонда по-прежнему не судят.
+- 10080 — префикс. Полная матрица на тех же порчах проверила 109665, false_accept 0. Потолок 100000 отвергли: он отрезал бы поздние операции. Медленный pytest по-прежнему гоняет только префикс.
+- `false_reject` 0 относится только к этой матрице. Строки `may_pass` — сдвиги в запас, поэтому правило нотариуса, которого эти сдвиги не касаются, не измерено.
+- Прогон `37696570417` умер на сборе тестов. Прогон `37697094085` на `4167df4` закончился: убито 1120, живо 801, счёт 1120/1921. Прогон `37742695440` на `e8f6efa` закончился: убито 1126, живо 795. Прогон `37743200619` на `13dbb9d` закончился: убито 1161, живо 760, счёт 1161/1921, и остальной прогон, включая `test-slow`, прошёл. Четыре исходника нотариуса не менялись, поэтому 41 смерть — это тесты. Четыре выживших в ёмкости остаются эквивалентными. Два выживших в полосах — мёртвая запись. Пропуски прихода запчастей, неизвестной оснастки и переналадки на том же посту на `13dbb9d` ещё были живы. Прогон `37759423830` на `de135ae` закончился: убито 1227, живо 694, счёт 1227/1921, и `test-slow` того же прогона прошёл. Там умерли восемь названных пропусков. Пропуски обменного фонда и оборотных проверяются на `7be8040`, этот прогон их не мутировал. `_colour_lanes` 52 эквивалентен для каждого вызывающего: читается только первое переполнение. Тридцать выживших, которые стирают `suggested_relaxation`, эквивалентны, потому что `_violation` возвращает ту же фразу. Остальные правки полей не эквивалентны. `tests/test_violation_identity.py` фиксирует визит и идентификаторы и в счёт 1227/1921 не входит. 694 выживших разобраны не все, поэтому фаза 1 остаётся открытой. Стирания подсказки в нотариусе остаются эквивалентными, включая девять мест вызова, найденных после первого прохода. Восемь стираний подсказки в книге остатков не эквивалентны: те функции собирают `Violation` напрямую. Мутанты `_violation` 2, 4, 5 и 38–41 эквивалентны, мутант 42 нет. `_spare_receipts` 22, 25 и 28 эквивалентны, потому что пустой идентификатор операции всё равно сортируется раньше выдачи. `tests/test_boundary_survivors.py` фиксирует оставшиеся края и фразы книги. Нового счёта это не даёт. Полная кампания выкладывается по расписанию или когда ручной запуск ставит `run_nightly`. Этот вход по умолчанию выключен. Эти запуски не аттестуют `main`, и `e89eefd` не мутировали. Прогон `37797011451` на `e54e33a` закончился: убито 1261, живо 660, счёт 1261/1921. Умерли 34 мутанта книги, новых не родилось. Нотариус, ёмкость и полосы не сдвинулись. В том прогоне нет тестов тождества и краевых тестов. 660 выживших разобраны не все, поэтому фаза 1 остаётся открытой. `_precedence` 1, `_duration_violation` 38, `spare_is_rotable` 12 и 16 и выгрузка `PYTHON` эквивалентны после чтения тел мутантов. `tests/test_more_survivors.py` фиксирует следующие края и в тот счёт не входит. Прогон `37829096222` на `e027edd` закончился: убито 1562, живо 359. Он мерил тесты тождества и краевые тесты и не содержал `tests/test_more_survivors.py`. Четыре более поздних ночных прогона на `b7c8c29` имеют одни и те же коды выхода: убито 1587, живо 334. Пересчёт четырёх артефактов совпал с этой картой. У 62 из этих 334 есть причина эквивалентности, и они живы. У 272 причины нет, поэтому фаза 1 остаётся открытой. `_completion_times` 24 жив и не эквивалентен. `_job_of` 6 и `_op` 3 не эквивалентны. `_spare_receipts` 23 эквивалентен. Тесты на назначенный пост, назначенную бригаду, частичное окно оснастки, отрицательный лаг возврата и неизвестную операцию вне горизонта в счёт 1587/1921 не входят. Эти прогоны не аттестуют `main`. Прогон `38618458299` на `a4e4e90` убил 1814 из 1922. Четыре идентификатора без причины эквивалентности умерли, новых не родилось. У каждого оставшегося выжившего причина уже записана. Прогон аттестацией не является. Подробности в `docs/mutation-survivors.md`.
 
-## Banned-phrase gate (2026-10-08)
+## Ворота запрещённых фраз (2026-10-08)
 
-`tests/test_banned_claims.py` reads `docs/BANNED_CLAIMS.txt` and scans `README.md`, `APPLICATION.md`, and `docs/**/*.md`. Owner decision O1 followed the plan's recommendation: rename the two literature pages. Narrowing the rule to "a result claim" was rejected because a test cannot judge that.
+`tests/test_banned_claims.py` читает `docs/BANNED_CLAIMS.txt` и смотрит `README.md`, `APPLICATION.md` и `docs/**/*.md`. Решение владельца О1 пошло по рекомендации плана: две страницы обзора переименованы. Сузить правило до «заявления о результате» не стали: тест такое не рассудит.
 
-Closed by the matcher, each with a regression in that test:
+Что ловит сверка, и на каждый пункт есть регрессия в том тесте:
 
-- case, compatibility forms, and precomposed letters that decompose to the same phrase;
-- zero-width and combining marks, stripped after decomposition so they cannot fuse into a different letter first;
-- a short homoglyph map for letters that look like Latin;
-- HTML escapes, tags, and markdown `*` / backtick splits;
-- an allowlist hit is the whole source line, not a prefix, and each hit has its own reason.
+- регистр, формы совместимости и заранее составленные буквы, которые раскладываются в ту же фразу;
+- знаки нулевой ширины и комбинирующие знаки: их снимают после разложения, чтобы они не слиплись сначала в другую букву;
+- короткая карта похожих букв, которые выглядят как латиница;
+- HTML-экранирование, теги и разрывы markdown на `*` и обратную кавычку;
+- попадание в список разрешений — это вся строка исходника, не приставка, и у каждого попадания своя причина.
 
-Accepted limits, not treated as a pass:
+Принятые границы, не зачёт:
 
-- Russian morphology is not stemmed. A different ending is a different phrase.
-- A phrase split by a newline or by `_` is not one line. `_` stays, because identifiers use it.
-- `plans/` is not scanned. It is the instruction file and names the phrase list on purpose.
-- `CHANGELOG.md` is not scanned. The historical mention was reworded anyway.
-- README digits outside the generated evidence block are rejected in visible text. Digits that exist only in a markdown link destination are the pointer to a file, not a copied measurement. `APPLICATION.md` still says "90-day" as a hypothesis length; that page is outside the digit rule.
-- One HTML unescape. A double-encoded entity is not decoded twice.
+- Русские окончания не сводятся к словарной форме. Другое окончание — другая фраза.
+- Фраза, разорванная переводом строки или `_`, одной строкой не считается. `_` остаётся: им пользуются идентификаторы.
+- `plans/` не смотрится. Это файл поручения, и список фраз он называет нарочно.
+- `CHANGELOG.md` не смотрится. Историческое упоминание всё равно переписали.
+- Цифры README вне собранного блока доказательств отвергаются в видимом тексте. Цифра, которая живёт только в адресе ссылки, — указатель на файл, не переписанный замер. В `APPLICATION.md` по-прежнему есть «90 дней» как длина гипотезы. Эта страница под правило цифр README не попадает.
+- Одно HTML-раскодирование. Дважды закодированная сущность второй раз не раскодируется.

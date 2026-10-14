@@ -1,13 +1,13 @@
-# Pilot protocol (90 days, shadow)
+# Протокол пилота
 
-Claim gates before customer language: [`evidence-protocol.md`](evidence-protocol.md).
+Теневой, на 90 дней. Пока нет своего доказательства, языком заказчика не говорим. Ворота формулировок: [`evidence-protocol.md`](evidence-protocol.md).
 
-1. Agree one contour and one process owner.
-2. Freeze a data contract (`repairflow.problem.v1`) on anonymised history.
-3. Replay FIFO/historical baseline vs GREED candidate.
-4. Independent checker is the only source of “feasible”.
-5. Metrics: hard violations, overdue jobs, makespan, solve time, setups, post load, unassigned ops, operator accept/reject.
-6. No write-back into production systems.
-7. Stop if data cannot be exported without live-system coupling.
+1. Договориться об одном участке и одном владельце процесса.
+2. Заморозить договор о данных (`repairflow.problem.v1`) на обезличенной истории.
+3. Прогнать базу FIFO или исторический план против кандидата GREED.
+4. Слово «допустимо» имеет право сказать только независимый нотариус.
+5. Смотреть на жёсткие нарушения, просрочку, общий срок, время счёта, переналадки, загрузку постов, операции без назначения и на то, принял человек план или отверг.
+6. В рабочие системы ничего не писать.
+7. Остановиться, если данные нельзя выгрузить без живой сцепки с действующей системой.
 
-Success is a measured gap on that contour, not a city-wide KPI.
+Успех — измеренный зазор на этом участке. Городской показатель из одного участка не получается.

@@ -1,27 +1,27 @@
-# ADR-0005. Inspection rewrites one card, then replans
+# ADR-0005. Дефектовка переписывает одну карту, потом идёт пересчёт
 
-## Context
+## Контекст
 
-Defectation changes the work, not only the dates. The kernel has no event
-type for that. A revealed branch is new operations plus new precedence.
+Дефектовка меняет состав работ, не только даты. У ядра нет типа события
+для этого. Вскрытая ветка — новые операции и новый порядок.
 
-## Decision
+## Решение
 
-`InspectionEvent` adds operations to one job and may replace `predecessor_ids`
-on the join. `replan_after_inspection` freezes every assignment that already
-exists, then runs domain GREED for the new branch only. Issued slots stay,
-including on the inspected unit: a neighbour's setup depends on the previous
-state on that post, so sliding an issued operation would rewrite a frozen
-setup. If the branch does not fit before the frozen join, the plan is rejected.
-The domain checker still sees the original edges, including the new join.
+`InspectionEvent` добавляет операции в один заказ и может заменить `predecessor_ids`
+на слиянии. `replan_after_inspection` замораживает каждое уже существующее назначение,
+затем гоняет доменный GREED только для новой ветки. Выданные слоты остаются,
+в том числе на осмотренном агрегате: переналадка соседа зависит от предыдущего
+состояния на этом посту, поэтому сдвиг выданной операции переписал бы замороженную
+переналадку. Если ветка не влезает до замороженного слияния, план отвергается.
+Доменный нотариус по-прежнему видит исходные рёбра, включая новое слияние.
 
-Nervousness compares the new plan with the plan that was shown. A ratio above
-`policy.nervousness_warn_ratio` (default 0.10) is `NERVOUSNESS_HIGH` with
-severity `kpi`. A frozen assignment that moved is already `FROZEN_MOVED`
-(hard) and is also counted in `frozen_violations`.
+Нервозность сравнивает новый план с тем, который показывали. Доля выше
+`policy.nervousness_warn_ratio` (по умолчанию 0.10) даёт `NERVOUSNESS_HIGH`
+с серьёзностью `kpi`. Сдвинутое замороженное назначение — это уже `FROZEN_MOVED`
+(жёстко), и оно же считается в `frozen_violations`.
 
-## Consequences
+## Что из этого следует
 
-Domain GREED is the freeze-aware closer for this event. Kernel
-`repair_schedule` remains the path for `replan_after_disruption`, which
-shifts existing operations and does not insert a branch.
+Доменный GREED закрывает это событие, потому что умеет уважать заморозку. Ядерный
+`repair_schedule` остаётся путём для `replan_after_disruption`: тот сдвигает
+уже существующие операции и ветку не вставляет.

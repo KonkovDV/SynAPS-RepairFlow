@@ -1,15 +1,14 @@
-# Bounded local ATC baseline contract
+# Локальная база ATC
 
-## Status
+## Статус
 
-The repository contains a local ATC-shaped **ordering contract** in
-`repairflow.atc_baseline`. It is an evaluation baseline and is deliberately
-separate from the pinned SynAPS API.
+В репозитории есть локальный договор об упорядочении в духе ATC, модуль
+`repairflow.atc_baseline`. Это база для сравнения, и она нарочно отделена
+от закреплённого API SynAPS.
 
-The current contract orders a caller-supplied set of operation IDs. It does
-not yet replace or extend the planner's FIFO, EDD, GREED, or kernel routing.
-Planner integration is a separate change and must preserve the independent
-checker boundary.
+Сейчас договор упорядочивает набор идентификаторов операций, который передал вызывающий.
+Планировщикские FIFO, EDD, GREED и маршрутизацию ядра он не заменяет и не расширяет.
+Встройка в планировщик — отдельная правка, и граница независимого нотариуса при ней сохраняется.
 
 ## Score
 

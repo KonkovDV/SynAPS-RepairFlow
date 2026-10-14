@@ -1,23 +1,23 @@
-# ADR-0004. Exchange pool is a ledger, not a kernel pool
+# ADR-0004. Обменный фонд — книга остатков, не пул ядра
 
-## Context
+## Контекст
 
-`AuxiliaryResource.pool_size` is how many units of a tool can be busy at the same
-instant. An exchange pool is a stock: repaired units return when the card's
-sinks finish, and fleet demand withdraws them at dated events. Encoding that
-stock as `pool_size` answers a different question.
+`AuxiliaryResource.pool_size` говорит, сколько единиц оснастки может быть занято в один
+миг. Обменный фонд — это запас: отремонтированные агрегаты возвращаются, когда закончились
+стоки карты, а спрос парка списывает их в датированные моменты. Если закодировать этот
+запас как `pool_size`, получится ответ на другой вопрос.
 
-## Decision
+## Решение
 
-`ExchangePool` lives on the domain problem. The ledger is
+`ExchangePool` живёт на доменной задаче. Книга такая:
 
 `stock(t) = initial + completions with end <= t − demand with at <= t`.
 
-A completion is the latest sink of the job's DAG, and only if every sink is
-assigned. `hard=true` makes `EXCHANGE_POOL_STOCKOUT` reject the plan (exit 2).
-Otherwise the same code is a KPI and a feasible schedule stays `verified`.
+Пополнение — это самый поздний сток графа заказа, и только если назначен каждый сток.
+При `hard=true` код `EXCHANGE_POOL_STOCKOUT` отвергает план (код выхода 2).
+Иначе тот же код — показатель, и допустимый график остаётся `verified`.
 
-## Consequences
+## Что из этого следует
 
-Part ETA stays on `Spare.available_from` / `earliest_start`. The exchange pool
-does not consume those rows.
+Ожидаемый приход запчасти остаётся на `Spare.available_from` / `earliest_start`. Обменный фонд
+эти строки не съедает.
