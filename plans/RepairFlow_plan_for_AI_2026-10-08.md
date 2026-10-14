@@ -143,6 +143,7 @@ python tools/verify_schema.py, python tools/export_schemas.py, python tools/veri
 - **Acceptance:** лабораторная часть `docs/release-checklist.md` отмечена со ссылками на прогоны. Офлайн-demo зелёный.
 
 ### Фаза 4. Журнал оператора v2 (2–3 дня)
+Статус: цепочка, lock, fsync, `repairflow decide` и `repairflow log verify|stats` записаны. Linux dispatch `37701431554` на `9cd4ce0` зелёный. Журнал не подписан. Обёртка `tools/append_decision.py` не сверяет файл результата.
 Ветка `feat/decision-log-chain`.
 1. Падающие тесты: подмена строки в середине ловится; перестановка двух строк ловится; обрезанный хвост ловится, если известен якорь (хэш головы в evidence-бандле); два параллельных писателя не перемешивают строки.
 2. `DecisionEvent` v2: `prev_hash` (первая запись — 64 нуля) и `event_hash` = SHA-256 канонического JSON без `event_hash`. Журнал v1 без цепочки читается только как `legacy`. Смесь v1 и v2 — ошибка.
@@ -153,6 +154,7 @@ python tools/verify_schema.py, python tools/export_schemas.py, python tools/veri
 - **Acceptance:** все атаки из п. 1 ловятся. `docs/operator-decision-log.md` обновлён. Псевдонимизация `operator_code` не ослаблена.
 
 ### Фаза 5. Типизированные сбои (1–2 недели)
+Статус: пять событий в `events.py`, частный календарь вместо закрытия общего `CAL-DAY`, окно 8 часов, демо «пост сломался» на позднем визите. Кампания tiny, 5×30, `false_accept` 0, отчёт `docs/disruption-campaign.json`. Ранняя дыра на плотной дорожке MVP отпускает хвост, и списочный ремонт может вернуть `PARTIAL`. Каталога вариантов маршрута нет. Linux `workflow_dispatch` [37702688921](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/runs/37702688921) на `6d7325d`: success, шесть джобов, включая `test-slow`. Это прогон ветки, не аттестация main. Эта строка статуса не входит в тот прогон.
 Ветка `feat/disruption-events`.
 1. `DisruptionEvent` (дискриминированное объединение) в `events.py`: `POST_DOWN(work_center_id, start, end)`, `PART_DELAY(spare_id, available_at)`, `CREW_ABSENT(crew_id, start, end)`, `DURATION_OVERRUN(operation_id, new_duration_min)`, `URGENT_JOB(job, operations)`.
 2. `apply_disruption(problem, event) -> RepairFlowProblem` и затронутые операции → `replan_after_disruption` с frozen. Неизвестные id — ошибка, не пропуск.
@@ -162,6 +164,7 @@ python tools/verify_schema.py, python tools/export_schemas.py, python tools/veri
 - **Acceptance:** п. 10 `docs/limitations.md` переписан по факту. Демо-сценарий «пост сломался» есть в `repairflow demo`.
 
 ### Фаза 6. Реальные данные и офлайн-пакет (3–5 дней)
+Статус: CSV-пакет без `manifest.json` не читается. CP1251, ночная смена 22:00–06:00 одним окном на следующие сутки, HMAC табельного номера в `crew-` и восемь hex, соль только аргументом. Пример пяти ошибок: `schemas/templates/five-errors/`. `tzdata==2026.3`. Docker и Astra не сделаны: хэш-лок фазы 3 на другой ветке, образа РЕД ОС здесь нет. Linux `workflow_dispatch` [37704013170](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/runs/37704013170) на `2a45feb`: success, шесть джобов, включая `test-slow`. Это прогон ветки, не аттестация main. Эта строка статуса не входит в тот прогон.
 Ветка `feat/ingest-manifest`.
 1. `manifest.json` рядом с CSV: `encoding` (utf-8, utf-8-sig, cp1251), `delimiter`, `source_tz` (по умолчанию `Europe/Moscow`), `data_provenance`, версия выгрузки. Без манифеста несинтетика не грузится.
 2. Перевод времени в UTC через `zoneinfo`. На Windows нужен пакет `tzdata`: добавить в зависимости и в lock.

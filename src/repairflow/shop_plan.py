@@ -10,8 +10,10 @@ import csv
 from datetime import UTC, datetime
 from io import StringIO
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
-from repairflow.io import read_text_limited
+from repairflow.ingest import load_manifest
+from repairflow.io import read_text_encoded, read_text_limited
 from repairflow.model import PlannedAssignment, RepairFlowProblem, Violation
 from repairflow.reasons import REASON_RU, SUGGESTIONS, ReasonCode
 
@@ -43,8 +45,16 @@ def load_shop_plan(
 ) -> tuple[list[PlannedAssignment], list[Violation]]:
     """Read a shop plan. A job that does not own the operation is a hard row."""
 
-    text = read_text_limited(path)
-    delimiter = ";" if text.splitlines()[0].count(";") > text.splitlines()[0].count(",") else ","
+    manifest_path = path.parent / "manifest.json"
+    zone: ZoneInfo | None = None
+    if manifest_path.is_file():
+        manifest = load_manifest(manifest_path)
+        text = read_text_encoded(path, manifest.encoding)
+        delimiter = manifest.separator()
+        zone = manifest.zone()
+    else:
+        text = read_text_limited(path)
+        delimiter = ";" if text.splitlines()[0].count(";") > text.splitlines()[0].count(",") else ","
     reader = csv.DictReader(StringIO(text), delimiter=delimiter)
     if reader.fieldnames is None:
         raise ValueError(f"{path} has no header")
@@ -60,8 +70,8 @@ def load_shop_plan(
         operation_id = row["operation_id"]
         if not operation_id:
             raise ValueError(f"{path} line {index} has no operation")
-        start = _instant(row["start"], path=path, line=index, column="начало")
-        end = _instant(row["end"], path=path, line=index, column="конец")
+        start = _instant(row["start"], path=path, line=index, column="начало", zone=zone)
+        end = _instant(row["end"], path=path, line=index, column="конец", zone=zone)
         if end <= start:
             raise ValueError(f"{path} line {index} ends at or before it starts")
         aux = [item for item in row["aux_ids"].split("|") if item]
@@ -126,7 +136,14 @@ def write_shop_plan(
             )
 
 
-def _instant(value: str, *, path: Path, line: int, column: str) -> datetime:
+def _instant(
+    value: str,
+    *,
+    path: Path,
+    line: int,
+    column: str,
+    zone: ZoneInfo | None,
+) -> datetime:
     if not value:
         raise ValueError(f"{path} line {line} has no {column}")
     try:
@@ -134,5 +151,7 @@ def _instant(value: str, *, path: Path, line: int, column: str) -> datetime:
     except ValueError as exc:
         raise ValueError(f"{path} line {line} {column} is not an ISO timestamp") from exc
     if parsed.tzinfo is None:
-        raise ValueError(f"{path} line {line} {column} has no timezone")
+        if zone is None:
+            raise ValueError(f"{path} line {line} {column} has no timezone")
+        parsed = parsed.replace(tzinfo=zone)
     return parsed.astimezone(UTC)
