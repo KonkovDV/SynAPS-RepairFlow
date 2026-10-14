@@ -34,7 +34,7 @@
 | Замок зависимостей по SHA-256 архивов | implemented | `repairflow.dependency_lock`; `locked` только когда каждый хеш на месте |
 | Подписанный артефакт | blocked | статус подписи остаётся `absent`; ключа выпуска в этой сборке нет |
 | Граница «без сети, теневой режим» | documented | модель угроз, ADR-0003, протокол пилота |
-| Журнал приёмки оператором | documented | договор JSONL; писателя нет |
+| Журнал приёмки оператором | implemented | `repairflow decide`, `repairflow log verify`, хеш-цепочка; без подписи |
 | `POST_DOWN`, `PART_DELAY`, `CREW_ABSENT`, `DURATION_OVERRUN`, `URGENT_JOB` | implemented | `tests/test_disruption_events.py`, `docs/disruption-campaign.json` |
 | Каталог вариантов маршрута | blocked | `docs/limitations.md` |
 | Лаг возврата оборотной внутри модели ядра | documented | власть у доменной книги; молчание ядра не даёт `verified` |
