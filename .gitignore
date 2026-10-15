@@ -12,6 +12,7 @@ skeleton_extract/
 *.egg-info/
 dist/
 build/
+wheelhouse/
 .coverage
 htmlcov/
 mutants/

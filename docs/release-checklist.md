@@ -4,7 +4,7 @@
 
 ## Лабораторный выпуск
 
-Dispatch [37700478444](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/runs/37700478444) на `0f56005` прогнал установку по хешам, быстрые и медленные тесты, демо, замер и офлайн-демо из склада колёс. `dependency-review` не запускался: он только для pull request. `codeql.yml` и `scorecard.yml` ещё не в ветке по умолчанию, поэтому прогонов у них нет.
+Dispatch [37700478444](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/runs/37700478444) на `0f56005` прогнал установку по хешам, быстрые и медленные тесты, демо, замер и офлайн-демо из склада колёс. `dependency-review` не запускался: он только для pull request. CodeQL и Scorecard лежат в ветке по умолчанию. Отметки ниже ставит человек по конкретному прогону.
 
 - [ ] `python tools/verify_lock.py` проходит.
 - [ ] Проходят ruff, mypy, выгрузка схем, быстрые тесты, демо и замер по умолчанию.
