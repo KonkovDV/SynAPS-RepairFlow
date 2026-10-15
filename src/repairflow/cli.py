@@ -411,7 +411,8 @@ def _demo(preset: str, out_dir: Path, *, skip_cpsat: bool) -> int:
     fifo = plan(problem, solver_config="FIFO")
     _write_json(out_dir / "fifo.json", fifo.result.model_dump(mode="json"))
     greed = plan(problem, solver_config="GREED")
-    _write_json(out_dir / "greed.json", greed.result.model_dump(mode="json"))
+    greed_path = out_dir / "greed.json"
+    _write_json(greed_path, greed.result.model_dump(mode="json"))
     compare = diff_plans(problem, fifo.result, greed.result)
     _write_json(out_dir / "compare.json", compare)
     (out_dir / "greed.md").write_text(render_markdown(problem, greed.result), encoding="utf-8")
@@ -497,6 +498,23 @@ def _demo(preset: str, out_dir: Path, *, skip_cpsat: bool) -> int:
             f"exit={cpsat.result.exit_code} claim={cpsat.result.claim_status}\n"
         )
 
+    log_ok = False
+    log_line = "  decision-log missing\n"
+    if greed.result.exit_code == 0:
+        log_path = out_dir / "decisions.jsonl"
+        event = record_checked_decision(
+            problem_path=problem_path,
+            result_path=greed_path,
+            decision=Decision.ACCEPTED,
+            operator_code="op-demo",
+            log_path=log_path,
+            reason="demo candidate kept",
+        )
+        version = verify_decision_log(log_path, head=event.event_hash)
+        logged = read_decision_log(log_path)
+        log_ok = version == "v2" and len(logged) == 1 and logged[0].event_hash == event.event_hash
+        log_line = f"  decision-log {version} head={event.event_hash}\n"
+
     sys.stdout.write(
         "RepairFlow demo\n"
         f"  FIFO violations={len(fifo.result.violations)} exit={fifo.result.exit_code}\n"
@@ -511,12 +529,13 @@ def _demo(preset: str, out_dir: Path, *, skip_cpsat: bool) -> int:
         f"frozen_moved={frozen_moved}\n"
         f"  broken exit={broken_check.result.exit_code} codes="
         f"{sorted({row.code for row in broken_check.result.violations})}\n"
+        f"{log_line}"
     )
     clean_ok = greed.result.exit_code == 0 and greed.result.verified_feasible
     fifo_dirty = fifo.result.exit_code == 2 and len(fifo.result.violations) > 0
     broken_ok = broken_check.result.exit_code == 2
     frozen_ok = len(frozen_kept["broken_frozen_assignments"]) == 0
-    if clean_ok and fifo_dirty and broken_ok and frozen_ok and cpsat_ok and post_down_ok:
+    if clean_ok and fifo_dirty and broken_ok and frozen_ok and cpsat_ok and post_down_ok and log_ok:
         sys.stdout.write("MVP readiness: PASS\n")
         return 0
     sys.stderr.write("MVP readiness: FAIL\n")

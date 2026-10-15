@@ -45,7 +45,7 @@ repairflow log stats L
 
 `log stats` печатает `acceptance_rate`, `edit_rate` и частые причины отказа. `operator_code` не печатается. Причина — текст оператора; имя, спрятанное внутри, команда не ищет.
 
-`tools/append_decision.py` остаётся обёрткой над `append_decision`. Он запечатывает цепочку, но не открывает задачу и результат, поэтому правило кода выхода не применяет.
+`tools/append_decision.py` открывает файлы задачи и результата, сверяет хеши и не записывает `accepted` при ненулевом коде выхода. Хеши с командной строки не принимаются.
 
 ## Форма записи до цепочки
 
@@ -90,10 +90,9 @@ append_decision("out/decisions.jsonl", event)
 ```text
 python tools/append_decision.py \
   --log out/decisions.jsonl \
+  --problem out/repair-site-mvp.json \
+  --result out/greed.json \
   --operator-code op-shadow-01 \
-  --instance-id instance-code \
-  --input-hash <sha256> \
-  --result-hash <sha256> \
   --decision accepted
 ```
 

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- `tools/append_decision.py` checks the problem and result files and will not
+  accept a non-zero exit. `repairflow demo` appends that decision and checks
+  the hash chain.
 - The evidence manifest attests main `1f1f80c` / push run `38706879199`,
   including `test-slow`. This commit does not attest itself.
 - The laboratory image installs from the hashed wheelhouse. The install step

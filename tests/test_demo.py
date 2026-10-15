@@ -10,6 +10,8 @@ def test_one_command_mvp_readiness(tmp_path, capsys) -> None:
     assert "post_down old=['CALENDAR_BROKEN']" in out
     assert "replan_verified=True" in out
     assert (tmp_path / "post-down.json").is_file()
+    assert (tmp_path / "decisions.jsonl").is_file()
+    assert "decision-log v2" in out
     assert "CPSAT status=" in out
     assert "verified=True" in out
     assert "code=KERNEL_CALENDAR_UNSUPPORTED" not in out
