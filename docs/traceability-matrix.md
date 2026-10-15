@@ -24,6 +24,7 @@
 | Манифест загрузки CSV, ночная смена, псевдоним бригады | implemented | `src/repairflow/ingest.py`, `tests/test_ingest_manifest.py`; образ из склада колёс на Debian, Astra не проверялась |
 | Ключ личных данных в `domain_attributes` | implemented | модель отвергает такой ключ, включая вложенный; значение и срок хранения этим списком не закрыты; `tests/test_personal_fields.py` |
 | Склад колёс в финальном слое образа | implemented | стадия сборки, в финальный образ копируется `/usr/local`; `tests/test_offline_image.py`, `Dockerfile` |
+| Шаги Actions по коммиту | implemented | тег остаётся комментарием; `tests/test_action_pins.py`, `tests/test_supply_chain_workflow.py` |
 | Блокирующие запчасти | implemented | тесты запчастей нотариуса |
 | Обменный фонд как книга остатков | implemented | `src/repairflow/ledger.py`, ADR-0004 |
 | Дефектовка, которая замораживает уже выданную работу | implemented | `repairflow inspect`, ADR-0005 |
