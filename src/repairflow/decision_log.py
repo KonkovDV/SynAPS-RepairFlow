@@ -18,6 +18,7 @@ from uuid import UUID, uuid4
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from repairflow.evidence import verify_plan_hashes
+from repairflow.io import read_text_limited
 from repairflow.model import RepairFlowProblem, RepairFlowResult
 
 _SHA256 = re.compile(r"^[0-9a-fA-F]{64}$")
@@ -224,8 +225,8 @@ def record_checked_decision(
 ) -> DecisionEvent:
     """Append a decision only when the result file still matches the problem."""
 
-    problem = RepairFlowProblem.model_validate_json(problem_path.read_text(encoding="utf-8"))
-    result = RepairFlowResult.model_validate_json(result_path.read_text(encoding="utf-8"))
+    problem = RepairFlowProblem.model_validate_json(read_text_limited(problem_path))
+    result = RepairFlowResult.model_validate_json(read_text_limited(result_path))
     mismatches = verify_plan_hashes(problem, result)
     if mismatches:
         raise ValueError("; ".join(mismatches))
@@ -274,7 +275,7 @@ def _verify_chain(events: list[DecisionEvent]) -> None:
 def _load(path: Path) -> tuple[str, list[DecisionEvent]]:
     if not path.exists():
         return "empty", []
-    text = path.read_text(encoding="utf-8")
+    text = read_text_limited(path)
     if text == "":
         return "empty", []
     kinds: list[str] = []
