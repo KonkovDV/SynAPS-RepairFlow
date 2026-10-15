@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- The laboratory image installs from the hashed wheelhouse. The install step
+  has no network. The base is Debian bookworm pinned by digest. Astra Linux
+  and RED OS were not tested.
 - The evidence manifest attests main `0aa2ecf` / push run `38647110145`,
   including `test-slow`. This commit does not attest itself.
 - The evidence manifest attests main `246a850` / push run `38645887703`,

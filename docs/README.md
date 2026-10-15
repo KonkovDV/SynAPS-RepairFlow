@@ -7,8 +7,9 @@
 1. [`../README.md`](../README.md) — для кого эта программа, команды, какие слова в ответе честные.
 2. [`evidence-protocol.md`](evidence-protocol.md) — что считается доказательством.
 3. [`limitations.md`](limitations.md) — чего программа не обещает.
-4. [`red-team-remediation.md`](red-team-remediation.md) — что нотариус закрывает и что остаётся снаружи.
-5. [`traceability-matrix.md`](traceability-matrix.md) — требование, статус и где лежит подтверждение.
+4. [`runbook.md`](runbook.md) — лабораторный образ из склада колёс.
+5. [`red-team-remediation.md`](red-team-remediation.md) — что нотариус закрывает и что остаётся снаружи.
+6. [`traceability-matrix.md`](traceability-matrix.md) — требование, статус и где лежит подтверждение.
 
 ## Для инженерного разбора
 
@@ -31,7 +32,7 @@
 - [`jury-demo.md`](jury-demo.md) — что говорить на показе.
 - [`pilot-protocol.md`](pilot-protocol.md) — теневой протокол на 90 дней.
 - [`pilot-kpi-template.md`](pilot-kpi-template.md) — определения показателей, без придуманных результатов.
-- [`operator-decision-log.md`](operator-decision-log.md) — запись решения человека. Писателя пока нет.
+- [`operator-decision-log.md`](operator-decision-log.md) — запись решения человека. Писатель — `repairflow decide`.
 - [`osint-and-pilot-gates.md`](osint-and-pilot-gates.md) — открытые источники и что нужно для входа.
 - [`release-checklist.md`](release-checklist.md) — лабораторный выпуск и подача на пилот — разные ворота.
 - [`adr/0003-release-boundary.md`](adr/0003-release-boundary.md) — теневой план не является командой системе управления.
