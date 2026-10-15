@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- The evidence manifest attests main `ad6f7fa` / push run `38738246339`,
+  including `test-slow`. This commit does not attest itself.
 - `domain_attributes` rejects keys that name a person. The check is the key,
   not the value, and it is not a personal-data compliance claim.
 - The laboratory image copies the install out of a build stage. The wheelhouse
