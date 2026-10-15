@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- The evidence manifest attests main `0e1d02a` / push run `38733162076`,
+  including `test-slow`. This commit does not attest itself.
 - Nightly mutmut `38698472141` on `7f6e9ae` was read. 126 survivors are
   equivalent. 49 are not. `tests/test_nightly_survivors.py` records the
   original behaviour and is not part of that run. Phase 1 stays open.
