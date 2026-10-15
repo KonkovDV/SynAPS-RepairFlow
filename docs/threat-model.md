@@ -17,7 +17,7 @@ RepairFlow — подсказка для планирования. Она чит
 | Уехало колесо решателя | OR-Tools закреплён на 9.15.6755; прямая опись CycloneDX | `pyproject.toml`, `repairflow.sbom` |
 | Подмена транзитивного колеса | Универсальный хеш-замок; у каждой строки, кроме git-пина SynAPS, есть sha256 | `requirements-lock.txt`, `tools/verify_lock.py` |
 | В экземпляр подложены лишние поля | Pydantic `extra=forbid` и собранная схема | `tools/export_schemas.py`, `schemas/negative/` |
-| В пакете плана оказались фамилии | Договор о полях просит псевдонимы бригад | `docs/data-mapping-1c-toir.md` |
+| В пакете плана оказались фамилии | `domain_attributes` отвергает такой ключ. Договор о полях по-прежнему просит псевдонимы | `repairflow.personal_fields`, `docs/data-mapping-1c-toir.md` |
 
 ## Чего ещё нет
 

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import defaultdict, deque
+from collections.abc import Mapping
 from datetime import datetime, timedelta
 from enum import StrEnum
 from typing import Annotated, Any, Literal, Self
@@ -33,6 +34,7 @@ from repairflow.limits import (
     MAX_SPARES,
     MAX_WORK_CENTERS,
 )
+from repairflow.personal_fields import reject_personal_attribute_keys
 from repairflow.scheduling_contract import (
     declares_open_horizon,
     held_minutes,
@@ -87,6 +89,21 @@ class RepairFlowModel(BaseModel):
     """Public documents reject unknown fields; extensions go in domain_attributes."""
 
     model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    @model_validator(mode="after")
+    def _reject_personal_attribute_keys(self) -> Self:
+        attributes = getattr(self, "domain_attributes", None)
+        if isinstance(attributes, dict):
+            reject_personal_attribute_keys(attributes)
+        return self
+
+    def model_copy(self, *, update: Mapping[str, Any] | None = None, deep: bool = False) -> Self:
+        # BaseModel.model_copy does not validate. Assignment does, and that rejects a personal key.
+        copied = super().model_copy(update=update, deep=deep)
+        if update is not None and "domain_attributes" in update:
+            # The field lives on the documents, not on this base class.
+            copied.domain_attributes = update["domain_attributes"]  # type: ignore[attr-defined]
+        return copied
 
 
 class ResultStatus(StrEnum):
