@@ -305,3 +305,37 @@ def test_randomized_checker_matches_minute_oracle() -> None:
             assert bool(oracle) == bool(checker), (sorted(oracle), sorted(checker))
             cases += 1
     assert cases > 300
+
+
+# --- round 2 ---
+
+
+def test_r2_repeated_aux_id_is_rejected() -> None:
+    with pytest.raises(ValueError, match="aux_ids must not repeat"):
+        PlannedAssignment(operation_id="A", work_center_id="W", start=_t(8), end=_t(9), aux_ids=["T1", "T1"])
+
+
+def test_r2_cli_check_refuses_plan_with_repeated_aux(tmp_path: Path, capsys) -> None:  # type: ignore[no-untyped-def]
+    problem = synthesize("repair-site-mvp", seed=42)
+    result = plan(problem, solver_config="GREED").result
+    payload = result.model_dump(mode="json")
+    row = next(r for r in payload["assignments"] if r["aux_ids"])
+    row["aux_ids"] = row["aux_ids"] * 2
+    ppath, rpath = tmp_path / "p.json", tmp_path / "r.json"
+    ppath.write_text(problem.model_dump_json(), encoding="utf-8")
+    import json
+
+    rpath.write_text(json.dumps(payload), encoding="utf-8")
+    assert main(["check", str(ppath), str(rpath)]) == 1
+    assert "aux_ids" in capsys.readouterr().err
+
+
+def test_r2_decision_log_read_is_size_limited(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    from repairflow import io as rf_io
+    from repairflow.decision_log import read_decision_log
+
+    monkeypatch.setattr(rf_io.__dict__["read_text_limited"], "__kwdefaults__", {"max_bytes": 10})
+    log = tmp_path / "log.jsonl"
+    log.write_text("x" * 100, encoding="utf-8")
+    with pytest.raises(ValueError, match="larger than"):
+        read_decision_log(log)

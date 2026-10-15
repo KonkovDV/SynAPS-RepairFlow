@@ -14,6 +14,7 @@ from pydantic import (
     BeforeValidator,
     ConfigDict,
     Field,
+    field_validator,
     model_validator,
 )
 
@@ -353,6 +354,13 @@ class PlannedAssignment(RepairFlowModel):
         ge=0,
         description="Optional lane index on a parallel work center; removes lane ambiguity.",
     )
+
+    @field_validator("aux_ids")
+    @classmethod
+    def _aux_ids_unique(cls, value: list[str]) -> list[str]:
+        if len(set(value)) != len(value):
+            raise ValueError("aux_ids must not repeat a resource")
+        return value
 
 
 class Violation(RepairFlowModel):
