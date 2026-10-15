@@ -13,9 +13,12 @@ from repairflow.decision_log import (
     Decision,
     DecisionEvent,
     append_decision,
+    canonical_event_json,
+    decision_log_witness,
     format_decision_stats,
     log_version,
     read_decision_log,
+    seal_event,
     verify_decision_log,
 )
 
@@ -283,3 +286,37 @@ def test_decide_checks_hashes_and_refuses_a_failed_exit(
         )
         == 1
     )
+
+
+def test_witness_rejects_a_rewritten_tail(tmp_path: Path) -> None:
+    path = tmp_path / "decisions.jsonl"
+    key = b"operator-key-not-in-repo"
+    append_decision(path, _event())
+    append_decision(path, _event(Decision.REJECTED, reason="Hard notary is non-empty"))
+    token = decision_log_witness(path, key)
+    assert verify_decision_log(path, witness=token, witness_key=key) == "v2"
+
+    events = read_decision_log(path)
+    rewritten = seal_event(
+        events[1].model_copy(update={"reason": "replaced tail", "event_hash": "", "prev_hash": ""}),
+        events[0].event_hash,
+    )
+    first_line = path.read_text(encoding="utf-8").splitlines()[0]
+    path.write_text(
+        first_line + "\n" + canonical_event_json(rewritten, include_event_hash=True) + "\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="witness does not match"):
+        verify_decision_log(path, witness=token, witness_key=key)
+    fresh = decision_log_witness(path, key)
+    assert verify_decision_log(path, witness=fresh, witness_key=key) == "v2"
+    with pytest.raises(ValueError, match="witness does not match"):
+        verify_decision_log(path, witness=fresh, witness_key=b"other-key")
+
+
+def test_witness_needs_a_v2_chain_and_both_halves(tmp_path: Path) -> None:
+    path = tmp_path / "missing.jsonl"
+    with pytest.raises(ValueError, match="v2 chain"):
+        decision_log_witness(path, b"key")
+    with pytest.raises(ValueError, match="both the token and the key"):
+        verify_decision_log(path, witness="ab")

@@ -21,6 +21,7 @@
 - [`adr/0002-dag-over-chain-kernel.md`](adr/0002-dag-over-chain-kernel.md) — сходящаяся карта собирается в цепочки для ядра.
 - [`adr/0004-exchange-pool-ledger.md`](adr/0004-exchange-pool-ledger.md) — обменный фонд считается книгой остатков.
 - [`adr/0005-inspection-rewrites-the-card.md`](adr/0005-inspection-rewrites-the-card.md) — дефектовка замораживает уже выданные слоты.
+- [`adr/0006-native-model-stays-unwired.md`](adr/0006-native-model-stays-unwired.md) — нативная модель разрешена и к `plan` не подключена.
 - [`literature-2026.md`](literature-2026.md) — обзор работ и что ещё нужно для статьи.
 - [`benchmark-protocol.md`](benchmark-protocol.md) — как повторять синтетическое сравнение.
 - [`atc-baseline-contract.md`](atc-baseline-contract.md) — локальное правило ATC и где оно кончается.

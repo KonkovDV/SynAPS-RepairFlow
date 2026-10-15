@@ -94,6 +94,7 @@ repairflow report out/tiny.json out/greed.json --md out/greed.md --html out/gree
 | `benchmark` | FIFO против GREED на наборе пресетов и зёрен. | `benchmark.json`, `.md`, `.html` и отчёты по каждому примеру. |
 | `decide` | Записать решение человека по файлам задачи и результата. Ненулевой код выхода нельзя принять. | Строка JSONL в журнале. |
 | `log verify` | Пересчитать цепочку журнала. Если вершина хранится отдельно, пропавший хвост — ошибка. | Код выхода. |
+| `log witness` | HMAC вершины ключом из файла. Это не подпись выпуска. | Строка хеша. |
 | `log stats` | Счётчики журнала без кода оператора. | Текст на экран. |
 
 ## Как устроена проверка
@@ -187,7 +188,7 @@ RepairFlow не предлагает новый универсальный ре�
 
 Запись в учётную систему, диспетчеризация, SCADA и функция безопасности сюда не входят. Нет измеренного промышленного эффекта, действующего заказчика, спонсорства и сертификата. Страницы [программы пилотов](https://ftim.ru/pilotirovanie/), [профиля завода](https://www.mosgortrans.ru/about/branches/filial-sokolnicheskii-vagonoremontno-stroitelnyi-zavod-svarz-gup-mosgortrans/) и [кластера](https://i.moscow/pilot) описывают, куда можно податься. Факта внедрения в них нет.
 
-Варианты маршрута не смоделированы. Журнал оператора пишет `repairflow decide` и проверяет `repairflow log verify`. Подписи у журнала нет. Своя точная модель на CP-SAT не начата: её открывает решение владельца. Выше лабораторного предела операций точный прогон отвергается с `CPSAT_OPS_CAP`, такой экземпляр считают эвристики GREED, EDD или ATC.
+Варианты маршрута не смоделированы. Журнал оператора пишет `repairflow decide` и проверяет `repairflow log verify`. Вершину можно отдельно заверить HMAC через `repairflow log witness`: ключ в репозиторий не кладётся. Подписи выпуска у журнала нет. Своя точная модель на CP-SAT не начата: разрешение владельца записано в [ADR о нативной модели](docs/adr/0006-native-model-stays-unwired.md). В продукт она войдёт только после замера из плана. Выше лабораторного предела операций точный прогон отвергается с `CPSAT_OPS_CAP`, такой экземпляр считают эвристики GREED, EDD или ATC.
 
 Полный список границ — [`docs/limitations.md`](docs/limitations.md). Если пилот когда-нибудь будет, он останется теневым: один участок, обезличенный срез, заранее согласованная база, журнал решений человека и откат. Ворота описаны в [`docs/pilot-protocol.md`](docs/pilot-protocol.md).
 
@@ -246,4 +247,4 @@ python -m pip install -e ".[dev]"
 repairflow demo --out out
 ```
 
-The only measurements on this page sit in the generated table in the Russian section. A bare number is not evidence. The CI badge is the latest workflow run. It does not replace that table. The machine-readable copy is [`docs/evidence-manifest.json`](docs/evidence-manifest.json). The operator log is written by `repairflow decide` and checked by `repairflow log verify`. It is not signed.
+The only measurements on this page sit in the generated table in the Russian section. A bare number is not evidence. The CI badge is the latest workflow run. It does not replace that table. The machine-readable copy is [`docs/evidence-manifest.json`](docs/evidence-manifest.json). The operator log is written by `repairflow decide` and checked by `repairflow log verify`. `repairflow log witness` is an HMAC of the tip. The key stays outside the repository. It is not a release signature.

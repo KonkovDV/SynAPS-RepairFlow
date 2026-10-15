@@ -11,6 +11,7 @@ from typing import Any
 from repairflow.benchmark import run_benchmark
 from repairflow.decision_log import (
     Decision,
+    decision_log_witness,
     format_decision_stats,
     read_decision_log,
     record_checked_decision,
@@ -162,6 +163,11 @@ def main(argv: list[str] | None = None) -> int:
     p_verify = log_sub.add_parser("verify", help="Check the hash chain")
     p_verify.add_argument("log", type=Path)
     p_verify.add_argument("--head", default=None)
+    p_verify.add_argument("--witness", default=None)
+    p_verify.add_argument("--key-file", type=Path, default=None)
+    p_witness = log_sub.add_parser("witness", help="HMAC the log tip with an operator key")
+    p_witness.add_argument("log", type=Path)
+    p_witness.add_argument("--key-file", type=Path, required=True)
     p_stats = log_sub.add_parser("stats", help="Print counters without operator codes")
     p_stats.add_argument("log", type=Path)
 
@@ -250,17 +256,37 @@ def _decide(args: argparse.Namespace) -> int:
     return 0
 
 
+def _witness_key(path: Path | None) -> bytes | None:
+    if path is None:
+        return None
+    key = path.read_bytes().strip()
+    if not key:
+        raise ValueError("decision log witness key is empty")
+    return key
+
+
 def _log(args: argparse.Namespace) -> int:
     if args.log_command == "verify":
-        version = verify_decision_log(args.log, head=args.head)
+        version = verify_decision_log(
+            args.log,
+            head=args.head,
+            witness=args.witness,
+            witness_key=_witness_key(args.key_file),
+        )
         events = read_decision_log(args.log)
         tip = events[-1].event_hash if events and version == "v2" else ""
         sys.stdout.write(f"decision-log {version} events={len(events)} head={tip}\n")
         return 0
+    if args.log_command == "witness":
+        key = _witness_key(args.key_file)
+        if key is None:
+            raise ValueError("decision log witness key is empty")
+        sys.stdout.write(decision_log_witness(args.log, key) + "\n")
+        return 0
     if args.log_command == "stats":
         sys.stdout.write(format_decision_stats(read_decision_log(args.log)))
         return 0
-    raise ValueError("log command must be verify or stats")
+    raise ValueError("log command must be verify, witness, or stats")
 
 
 def _solve(input_path: Path, output: Path, solver: str, *, crew_salt: str | None) -> int:

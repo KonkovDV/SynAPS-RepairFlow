@@ -40,3 +40,27 @@ def test_a_disguised_email_key_is_rejected() -> None:
     problem = synthesize("tiny", seed=1)
     with pytest.raises(ValidationError, match="e-mail"):
         problem.jobs[0].model_copy(update={"domain_attributes": {"e-mail": "a@b.c"}})
+
+
+def test_a_note_rejects_email_phone_name_and_snils() -> None:
+    problem = synthesize("tiny", seed=1)
+    crew = problem.crews[0]
+    for value in (
+        "crew@example.com",
+        "+7 000 000-00-00",
+        "Иванов Иван Иванович",
+        "Иванов И.И.",
+        "112-233-445 95",
+    ):
+        with pytest.raises(ValidationError, match="personal record"):
+            crew.model_copy(update={"domain_attributes": {"comment": value}})
+
+
+def test_a_shop_note_without_those_shapes_still_loads() -> None:
+    problem = synthesize("tiny", seed=1)
+    crew = problem.crews[0].model_copy(
+        update={"domain_attributes": {"comment": "Капитальный ремонт агрегата", "return_lag_min": 0}}
+    )
+    assert crew.domain_attributes["comment"] == "Капитальный ремонт агрегата"
+    kept = problem.jobs[0].model_copy(update={"domain_attributes": {"comment": "112-233-445 90"}})
+    assert kept.domain_attributes["comment"] == "112-233-445 90"

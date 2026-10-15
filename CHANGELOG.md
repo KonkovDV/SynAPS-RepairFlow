@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Domain attributes reject a few personal value shapes, and the operator log
+  can carry an HMAC witness of its tip. The witness key is not a release key.
+  The native CP-SAT model stays unwired until it is measured.
 - The README now names the operator-log writer, separates the CI badge from
   the attested revision, and points at the page map. A documentation audit
   records what was wrong and what the audit does not close.

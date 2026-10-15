@@ -29,7 +29,9 @@
 
 `append_decision` берёт эксклюзивный файл блокировки (`O_CREAT|O_EXCL`) рядом с журналом, с тайм-аутом. Чужую блокировку он не удаляет. После дописывания сбрасывает буфер и делает `fsync` файла, затем `fsync` каталога, если система это позволяет.
 
-`repairflow log verify LOG [--head HASH]` пересчитывает цепочку. Без `--head` укороченный файл, который остаётся допустимым префиксом, проходит проверку. Если хеш вершины хранится отдельно, пропавший хвост — ошибка. Изменённое поле или переставленные строки — ошибка. Переписанный хвост с новой опубликованной вершиной не обнаруживается: журнал не подписан.
+`repairflow log verify LOG [--head HASH]` пересчитывает цепочку. Без `--head` укороченный файл, который остаётся допустимым префиксом, проходит проверку. Если хеш вершины хранится отдельно, пропавший хвост — ошибка. Изменённое поле или переставленные строки — ошибка.
+
+Переписанный хвост с новой вершиной цепочка сама не ловит. Его ловит свидетель: `repairflow log witness LOG --key-file KEY` печатает HMAC-SHA256 вершины. `repairflow log verify LOG --witness HEX --key-file KEY` сверяет старый HMAC с текущей вершиной. Ключ лежит у оператора и в журнал не пишется. Это не подпись выпуска и не ключ репозитория. Без свидетеля дыра остаётся.
 
 ## Проверенное решение
 
@@ -40,6 +42,8 @@ repairflow decide --problem P --result R --accept --operator-code op-shadow-01 -
 repairflow decide --problem P --result R --accept-with-edits "moved one operation" --operator-code op-shadow-01 --log L
 repairflow decide --problem P --result R --reject --reason "hard notary" --operator-code op-shadow-01 --log L
 repairflow log verify L --head <event_hash>
+repairflow log witness L --key-file KEY
+repairflow log verify L --witness HEX --key-file KEY
 repairflow log stats L
 ```
 
