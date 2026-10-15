@@ -29,7 +29,7 @@
 ## Для пилота и жюри
 
 - [`../APPLICATION.md`](../APPLICATION.md) — текст заявки.
-- [`jury-demo.md`](jury-demo.md) — что говорить на показе.
+- [`jury-demo.md`](jury-demo.md) — что говорить на показе. Папку этих страниц собирает `python tools/pack_submission.py`.
 - [`pilot-protocol.md`](pilot-protocol.md) — теневой протокол на 90 дней.
 - [`pilot-kpi-template.md`](pilot-kpi-template.md) — определения показателей, без придуманных результатов.
 - [`operator-decision-log.md`](operator-decision-log.md) — запись решения человека. Писатель — `repairflow decide`.
