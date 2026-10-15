@@ -222,6 +222,7 @@ def record_checked_decision(
     reason: str = "",
     edit_summary: str = "",
     rollback_reference: str = "",
+    timestamp: datetime | None = None,
 ) -> DecisionEvent:
     """Append a decision only when the result file still matches the problem."""
 
@@ -234,16 +235,19 @@ def record_checked_decision(
         raise ValueError("instance_id does not match the result")
     if result.exit_code != 0 and decision in _ACCEPTING:
         raise ValueError("a non-zero exit cannot be accepted")
-    event = DecisionEvent(
-        operator_code=operator_code,
-        instance_id=problem.instance_id,
-        input_hash=result.input_hash,
-        result_hash=result.result_hash,
-        decision=decision,
-        reason=reason,
-        edit_summary=edit_summary,
-        rollback_reference=rollback_reference,
-    )
+    payload: dict[str, Any] = {
+        "operator_code": operator_code,
+        "instance_id": problem.instance_id,
+        "input_hash": result.input_hash,
+        "result_hash": result.result_hash,
+        "decision": decision,
+        "reason": reason,
+        "edit_summary": edit_summary,
+        "rollback_reference": rollback_reference,
+    }
+    if timestamp is not None:
+        payload["timestamp"] = timestamp
+    event = DecisionEvent.model_validate(payload)
     return append_decision(log_path, event)
 
 

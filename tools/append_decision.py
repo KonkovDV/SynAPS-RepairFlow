@@ -1,20 +1,21 @@
-"""Append one validated operator decision to an evidence JSONL log."""
+"""Append one operator decision after the result file has been checked."""
 
 from __future__ import annotations
 
 import argparse
+import sys
+from datetime import datetime
 from pathlib import Path
 
-from repairflow.decision_log import DecisionEvent, append_decision
+from repairflow.decision_log import Decision, record_checked_decision
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--log", type=Path, required=True)
+    parser.add_argument("--problem", type=Path, required=True)
+    parser.add_argument("--result", type=Path, required=True)
     parser.add_argument("--operator-code", required=True)
-    parser.add_argument("--instance-id", required=True)
-    parser.add_argument("--input-hash", required=True)
-    parser.add_argument("--result-hash", required=True)
     parser.add_argument(
         "--decision",
         choices=("accepted", "accepted_with_edits", "rejected", "manual_fallback"),
@@ -28,21 +29,26 @@ def main() -> int:
         default=None,
         help="ISO-8601 timestamp with timezone; defaults to current UTC",
     )
-    args = parser.parse_args()
-    payload = {
-        "operator_code": args.operator_code,
-        "instance_id": args.instance_id,
-        "input_hash": args.input_hash,
-        "result_hash": args.result_hash,
-        "decision": args.decision,
-        "edit_summary": args.edit_summary,
-        "reason": args.reason,
-        "rollback_reference": args.rollback_reference,
-    }
+    args = parser.parse_args(argv)
+    timestamp = None
     if args.timestamp is not None:
-        payload["timestamp"] = args.timestamp
-    event = append_decision(args.log, DecisionEvent.model_validate(payload))
-    print(event.model_dump_json())
+        timestamp = datetime.fromisoformat(args.timestamp)
+    try:
+        event = record_checked_decision(
+            problem_path=args.problem,
+            result_path=args.result,
+            decision=Decision(args.decision),
+            operator_code=args.operator_code,
+            log_path=args.log,
+            reason=args.reason,
+            edit_summary=args.edit_summary,
+            rollback_reference=args.rollback_reference,
+            timestamp=timestamp,
+        )
+    except (OSError, ValueError, TypeError) as exc:
+        sys.stderr.write(f"append-decision: {exc}\n")
+        return 1
+    sys.stdout.write(event.model_dump_json() + "\n")
     return 0
 
 
