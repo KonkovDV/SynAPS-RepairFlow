@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- The laboratory image is started with a read-only root. There is no health
+  check: the container exits with the command.
 - The evidence manifest attests main `c7757f3` / push run `38749261423`,
   including `test-slow`. This commit does not attest itself.
 - `docs/submission-facts.md` is rendered from the manifest and the two campaign

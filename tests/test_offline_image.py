@@ -35,5 +35,4 @@ def test_ci_builds_the_image_without_a_network() -> None:
     assert "needs: wheelhouse" in CI
     assert "docker pull " + BASE in CI
     assert "docker build --pull=false --network none" in CI
-    assert "docker run --rm --network none" in CI
-    assert "repairflow:lab version" in CI
+    assert "docker run --rm --network none --read-only --tmpfs /tmp:rw,mode=1777 repairflow:lab version" in CI
