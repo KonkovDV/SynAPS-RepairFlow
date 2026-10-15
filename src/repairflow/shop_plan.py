@@ -7,6 +7,7 @@ or tooling cell stays empty; the domain checker decides whether that is legal.
 from __future__ import annotations
 
 import csv
+import hashlib
 from datetime import UTC, datetime
 from io import StringIO
 from pathlib import Path
@@ -42,8 +43,10 @@ SHOP_HEADER = ("заказ", "операция", "пост", "бригада", "
 def load_shop_plan(
     path: Path,
     problem: RepairFlowProblem,
-) -> tuple[list[PlannedAssignment], list[Violation], dict[str, tuple[str, int]]]:
+) -> tuple[list[PlannedAssignment], list[Violation], dict[str, tuple[str, int]], str]:
     """Read a shop plan. A repeated operation is an error, not a second visit."""
+
+    file_sha256 = hashlib.sha256(path.read_bytes()).hexdigest()
 
     manifest_path = path.parent / "manifest.json"
     zone: ZoneInfo | None = None
@@ -114,7 +117,22 @@ def load_shop_plan(
                     },
                 )
             )
-    return assignments, issues, sources
+    return assignments, issues, sources, file_sha256
+
+
+def format_shop_finding(violation: Violation) -> str:
+    """One human-readable line. The notary sentence stays intact."""
+
+    text = REASON_RU.get(violation.code, violation.message)
+    place = violation.operation_id or violation.resource_id or ""
+    parts = [violation.code, text]
+    if place:
+        parts.append(place)
+    name = violation.details.get("source_name")
+    line = violation.details.get("source_line")
+    if isinstance(name, str) and isinstance(line, int):
+        parts.append(f"{name}:{line}")
+    return "\t".join(parts)
 
 
 def write_shop_plan(

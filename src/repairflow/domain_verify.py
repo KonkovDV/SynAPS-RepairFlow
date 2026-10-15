@@ -22,6 +22,7 @@ def verify_domain_plan(
     *,
     extra_violations: list[Violation] | None = None,
     source_rows: dict[str, tuple[str, int]] | None = None,
+    shop_file: tuple[str, str] | None = None,
 ) -> RepairFlowResult:
     """Check a shop plan against the domain contract. The kernel is not called."""
 
@@ -53,19 +54,23 @@ def verify_domain_plan(
         "runtime": runtime_manifest(),
     }
     config_hash = fingerprint_payload(config_payload)
+    extra = {
+        "solver_config": "verify-plan",
+        "kernel_status": "domain_only",
+        "kernel_consulted": False,
+        "verification_origin": "domain_only",
+        "claim_status": claim_status,
+        "claim_note": "domain notary only; the kernel was not called",
+        "config_payload": config_payload,
+    }
+    if shop_file is not None:
+        extra["shop_plan_name"] = shop_file[0]
+        extra["shop_plan_sha256"] = shop_file[1]
     stamp = evidence_stamp(
         input_hash=input_hash,
         config_hash=config_hash,
         data_provenance=problem.data_provenance,
-        extra={
-            "solver_config": "verify-plan",
-            "kernel_status": "domain_only",
-            "kernel_consulted": False,
-            "verification_origin": "domain_only",
-            "claim_status": claim_status,
-            "claim_note": "domain notary only; the kernel was not called",
-            "config_payload": config_payload,
-        },
+        extra=extra,
     )
     payload = RepairFlowResult(
         instance_id=problem.instance_id,

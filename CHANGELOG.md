@@ -7,7 +7,8 @@
   The native CP-SAT model stays unwired until it is measured.
 - A shop-plan job mismatch records the file name and source line. An empty
   crew cell stays empty for the notary. A notary finding on that operation
-  receives the same row. A repeated operation row is rejected.
+  receives the same row. A repeated operation row is rejected. The shop file
+  SHA-256 is stored on the verdict, and the text reason names the file and line.
 - The README now names the operator-log writer, separates the CI badge from
   the attested revision, and points at the page map. A documentation audit
   records what was wrong and what the audit does not close.

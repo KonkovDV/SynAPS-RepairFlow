@@ -170,7 +170,7 @@ def test_shop_sheet_uses_the_manifest_clock(tmp_path: Path) -> None:
         ),
         encoding="utf-8",
     )
-    assignments, extra, _sources = load_shop_plan(shop, problem)
+    assignments, extra, _sources, _digest = load_shop_plan(shop, problem)
     assert extra == []
     assert assignments[0].start == datetime(2026, 10, 2, 8, 0, tzinfo=UTC)
     assert assignments[0].end == datetime(2026, 10, 2, 9, 0, tzinfo=UTC)

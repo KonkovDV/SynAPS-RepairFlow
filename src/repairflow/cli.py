@@ -32,9 +32,8 @@ from repairflow.planner import (
     replan_after_inspection,
     replan_disruption,
 )
-from repairflow.reasons import REASON_RU
 from repairflow.report import render_html, render_markdown
-from repairflow.shop_plan import load_shop_plan, write_shop_plan
+from repairflow.shop_plan import format_shop_finding, load_shop_plan, write_shop_plan
 from repairflow.synthetic import PRESETS, corrupt_plan, synthesize
 from repairflow.versions import REPAIRFLOW_VERSION, SYNAPS_COMMIT
 
@@ -334,8 +333,14 @@ def _verify_plan(
     crew_salt: str | None = None,
 ) -> int:
     problem = load_problem(problem_path, crew_salt=crew_salt)
-    assignments, extra, sources = load_shop_plan(plan_path, problem)
-    result = verify_domain_plan(problem, assignments, extra_violations=extra, source_rows=sources)
+    assignments, extra, sources, digest = load_shop_plan(plan_path, problem)
+    result = verify_domain_plan(
+        problem,
+        assignments,
+        extra_violations=extra,
+        source_rows=sources,
+        shop_file=(plan_path.name, digest),
+    )
     if output is not None:
         _write_json(output, result.model_dump(mode="json"))
     if result.claim_status == "domain_verified":
@@ -343,9 +348,8 @@ def _verify_plan(
     for violation in result.violations:
         if violation.severity == "kpi":
             continue
-        text = REASON_RU.get(violation.code, violation.message)
-        where = violation.operation_id or violation.resource_id or ""
-        sys.stdout.write(f"{violation.code}\t{text}\t{where}\n")
+        text = format_shop_finding(violation)
+        sys.stdout.write(text + "\n")
     return int(result.exit_code)
 
 
@@ -508,10 +512,16 @@ def _demo(preset: str, out_dir: Path, *, skip_cpsat: bool) -> int:
     foreign = greed.result.assignments[0].model_copy(update={"work_center_id": "POST-MISSING"})
     shop_path = out_dir / "shop-plan.csv"
     write_shop_plan(shop_path, problem, [foreign])
-    shop_assignments, extra, sources = load_shop_plan(shop_path, problem)
-    shop = verify_domain_plan(problem, shop_assignments, extra_violations=extra, source_rows=sources)
+    shop_assignments, extra, sources, digest = load_shop_plan(shop_path, problem)
+    shop = verify_domain_plan(
+        problem,
+        shop_assignments,
+        extra_violations=extra,
+        source_rows=sources,
+        shop_file=(shop_path.name, digest),
+    )
     _write_json(out_dir / "shop-verify.json", shop.model_dump(mode="json"))
-    shop_lines = [REASON_RU.get(row.code, row.message) for row in shop.violations if row.severity != "kpi"]
+    shop_lines = [format_shop_finding(row) for row in shop.violations if row.severity != "kpi"]
     (out_dir / "shop-reasons.txt").write_text("\n".join(shop_lines) + "\n", encoding="utf-8")
     shop_ok = (
         shop.exit_code == 2

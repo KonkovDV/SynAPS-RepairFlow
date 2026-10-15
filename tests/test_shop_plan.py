@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import ast
 import csv
+import hashlib
 from datetime import timedelta
 from pathlib import Path
 
@@ -12,7 +13,7 @@ from repairflow.domain_verify import verify_domain_plan
 from repairflow.model import RepairFlowProblem
 from repairflow.planner import plan
 from repairflow.reasons import REASON_RU, ReasonCode
-from repairflow.shop_plan import load_shop_plan, write_shop_plan
+from repairflow.shop_plan import format_shop_finding, load_shop_plan, write_shop_plan
 from repairflow.synthetic import synthesize
 
 
@@ -129,7 +130,7 @@ def test_job_mismatch_is_a_hard_russian_reason(tmp_path) -> None:
     write_shop_plan(shop, problem, list(outcome.result.assignments))
     text = shop.read_text(encoding="utf-8")
     shop.write_text(text.replace(problem.jobs[0].id, "JOB-OTHER", 1), encoding="utf-8")
-    assignments, extra, sources = load_shop_plan(shop, problem)
+    assignments, extra, sources, _digest = load_shop_plan(shop, problem)
     result = verify_domain_plan(problem, assignments, extra_violations=extra, source_rows=sources)
     assert any(row.code == ReasonCode.JOB_MISMATCH for row in result.violations)
     mismatch = next(row for row in result.violations if row.code == ReasonCode.JOB_MISMATCH)
@@ -179,7 +180,7 @@ def test_semicolon_shop_csv_loads(tmp_path) -> None:
     write_shop_plan(shop, problem, list(outcome.result.assignments))
     comma = shop.read_text(encoding="utf-8")
     shop.write_text(comma.replace(",", ";"), encoding="utf-8")
-    assignments, extra, _sources = load_shop_plan(shop, problem)
+    assignments, extra, _sources, _digest = load_shop_plan(shop, problem)
     assert extra == []
     assert len(assignments) == len(outcome.result.assignments)
     assert assignments[0].end - assignments[0].start >= timedelta(0)
@@ -194,7 +195,7 @@ def test_an_empty_crew_cell_is_left_for_the_notary(tmp_path: Path) -> None:
     rows[1][3] = ""
     with shop.open("w", encoding="utf-8", newline="") as handle:
         csv.writer(handle).writerows(rows)
-    assignments, extra, _sources = load_shop_plan(shop, problem)
+    assignments, extra, _sources, _digest = load_shop_plan(shop, problem)
     assert extra == []
     assert assignments[0].crew_id is None
 
@@ -205,14 +206,24 @@ def test_a_notary_finding_cites_the_shop_row(tmp_path: Path) -> None:
     foreign = outcome.result.assignments[0].model_copy(update={"work_center_id": "POST-MISSING"})
     shop = tmp_path / "missing-post.csv"
     write_shop_plan(shop, problem, [foreign])
-    assignments, extra, sources = load_shop_plan(shop, problem)
-    result = verify_domain_plan(problem, assignments, extra_violations=extra, source_rows=sources)
+    assignments, extra, sources, digest = load_shop_plan(shop, problem)
+    result = verify_domain_plan(
+        problem,
+        assignments,
+        extra_violations=extra,
+        source_rows=sources,
+        shop_file=(shop.name, digest),
+    )
     cited = [
         row for row in result.violations if row.operation_id == foreign.operation_id and row.severity != "kpi"
     ]
     assert cited
+    assert digest == hashlib.sha256(shop.read_bytes()).hexdigest()
+    assert result.metadata["shop_plan_name"] == "missing-post.csv"
+    assert result.metadata["shop_plan_sha256"] == digest
     assert {row.details["source_name"] for row in cited} == {"missing-post.csv"}
     assert {row.details["source_line"] for row in cited} == {2}
+    assert all("missing-post.csv:2" in format_shop_finding(row) for row in cited)
     omitted = [row for row in result.violations if row.operation_id not in sources]
     assert all("source_line" not in row.details for row in omitted)
 
