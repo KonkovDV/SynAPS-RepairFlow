@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- `tools/pack_submission.py` copies the submission pages into one folder and
+  records their hashes. It does not generate the prose or add a result figure.
 - The evidence manifest attests main `3f84202` / push run `38719812783`,
   including `test-slow`. This commit does not attest itself.
 - `repairflow demo` writes a foreign shop sheet, a domain rejection, and a
