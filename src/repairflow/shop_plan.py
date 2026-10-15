@@ -103,7 +103,11 @@ def load_shop_plan(
                     operation_id=operation_id,
                     job_id=row["job_id"] or None,
                     suggested_relaxation=SUGGESTIONS[ReasonCode.JOB_MISMATCH],
-                    details={"operation_job_id": owner},
+                    details={
+                        "operation_job_id": owner,
+                        "source_name": path.name,
+                        "source_line": index,
+                    },
                 )
             )
     return assignments, issues

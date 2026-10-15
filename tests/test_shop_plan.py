@@ -132,6 +132,14 @@ def test_job_mismatch_is_a_hard_russian_reason(tmp_path) -> None:
     assignments, extra = load_shop_plan(shop, problem)
     result = verify_domain_plan(problem, assignments, extra_violations=extra)
     assert any(row.code == ReasonCode.JOB_MISMATCH for row in result.violations)
+    mismatch = next(row for row in result.violations if row.code == ReasonCode.JOB_MISMATCH)
+    expected_line = next(
+        number
+        for number, line in enumerate(shop.read_text(encoding="utf-8").splitlines(), start=1)
+        if "JOB-OTHER" in line
+    )
+    assert mismatch.details["source_name"] == "plan.csv"
+    assert mismatch.details["source_line"] == expected_line
     assert result.claim_status == "rejected"
     assert result.verified_feasible is False
     assert REASON_RU[ReasonCode.JOB_MISMATCH]
@@ -175,3 +183,17 @@ def test_semicolon_shop_csv_loads(tmp_path) -> None:
     assert extra == []
     assert len(assignments) == len(outcome.result.assignments)
     assert assignments[0].end - assignments[0].start >= timedelta(0)
+
+
+def test_an_empty_crew_cell_is_left_for_the_notary(tmp_path: Path) -> None:
+    problem = synthesize("tiny", seed=1)
+    outcome = plan(problem, solver_config="GREED")
+    shop = tmp_path / "open-crew.csv"
+    write_shop_plan(shop, problem, list(outcome.result.assignments))
+    rows = list(csv.reader(shop.read_text(encoding="utf-8").splitlines()))
+    rows[1][3] = ""
+    with shop.open("w", encoding="utf-8", newline="") as handle:
+        csv.writer(handle).writerows(rows)
+    assignments, extra = load_shop_plan(shop, problem)
+    assert extra == []
+    assert assignments[0].crew_id is None
