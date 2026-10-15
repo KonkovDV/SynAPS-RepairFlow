@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- The evidence manifest attests main `a7ff737` / push run `38743808761`,
+  including `test-slow`. This commit does not attest itself.
 - GitHub Actions are pinned to the commit of the reviewed tag. The tag stays
   in a comment. A floating tag in a workflow is rejected.
 - The evidence manifest attests main `ad6f7fa` / push run `38738246339`,
