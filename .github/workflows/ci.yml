@@ -29,8 +29,8 @@ jobs:
     env:
       PYTHONPATH: src
     steps:
-      - uses: actions/checkout@v7.0.1
-      - uses: actions/setup-python@v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
       - name: Install the hashed lock
@@ -49,8 +49,8 @@ jobs:
     env:
       PYTHONPATH: src
     steps:
-      - uses: actions/checkout@v7.0.1
-      - uses: actions/setup-python@v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
       - name: Install the hashed lock
@@ -65,8 +65,8 @@ jobs:
     env:
       PYTHONPATH: src
     steps:
-      - uses: actions/checkout@v7.0.1
-      - uses: actions/setup-python@v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
       - name: Install the hashed lock
@@ -84,8 +84,8 @@ jobs:
     env:
       PYTHONPATH: src
     steps:
-      - uses: actions/checkout@v7.0.1
-      - uses: actions/setup-python@v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
       - name: Install the hashed lock
@@ -95,7 +95,7 @@ jobs:
           python -m pip install --no-deps -r "$RUNNER_TEMP/git.txt"
       - run: python -m repairflow demo --out out
       - run: python tools/pack_evidence.py --out out/evidence
-      - uses: actions/upload-artifact@v7.0.2
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: repairflow-mvp-evidence
           path: |
@@ -110,8 +110,8 @@ jobs:
     env:
       PYTHONPATH: src
     steps:
-      - uses: actions/checkout@v7.0.1
-      - uses: actions/setup-python@v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
       - name: Install the hashed lock
@@ -120,7 +120,7 @@ jobs:
           python -m pip install --require-hashes -r "$RUNNER_TEMP/hashed.txt"
           python -m pip install --no-deps -r "$RUNNER_TEMP/git.txt"
       - run: python -m repairflow benchmark --out bench
-      - uses: actions/upload-artifact@v7.0.2
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: repairflow-benchmark
@@ -136,8 +136,8 @@ jobs:
     env:
       PYTHONPATH: src
     steps:
-      - uses: actions/checkout@v7.0.1
-      - uses: actions/setup-python@v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
       - name: Install the hashed lock
@@ -152,7 +152,7 @@ jobs:
           (github.event_name == 'workflow_dispatch' && inputs.run_nightly == true)) &&
           always()
         run: python -c "from pathlib import Path; from tests.fault_campaign import write_nightly; write_nightly(Path('out/fault-campaign-nightly.json'))"
-      - uses: actions/upload-artifact@v7.0.2
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: >-
           (github.event_name == 'schedule' ||
           (github.event_name == 'workflow_dispatch' && inputs.run_nightly == true)) &&
@@ -171,8 +171,8 @@ jobs:
       contents: read
       actions: write
     steps:
-      - uses: actions/checkout@v7.0.1
-      - uses: actions/setup-python@v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
       - name: Install the hashed lock
@@ -185,7 +185,7 @@ jobs:
       - name: Write mutmut summary
         if: always()
         run: mutmut results > mutmut-results.txt
-      - uses: actions/upload-artifact@v7.0.2
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: mutmut-results
@@ -199,8 +199,8 @@ jobs:
       contents: read
       actions: write
     steps:
-      - uses: actions/checkout@v7.0.1
-      - uses: actions/setup-python@v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
       - name: Download hashed wheels and build the two project wheels
@@ -211,7 +211,7 @@ jobs:
           python -m pip wheel --no-deps --no-build-isolation -r "$RUNNER_TEMP/git.txt" -w wheelhouse
           python -m pip wheel --no-deps --no-build-isolation . -w wheelhouse
           python -c "import pathlib; wheels=list(pathlib.Path('wheelhouse').glob('synaps-*.whl')); assert len(wheels)==1, wheels; project=list(pathlib.Path('wheelhouse').glob('synaps_repairflow-*.whl')); assert len(project)==1, project"
-      - uses: actions/upload-artifact@v7.0.2
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: repairflow-wheelhouse
           path: wheelhouse/
@@ -223,11 +223,11 @@ jobs:
       contents: read
       actions: read
     steps:
-      - uses: actions/checkout@v7.0.1
-      - uses: actions/setup-python@v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
-      - uses: actions/download-artifact@v7.0.0
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
           name: repairflow-wheelhouse
           path: wheelhouse
@@ -248,8 +248,8 @@ jobs:
       contents: read
       actions: read
     steps:
-      - uses: actions/checkout@v7.0.1
-      - uses: actions/download-artifact@v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
           name: repairflow-wheelhouse
           path: wheelhouse
@@ -266,5 +266,5 @@ jobs:
       contents: read
       pull-requests: read
     steps:
-      - uses: actions/checkout@v7.0.1
-      - uses: actions/dependency-review-action@v5.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0

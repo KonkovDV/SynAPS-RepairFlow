@@ -134,7 +134,7 @@ python tools/verify_schema.py, python tools/export_schemas.py, python tools/veri
 - **Acceptance:** Windows и Linux дают одинаковый `schedule_hash`. `result_hash` по-прежнему идентифицирует машину и описан так в `docs/sbom-and-provenance.md`.
 
 ### Фаза 3. CI и цепочка поставки (1–2 дня)
-Статус: dispatch `37700478444` на `0f56005` зелёный, включая офлайн-demo. Лабораторный чеклист отмечен по этому прогону. CodeQL на push `c1e4e4f` прошёл (`38735099559`). Scorecard по расписанию на `7f6e9ae` прошёл (`38698881868`). Это не аттестация main. Dependency review только на PR. Подписи релиза нет.
+Статус: dispatch `37700478444` на `0f56005` зелёный, включая офлайн-demo. Лабораторный чеклист отмечен по этому прогону. CodeQL на push `c1e4e4f` прошёл (`38735099559`). Scorecard по расписанию на `7f6e9ae` прошёл (`38698881868`). Это не аттестация main. Dependency review только на PR. Подписи релиза нет. Шаги Actions закреплены коммитом выбранного тега.
 Ветка `ci/supply-chain`. Правки `.github/workflows/` только через локальный git с правом `workflow`.
 1. Actions на v7 после чтения release notes [ПРОВЕРИТЬ].
 2. `runs-on: ubuntu-24.04` вместо `ubuntu-latest` до 19.10.2026. Переход на 26 — отдельным PR с полным прогоном.
