@@ -18,6 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from repairflow.attestation import render_attestation_markdown  # noqa: E402
+from repairflow.submission_facts import refresh_generated_facts  # noqa: E402
 from repairflow.versions import SYNAPS_COMMIT  # noqa: E402
 
 MANIFEST = ROOT / "docs" / "evidence-manifest.json"
@@ -42,6 +43,7 @@ def render_readme() -> None:
     head, rest = text.split(BEGIN, 1)
     _, tail = rest.split(END, 1)
     README.write_text(head + BEGIN + "\n" + table + END + tail, encoding="utf-8", newline="\n")
+    refresh_generated_facts(ROOT)
 
 
 def main() -> int:

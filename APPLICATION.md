@@ -14,4 +14,4 @@
 
 Дальше: `docs/README.md`, `docs/jury-demo.md`, `docs/pilot-protocol.md`, `docs/evidence-protocol.md`.
 
-Лабораторные числа лежат в `benchmark/results/benchmark.json` и `benchmark/results/SHA256SUMS`. Проверенная ревизия и пин ядра — в `docs/evidence-manifest.json`. Это и есть доказательства. На эту страницу их цифры не переписываются.
+Лабораторные числа лежат в `benchmark/results/benchmark.json` и `benchmark/results/SHA256SUMS`. Проверенная ревизия и пин ядра — в `docs/evidence-manifest.json`. Сводка из этих файлов — `docs/submission-facts.md`. На эту страницу их цифры не переписываются.
