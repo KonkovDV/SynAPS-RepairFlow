@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Nightly mutmut `38698472141` on `7f6e9ae` was read. 126 survivors are
+  equivalent. 49 are not. `tests/test_nightly_survivors.py` records the
+  original behaviour and is not part of that run. Phase 1 stays open.
+  The README does not copy the score.
 - The evidence manifest attests main `25e6e82` / push run `38724588580`,
   including `test-slow`. This commit does not attest itself.
 - `tools/pack_submission.py` copies the submission pages into one folder and

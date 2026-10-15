@@ -240,3 +240,43 @@ Accepted before the run, not as a pass:
 - No mypy pre-filter. A type error can hide a mutant the tests would also miss.
 - The slow campaign test stays out of the mutant runner. It repeats the same notary for minutes and would not add a distinct kill.
 - The uncapped campaign is recorded in `docs/fault-campaign-nightly.json` (checked 109665, false_accept 0, false_reject 0). It is a local Windows run. Dispatch `37810297431` on `e364f34` uploaded `fault-campaign-nightly` with the same counts and the same `input_hash`. mutmut was skipped. That artifact is not an attestation of main. Phase 1 stays open. The later score is run `38228010896`: 334 survivors. Of the 272 that had no equivalent reason, 45 now have one, read from the mutant body. 227 do not. `_completion_times` 24 is one of those 227 and is not equivalent. Phase 1 stays open. See the section Reading the 272.
+
+## Ночь 38698472141
+
+Ночной прогон [38698472141](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/runs/38698472141) на `7f6e9ae` закончился успехом mutation и `test-slow`. Это не аттестация `main`. Четыре модуля нотариуса на `7f6e9ae` совпадают с текущим `main`: аудит `0aa2ecf` уже внутри, поздние коммиты их не трогали. Идентификаторы мутантов поэтому называют текущий текст, а не прогон `38618458299`. Там было 1922 мутанта; здесь 2137, потому что `lane_setup.py` и `checker.py` выросли. Коды выхода только 0 и 1. README этот счёт не копирует.
+
+| Модуль | Убито | Живо | Всего |
+| --- | ---: | ---: | ---: |
+| `capacity.py` | 62 | 4 | 66 |
+| `checker.py` | 1455 | 122 | 1577 |
+| `lane_setup.py` | 210 | 39 | 249 |
+| `ledger.py` | 235 | 10 | 245 |
+| Всего | 1962 | 175 | 2137 |
+
+Тела 175 выживших прочитаны по спанам артефакта, не по старому номеру. У 126 есть причина эквивалентности. У 49 нет. `tests/test_nightly_survivors.py` фиксирует исходное поведение этих 49 и в счёт 1962/2137 не входит. Фазу не закрывать: убийство этих 49 ещё не измерено.
+
+Эквивалентны, потому что подстановка не меняет значение, которое потом читают:
+
+- `capacity.py`: пик `>` и `>=` пишут одно и то же; `pop` без запасного значения попадает в уже открытый индекс; вид старта 2 для развёртки тот же, что 1; `sort` без ключа на тройке совпадает с явным ключом.
+- `check_plan` 4–6 и `check_domain_assignments` 3–5: `model_dump(mode=None)`, `mode="XXpythonXX"` и `mode="PYTHON"` на этой сборке Pydantic дают тот же словарь, что `mode="python"`, и задача заново проходит валидацию.
+- Ветвь `except` у `check_plan` 7–10 и `check_domain_assignments` 6–9 не выполняется: уже собранная `RepairFlowProblem` переживает этот круг.
+- `check_domain_assignments` 13 передаёт `subset_mode=None`. И `if not subset_mode`, и `if ignore_absent` читают `None` как ложь.
+- `_normalize_assignments` 12, 13, 20 и 21 меняют только запасную строку вида. И для `"wc"` / `"op"`, и для другой строки в назначение попадает `str` того же uuid.
+- `_precedence` 1 меняет значение по умолчанию `ignore_absent`. Единственный вызов передаёт аргумент явно.
+- `_capacity_overlaps` 9 ставит `start = None`, следующая строка его заменяет: все три вызова передают `include_setup=True`.
+- `_duration_violation` 46 всегда зовёт `open_minutes`. Пустой список масок — это вся длина интервала, а до этой ветви доходят только целые минуты. 58 пишет `message = None` в недостижимом `else`: `policy_of` возвращает только `exact`, `min`, `preemptive` или `invalid`. `if not message` и для `None`, и для `""` пустой.
+- `_named_calendar_fit` 8–21, 27–30 и 33–36 правят два отказа. У проверенной задачи их нет: неизвестный `calendar_id` модель отвергает раньше, а отсутствие календаря у несинтетики тоже. Синтетика без календаря из этой функции выходит пустым списком.
+- `_spare_receipts` 22, 23, 25 и 28 меняют порядок или идентификатор события. Приход остаётся раньше расхода: у расхода непустой идентификатор операции, и он сортируется после пустого или после `"XXXX"`.
+- `_due_release_spares` 44–46, 48, 49, 52, 53, 55–57 и 107 правят отказ «неизвестный ЗИП» и `continue` сразу за ним. Модель не пускает операцию с неизвестным артикулом, ветвь не выполняется.
+- Стирание `suggested_relaxation` или подстановка `None` у `_violation` ничего не меняет: `None` заменяется на `SUGGESTIONS.get(text)`, а вызывающий код и так передавал эту строку. Это `_coverage` 9 и 14, `_skills_and_eligibility` 62, 69, 86, 94, 111 и 120, `_precedence` 20, 29, 46, 55, 74 и 83, `_capacity_overlaps` 35, 43 и 50, `_spare_receipts` 55 и 61, `_due_release_spares` 89, 97, 146, 154, 170 и 177, `_setup` 73 и 82, `_frozen` 15, 22, 48 и 56.
+- `_violation` 1 и 2 меняют запасную серьёзность. `kpi` ставится только при явном `"kpi"`. 4–6 не выходят из `ReasonCode`: это `StrEnum`, `str` совпадает со значением, а ветвь `else` вызывающие не берут. 38–41 правят `REASON_RU.get` только когда сообщение пустое. Пустое сообщение в `_violation` не передаётся.
+- `spare_is_rotable` 10, 12, 15 и 16: запасное значение, которое не равно `rotable` после `.lower()`, остаётся расходным. `_exchange_pool_violations` 21: начальное `worst_at` читается только после присваивания момента. `_rotable_spare_violations` 31, 73 и 109 убирают `severity="hard"`; у `Violation` это и есть значение по умолчанию. `_completion_times` 7 кладёт `None` вместо идентификатора преемника: список проверяется только на пустоту. 24 ставит `complete = None`; `if complete and ends` ложно и для `None`, и для `False`.
+- `stamp_canonical_lanes` 12–17, 21, 24, 25 и 35 готовят список для `_colour_lanes(..., ignore_explicit=True)`. При таком флаге поле `lane` у заготовки не читается, а `model_copy(update=None)` и неизвестный ключ полосу не стирают. 35 копирует полосу `None` поверх уже пустой полосы.
+
+Не эквивалентны. Исходное поведение зафиксировано в `tests/test_nightly_survivors.py`, не в этом прогоне:
+
+- `_duration_violation` 14 и 15 переписывают фразу про нецелую минуту.
+- `_calendar_fit` 45 и 52 стирают подсказку `WINDOW_BROKEN` у кода `CALENDAR_BROKEN`. В `SUGGESTIONS` ключа `CALENDAR_BROKEN` нет, поэтому `None` не восстанавливает ту же строку.
+- `stamp_canonical_lanes` 6 и 28 заменяют `and` на `or` и перекрашивают уже названную полосу или одиночный пост. 40 кладёт `None` вместо строки плана.
+- `_colour_lanes` 32, 36, 40–43, 54, 60, 65, 66, 68, 69, 80, 82, 88, 90, 103, 106–108, 127–129 и 154 меняют явную полосу, признак неоднозначности, поля свидетеля, `continue` на `break` или состояние `idle`. 151 и 152 эквивалентны: кортеж новой полосы тут же перезаписывается и не читается.
+- `_setup` 31 подставляет одну минуту вместо нуля при политике `zero`. 43–48, 53–63, 92 и 100 портят фразу, поля или обрыв цикла у неоднозначной полосы и у пропущенной ячейки. 73 и 82 уже названы выше и эквивалентны.
