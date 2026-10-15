@@ -21,6 +21,15 @@ def test_image_installs_only_from_the_wheelhouse() -> None:
     assert "USER nobody" in DOCKERFILE
 
 
+def test_the_wheelhouse_stays_in_the_build_stage() -> None:
+    stages = DOCKERFILE.split(f"FROM {BASE}")
+    assert len(stages) == 3
+    assert stages[1].startswith(" AS build")
+    runtime = stages[2]
+    assert "COPY --from=build /usr/local /usr/local" in runtime
+    assert "wheelhouse" not in runtime
+
+
 def test_ci_builds_the_image_without_a_network() -> None:
     assert "offline-image:" in CI
     assert "needs: wheelhouse" in CI

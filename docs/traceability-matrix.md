@@ -22,6 +22,8 @@
 | Мутационное тестирование нотариуса | measured, not closed | ночные прогоны `37908445280`, `38037961461`, `38126032914` и `38228010896` на `b7c8c29`: убито 1587, живо 334, коды выхода совпали, пересчёт сошёлся; прогон `38618458299` на `a4e4e90`: убито 1814, живо 108, всего 1922; четыре выживших без объяснения умерли, новых не родилось; ночь `38698472141` на `7f6e9ae` прочитана: живо 175, у 126 есть причина, у 49 нет, тесты `tests/test_nightly_survivors.py` в тот счёт не входят; это не аттестация `main`; `docs/mutation-survivors.md` |
 | Цеховой план без вызова ядра | implemented | `repairflow verify-plan`; заявление `domain_verified`; `tests/test_shop_plan.py` |
 | Манифест загрузки CSV, ночная смена, псевдоним бригады | implemented | `src/repairflow/ingest.py`, `tests/test_ingest_manifest.py`; образ из склада колёс на Debian, Astra не проверялась |
+| Ключ личных данных в `domain_attributes` | implemented | модель отвергает такой ключ, включая вложенный; значение и срок хранения этим списком не закрыты; `tests/test_personal_fields.py` |
+| Склад колёс в финальном слое образа | implemented | стадия сборки, в финальный образ копируется `/usr/local`; `tests/test_offline_image.py`, `Dockerfile` |
 | Блокирующие запчасти | implemented | тесты запчастей нотариуса |
 | Обменный фонд как книга остатков | implemented | `src/repairflow/ledger.py`, ADR-0004 |
 | Дефектовка, которая замораживает уже выданную работу | implemented | `repairflow inspect`, ADR-0005 |

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- `domain_attributes` rejects keys that name a person. The check is the key,
+  not the value, and it is not a personal-data compliance claim.
+- The laboratory image copies the install out of a build stage. The wheelhouse
+  is not a layer of the final image.
 - The evidence manifest attests main `0e1d02a` / push run `38733162076`,
   including `test-slow`. This commit does not attest itself.
 - Nightly mutmut `38698472141` on `7f6e9ae` was read. 126 survivors are
