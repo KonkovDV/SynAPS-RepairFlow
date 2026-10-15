@@ -6,7 +6,8 @@
   can carry an HMAC witness of its tip. The witness key is not a release key.
   The native CP-SAT model stays unwired until it is measured.
 - A shop-plan job mismatch records the file name and source line. An empty
-  crew cell stays empty for the notary.
+  crew cell stays empty for the notary. A notary finding on that operation
+  receives the same row. A repeated operation row is rejected.
 - The README now names the operator-log writer, separates the CI badge from
   the attested revision, and points at the page map. A documentation audit
   records what was wrong and what the audit does not close.

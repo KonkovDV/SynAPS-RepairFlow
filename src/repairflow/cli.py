@@ -334,8 +334,8 @@ def _verify_plan(
     crew_salt: str | None = None,
 ) -> int:
     problem = load_problem(problem_path, crew_salt=crew_salt)
-    assignments, extra = load_shop_plan(plan_path, problem)
-    result = verify_domain_plan(problem, assignments, extra_violations=extra)
+    assignments, extra, sources = load_shop_plan(plan_path, problem)
+    result = verify_domain_plan(problem, assignments, extra_violations=extra, source_rows=sources)
     if output is not None:
         _write_json(output, result.model_dump(mode="json"))
     if result.claim_status == "domain_verified":
@@ -508,8 +508,8 @@ def _demo(preset: str, out_dir: Path, *, skip_cpsat: bool) -> int:
     foreign = greed.result.assignments[0].model_copy(update={"work_center_id": "POST-MISSING"})
     shop_path = out_dir / "shop-plan.csv"
     write_shop_plan(shop_path, problem, [foreign])
-    shop_assignments, extra = load_shop_plan(shop_path, problem)
-    shop = verify_domain_plan(problem, shop_assignments, extra_violations=extra)
+    shop_assignments, extra, sources = load_shop_plan(shop_path, problem)
+    shop = verify_domain_plan(problem, shop_assignments, extra_violations=extra, source_rows=sources)
     _write_json(out_dir / "shop-verify.json", shop.model_dump(mode="json"))
     shop_lines = [REASON_RU.get(row.code, row.message) for row in shop.violations if row.severity != "kpi"]
     (out_dir / "shop-reasons.txt").write_text("\n".join(shop_lines) + "\n", encoding="utf-8")

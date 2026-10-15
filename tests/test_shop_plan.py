@@ -129,8 +129,8 @@ def test_job_mismatch_is_a_hard_russian_reason(tmp_path) -> None:
     write_shop_plan(shop, problem, list(outcome.result.assignments))
     text = shop.read_text(encoding="utf-8")
     shop.write_text(text.replace(problem.jobs[0].id, "JOB-OTHER", 1), encoding="utf-8")
-    assignments, extra = load_shop_plan(shop, problem)
-    result = verify_domain_plan(problem, assignments, extra_violations=extra)
+    assignments, extra, sources = load_shop_plan(shop, problem)
+    result = verify_domain_plan(problem, assignments, extra_violations=extra, source_rows=sources)
     assert any(row.code == ReasonCode.JOB_MISMATCH for row in result.violations)
     mismatch = next(row for row in result.violations if row.code == ReasonCode.JOB_MISMATCH)
     expected_line = next(
@@ -179,7 +179,7 @@ def test_semicolon_shop_csv_loads(tmp_path) -> None:
     write_shop_plan(shop, problem, list(outcome.result.assignments))
     comma = shop.read_text(encoding="utf-8")
     shop.write_text(comma.replace(",", ";"), encoding="utf-8")
-    assignments, extra = load_shop_plan(shop, problem)
+    assignments, extra, _sources = load_shop_plan(shop, problem)
     assert extra == []
     assert len(assignments) == len(outcome.result.assignments)
     assert assignments[0].end - assignments[0].start >= timedelta(0)
@@ -194,6 +194,39 @@ def test_an_empty_crew_cell_is_left_for_the_notary(tmp_path: Path) -> None:
     rows[1][3] = ""
     with shop.open("w", encoding="utf-8", newline="") as handle:
         csv.writer(handle).writerows(rows)
-    assignments, extra = load_shop_plan(shop, problem)
+    assignments, extra, _sources = load_shop_plan(shop, problem)
     assert extra == []
     assert assignments[0].crew_id is None
+
+
+def test_a_notary_finding_cites_the_shop_row(tmp_path: Path) -> None:
+    problem = synthesize("tiny", seed=1)
+    outcome = plan(problem, solver_config="GREED")
+    foreign = outcome.result.assignments[0].model_copy(update={"work_center_id": "POST-MISSING"})
+    shop = tmp_path / "missing-post.csv"
+    write_shop_plan(shop, problem, [foreign])
+    assignments, extra, sources = load_shop_plan(shop, problem)
+    result = verify_domain_plan(problem, assignments, extra_violations=extra, source_rows=sources)
+    cited = [
+        row for row in result.violations if row.operation_id == foreign.operation_id and row.severity != "kpi"
+    ]
+    assert cited
+    assert {row.details["source_name"] for row in cited} == {"missing-post.csv"}
+    assert {row.details["source_line"] for row in cited} == {2}
+    omitted = [row for row in result.violations if row.operation_id not in sources]
+    assert all("source_line" not in row.details for row in omitted)
+
+
+def test_a_repeated_operation_row_is_rejected(tmp_path: Path) -> None:
+    problem = synthesize("tiny", seed=1)
+    outcome = plan(problem, solver_config="GREED")
+    shop = tmp_path / "twice.csv"
+    write_shop_plan(shop, problem, list(outcome.result.assignments[:1]))
+    lines = shop.read_text(encoding="utf-8").splitlines()
+    shop.write_text("\n".join((lines[0], lines[1], lines[1])) + "\n", encoding="utf-8")
+    try:
+        load_shop_plan(shop, problem)
+    except ValueError as exc:
+        assert "repeats operation" in str(exc)
+    else:
+        raise AssertionError("a repeated operation row was accepted")

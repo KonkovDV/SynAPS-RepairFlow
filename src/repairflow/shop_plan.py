@@ -42,8 +42,8 @@ SHOP_HEADER = ("заказ", "операция", "пост", "бригада", "
 def load_shop_plan(
     path: Path,
     problem: RepairFlowProblem,
-) -> tuple[list[PlannedAssignment], list[Violation]]:
-    """Read a shop plan. A job that does not own the operation is a hard row."""
+) -> tuple[list[PlannedAssignment], list[Violation], dict[str, tuple[str, int]]]:
+    """Read a shop plan. A repeated operation is an error, not a second visit."""
 
     manifest_path = path.parent / "manifest.json"
     zone: ZoneInfo | None = None
@@ -65,11 +65,15 @@ def load_shop_plan(
     jobs = {op.id: op.job_id for op in problem.operations}
     assignments: list[PlannedAssignment] = []
     issues: list[Violation] = []
+    sources: dict[str, tuple[str, int]] = {}
     for index, raw in enumerate(reader, start=2):
         row = {field: (raw.get(source) or "").strip() for field, source in header.items() if field}
         operation_id = row["operation_id"]
         if not operation_id:
             raise ValueError(f"{path} line {index} has no operation")
+        if operation_id in sources:
+            raise ValueError(f"{path} line {index} repeats operation {operation_id}")
+        sources[operation_id] = (path.name, index)
         start = _instant(row["start"], path=path, line=index, column="начало", zone=zone)
         end = _instant(row["end"], path=path, line=index, column="конец", zone=zone)
         if end <= start:
@@ -110,7 +114,7 @@ def load_shop_plan(
                     },
                 )
             )
-    return assignments, issues
+    return assignments, issues, sources
 
 
 def write_shop_plan(
