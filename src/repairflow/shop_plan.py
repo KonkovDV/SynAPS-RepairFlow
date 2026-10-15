@@ -14,7 +14,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from repairflow.ingest import load_manifest
-from repairflow.io import read_text_encoded, read_text_limited
+from repairflow.io import read_bytes_limited
 from repairflow.model import PlannedAssignment, RepairFlowProblem, Violation
 from repairflow.reasons import REASON_RU, SUGGESTIONS, ReasonCode
 
@@ -44,19 +44,19 @@ def load_shop_plan(
     path: Path,
     problem: RepairFlowProblem,
 ) -> tuple[list[PlannedAssignment], list[Violation], dict[str, tuple[str, int]], str]:
-    """Read a shop plan. A repeated operation is an error, not a second visit."""
+    """Read a shop plan once. A repeated operation is an error, not a second visit."""
 
-    file_sha256 = hashlib.sha256(path.read_bytes()).hexdigest()
-
+    raw = read_bytes_limited(path)
+    file_sha256 = hashlib.sha256(raw).hexdigest()
     manifest_path = path.parent / "manifest.json"
     zone: ZoneInfo | None = None
     if manifest_path.is_file():
         manifest = load_manifest(manifest_path)
-        text = read_text_encoded(path, manifest.encoding)
+        text = _decode_shop(path, raw, manifest.encoding)
         delimiter = manifest.separator()
         zone = manifest.zone()
     else:
-        text = read_text_limited(path)
+        text = _decode_shop(path, raw, None)
         delimiter = ";" if text.splitlines()[0].count(";") > text.splitlines()[0].count(",") else ","
     reader = csv.DictReader(StringIO(text), delimiter=delimiter)
     if reader.fieldnames is None:
@@ -69,8 +69,8 @@ def load_shop_plan(
     assignments: list[PlannedAssignment] = []
     issues: list[Violation] = []
     sources: dict[str, tuple[str, int]] = {}
-    for index, raw in enumerate(reader, start=2):
-        row = {field: (raw.get(source) or "").strip() for field, source in header.items() if field}
+    for index, record in enumerate(reader, start=2):
+        row = {field: (record.get(source) or "").strip() for field, source in header.items() if field}
         operation_id = row["operation_id"]
         if not operation_id:
             raise ValueError(f"{path} line {index} has no operation")
@@ -133,6 +133,16 @@ def format_shop_finding(violation: Violation) -> str:
     if isinstance(name, str) and isinstance(line, int):
         parts.append(f"{name}:{line}")
     return "\t".join(parts)
+
+
+def _decode_shop(path: Path, raw: bytes, encoding: str | None) -> str:
+    chosen = "utf-8" if encoding is None else encoding
+    try:
+        return raw.decode(chosen)
+    except UnicodeDecodeError as exc:
+        if encoding is None:
+            raise
+        raise ValueError(f"{path} is not encoded as {encoding}") from exc
 
 
 def write_shop_plan(
