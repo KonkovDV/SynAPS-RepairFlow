@@ -1,8 +1,8 @@
 {
   "schema": "repairflow.evidence_manifest.v1",
-  "attests_commit": "3f8420245e601a956b3ebce4e001c179110766d4",
-  "ci_run_id": "38719812783",
-  "ci_run_url": "https://github.com/KonkovDV/SynAPS-RepairFlow/actions/runs/38719812783",
+  "attests_commit": "25e6e82d894e0c8f385a38225b50a5006abaece5",
+  "ci_run_id": "38724588580",
+  "ci_run_url": "https://github.com/KonkovDV/SynAPS-RepairFlow/actions/runs/38724588580",
   "ci_result": "success",
   "ci_includes_test_slow": true,
   "stale": true,

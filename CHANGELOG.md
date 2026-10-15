@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- The evidence manifest attests main `25e6e82` / push run `38724588580`,
+  including `test-slow`. This commit does not attest itself.
 - `tools/pack_submission.py` copies the submission pages into one folder and
   records their hashes. It does not generate the prose or add a result figure.
 - The evidence manifest attests main `3f84202` / push run `38719812783`,
