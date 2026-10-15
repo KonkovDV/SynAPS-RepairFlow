@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- The README now names the operator-log writer, separates the CI badge from
+  the attested revision, and points at the page map. A documentation audit
+  records what was wrong and what the audit does not close.
 - The laboratory image is started with a read-only root. There is no health
   check: the container exits with the command.
 - The evidence manifest attests main `c7757f3` / push run `38749261423`,
