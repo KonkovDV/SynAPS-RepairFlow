@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- The evidence manifest attests main `c7757f3` / push run `38749261423`,
+  including `test-slow`. This commit does not attest itself.
 - `docs/submission-facts.md` is rendered from the manifest and the two campaign
   files. `tools/attest.py` also rewrites the living attestation clause.
 - The evidence manifest attests main `a7ff737` / push run `38743808761`,
