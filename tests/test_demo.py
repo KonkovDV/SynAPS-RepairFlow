@@ -12,6 +12,17 @@ def test_one_command_mvp_readiness(tmp_path, capsys) -> None:
     assert (tmp_path / "post-down.json").is_file()
     assert (tmp_path / "decisions.jsonl").is_file()
     assert "decision-log v2" in out
+    assert (tmp_path / "shop-verify.json").is_file()
+    assert "claim=rejected" in out
+    shop = json.loads((tmp_path / "shop-verify.json").read_text(encoding="utf-8"))
+    assert shop["claim_status"] == "rejected"
+    assert shop["verified_feasible"] is False
+    assert shop["kernel_status"] == "domain_only"
+    reasons = (tmp_path / "shop-reasons.txt").read_text(encoding="utf-8")
+    assert reasons.strip()
+    witness = json.loads((tmp_path / "witness.json").read_text(encoding="utf-8"))
+    assert witness["kind"] == "deletion-minimal"
+    assert witness["operation_ids"]
     assert "CPSAT status=" in out
     assert "verified=True" in out
     assert "code=KERNEL_CALENDAR_UNSUPPORTED" not in out

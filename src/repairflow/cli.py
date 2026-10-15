@@ -20,6 +20,7 @@ from repairflow.diff import diff_plans
 from repairflow.domain_verify import verify_domain_plan
 from repairflow.events import InspectionEvent, PostDown, apply_disruption
 from repairflow.evidence import verify_plan_hashes
+from repairflow.explanations import deletion_minimal_operation_ids
 from repairflow.io import read_text_limited
 from repairflow.model import PlannedAssignment, RepairFlowResult
 from repairflow.normalize import load_problem
@@ -32,7 +33,7 @@ from repairflow.planner import (
 )
 from repairflow.reasons import REASON_RU
 from repairflow.report import render_html, render_markdown
-from repairflow.shop_plan import load_shop_plan
+from repairflow.shop_plan import load_shop_plan, write_shop_plan
 from repairflow.synthetic import PRESETS, corrupt_plan, synthesize
 from repairflow.versions import REPAIRFLOW_VERSION, SYNAPS_COMMIT
 
@@ -478,6 +479,35 @@ def _demo(preset: str, out_dir: Path, *, skip_cpsat: bool) -> int:
     _write_json(out_dir / "broken.json", broken_check.result.model_dump(mode="json"))
     (out_dir / "broken.html").write_text(render_html(problem, broken_check.result), encoding="utf-8")
 
+    foreign = greed.result.assignments[0].model_copy(update={"work_center_id": "POST-MISSING"})
+    shop_path = out_dir / "shop-plan.csv"
+    write_shop_plan(shop_path, problem, [foreign])
+    shop_assignments, extra = load_shop_plan(shop_path, problem)
+    shop = verify_domain_plan(problem, shop_assignments, extra_violations=extra)
+    _write_json(out_dir / "shop-verify.json", shop.model_dump(mode="json"))
+    shop_lines = [REASON_RU.get(row.code, row.message) for row in shop.violations if row.severity != "kpi"]
+    (out_dir / "shop-reasons.txt").write_text("\n".join(shop_lines) + "\n", encoding="utf-8")
+    shop_ok = (
+        shop.exit_code == 2
+        and shop.claim_status == "rejected"
+        and not shop.verified_feasible
+        and bool(shop_lines)
+    )
+    witness_code = next(
+        (row.code for row in broken_check.result.violations if row.severity != "kpi"),
+        "",
+    )
+    witness_ids = (
+        deletion_minimal_operation_ids(problem, list(broken_check.result.assignments), witness_code)
+        if witness_code
+        else []
+    )
+    _write_json(
+        out_dir / "witness.json",
+        {"code": witness_code, "operation_ids": witness_ids, "kind": "deletion-minimal"},
+    )
+    witness_ok = bool(witness_code) and bool(witness_ids)
+
     cpsat_ok = True
     cpsat_line = "  CPSAT skipped\n"
     if not skip_cpsat:
@@ -529,13 +559,25 @@ def _demo(preset: str, out_dir: Path, *, skip_cpsat: bool) -> int:
         f"frozen_moved={frozen_moved}\n"
         f"  broken exit={broken_check.result.exit_code} codes="
         f"{sorted({row.code for row in broken_check.result.violations})}\n"
+        f"  shop exit={shop.exit_code} claim={shop.claim_status}\n"
+        f"  witness code={witness_code} ids={','.join(witness_ids)}\n"
         f"{log_line}"
     )
     clean_ok = greed.result.exit_code == 0 and greed.result.verified_feasible
     fifo_dirty = fifo.result.exit_code == 2 and len(fifo.result.violations) > 0
     broken_ok = broken_check.result.exit_code == 2
     frozen_ok = len(frozen_kept["broken_frozen_assignments"]) == 0
-    if clean_ok and fifo_dirty and broken_ok and frozen_ok and cpsat_ok and post_down_ok and log_ok:
+    if (
+        clean_ok
+        and fifo_dirty
+        and broken_ok
+        and frozen_ok
+        and cpsat_ok
+        and post_down_ok
+        and log_ok
+        and shop_ok
+        and witness_ok
+    ):
         sys.stdout.write("MVP readiness: PASS\n")
         return 0
     sys.stderr.write("MVP readiness: FAIL\n")
