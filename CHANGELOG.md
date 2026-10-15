@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- `repairflow demo` writes a foreign shop sheet, a domain rejection, and a
+  deletion-minimal witness beside the operator-log line.
 - The evidence manifest attests main `4525533` / push run `38715742216`,
   including `test-slow`. This commit does not attest itself.
 - `tools/append_decision.py` checks the problem and result files and will not
