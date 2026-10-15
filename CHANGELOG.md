@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- The evidence manifest attests main `3f84202` / push run `38719812783`,
+  including `test-slow`. This commit does not attest itself.
 - `repairflow demo` writes a foreign shop sheet, a domain rejection, and a
   deletion-minimal witness beside the operator-log line.
 - The evidence manifest attests main `4525533` / push run `38715742216`,
