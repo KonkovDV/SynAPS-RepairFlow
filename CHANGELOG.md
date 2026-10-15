@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- The evidence manifest attests main `4525533` / push run `38715742216`,
+  including `test-slow`. This commit does not attest itself.
 - `tools/append_decision.py` checks the problem and result files and will not
   accept a non-zero exit. `repairflow demo` appends that decision and checks
   the hash chain.
