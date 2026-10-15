@@ -21,6 +21,7 @@ PAGES = (
     "docs/traceability-matrix.md",
     "docs/murder-board.md",
     "docs/limitations.md",
+    "docs/submission-facts.md",
     "docs/evidence-manifest.json",
     "docs/fault-campaign.json",
 )
