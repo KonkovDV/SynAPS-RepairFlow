@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- The evidence manifest attests main `8c0044e` / push run `38943321118`,
+  including `test-slow`. This commit does not attest itself.
 - The notary also rejects a kernel schedule whose order, state, crew, tooling,
   or skill-pool ids are not the compiled map.
 - The evidence manifest attests main `cc8acce` / push run `38933763584`,
