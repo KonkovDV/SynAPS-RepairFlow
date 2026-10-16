@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- The notary rejects a compiled kernel image whose duration, eligible posts,
+  setup state, latest finish, job order, or setup-matrix cell differs from
+  the source task. A compiler-segment predecessor is not derived again.
 - The evidence manifest attests main `049fad0` / push run `38951186802`,
   including `test-slow`. This commit does not attest itself.
 - The notary rejects a compiled kernel task whose operation, setup row, or
