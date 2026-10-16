@@ -223,6 +223,17 @@ def _id_map_issues(
                 "compiled kernel operations do not match the RepairFlow instance",
             )
         ]
+    mapped_ops = {id_map[key] for key in op_keys}
+    kernel_ops = {operation.id for operation in schedule_problem.operations}
+    mapped_centers = {id_map[key] for key in wc_keys}
+    kernel_centers = {center.id for center in schedule_problem.work_centers}
+    if mapped_ops != kernel_ops or mapped_centers != kernel_centers:
+        return [
+            _violation(
+                ReasonCode.INVALID_ID_MAP,
+                "compiled kernel ids do not match the id map",
+            )
+        ]
     return []
 
 
