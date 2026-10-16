@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- The evidence manifest attests main `049fad0` / push run `38951186802`,
+  including `test-slow`. This commit does not attest itself.
 - The notary rejects a compiled kernel task whose operation, setup row, or
   auxiliary requirement points outside the mapped ids. A setup row's own id
   is still not a map key.
