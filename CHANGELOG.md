@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- The evidence manifest attests main `3107575` / push run `38947330862`,
+  including `test-slow`. This commit does not attest itself.
 - Public pages name the kernel-id check, the fixed duration, the crew code,
   and the unwired native model. The nightly mutation note no longer says
   that `7f6e9ae` still matches `checker.py`.
