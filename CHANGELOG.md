@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- The notary rejects a compiled kernel task whose operation, setup row, or
+  auxiliary requirement points outside the mapped ids. A setup row's own id
+  is still not a map key.
 - The evidence manifest attests main `3107575` / push run `38947330862`,
   including `test-slow`. This commit does not attest itself.
 - Public pages name the kernel-id check, the fixed duration, the crew code,

@@ -248,7 +248,50 @@ def _id_map_issues(
                 "compiled kernel ids do not match the id map",
             )
         ]
+    if not _kernel_references_closed(
+        schedule_problem,
+        operations=kernel_ops,
+        centers=kernel_centers,
+        orders=kernel_orders,
+        states=kernel_states,
+        auxiliary=kernel_aux,
+    ):
+        return [
+            _violation(
+                ReasonCode.INVALID_ID_MAP,
+                "compiled kernel references are not closed over the id map",
+            )
+        ]
     return []
+
+
+def _kernel_references_closed(
+    schedule_problem: ScheduleProblem,
+    *,
+    operations: set[UUID],
+    centers: set[UUID],
+    orders: set[UUID],
+    states: set[UUID],
+    auxiliary: set[UUID],
+) -> bool:
+    for operation in schedule_problem.operations:
+        if operation.order_id not in orders or operation.state_id not in states:
+            return False
+        if operation.predecessor_op_id is not None and operation.predecessor_op_id not in operations:
+            return False
+        if not operation.eligible_wc_ids or not set(operation.eligible_wc_ids) <= centers:
+            return False
+    for row in schedule_problem.setup_matrix:
+        if (
+            row.work_center_id not in centers
+            or row.from_state_id not in states
+            or row.to_state_id not in states
+        ):
+            return False
+    for requirement in schedule_problem.aux_requirements:
+        if requirement.operation_id not in operations or requirement.aux_resource_id not in auxiliary:
+            return False
+    return True
 
 
 def _mapped_ids(id_map: dict[str, UUID], prefix: str) -> set[UUID]:
