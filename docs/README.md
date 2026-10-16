@@ -2,6 +2,8 @@
 
 Сначала договор о том, что программа обещает. Потом, чем это подтверждено. Потом, где проходит граница пилота.
 
+Значок CI на главной странице — последний прогон workflow. Аттестованная ревизия — таблица в [`../README.md`](../README.md). Её собирает `tools/attest.py`. Значок эту таблицу не заменяет.
+
 ## С чего начать
 
 1. [`../README.md`](../README.md) — для кого эта программа, команды, какие слова в ответе честные.
@@ -19,6 +21,7 @@
 - [`adr/0002-dag-over-chain-kernel.md`](adr/0002-dag-over-chain-kernel.md) — сходящаяся карта собирается в цепочки для ядра.
 - [`adr/0004-exchange-pool-ledger.md`](adr/0004-exchange-pool-ledger.md) — обменный фонд считается книгой остатков.
 - [`adr/0005-inspection-rewrites-the-card.md`](adr/0005-inspection-rewrites-the-card.md) — дефектовка замораживает уже выданные слоты.
+- [`adr/0006-native-model-stays-unwired.md`](adr/0006-native-model-stays-unwired.md) — нативная модель разрешена и к `plan` не подключена.
 - [`literature-2026.md`](literature-2026.md) — обзор работ и что ещё нужно для статьи.
 - [`benchmark-protocol.md`](benchmark-protocol.md) — как повторять синтетическое сравнение.
 - [`atc-baseline-contract.md`](atc-baseline-contract.md) — локальное правило ATC и где оно кончается.
@@ -39,6 +42,7 @@
 
 ## Как устроена работа с текстом
 
+- [`documentation-audit.md`](documentation-audit.md) — сверка публичных страниц с командами. Соседние репозитории дали устройство страницы, не текст.
 - [`AI_USE.md`](AI_USE.md) — где в разработке мог помочь автомат и почему его вывод не доказательство.
 - [`../SECURITY.md`](../SECURITY.md) — куда сообщать об уязвимости.
 - [`BANNED_CLAIMS.txt`](BANNED_CLAIMS.txt) — фразы, которых не должно быть в публичном заявлении.

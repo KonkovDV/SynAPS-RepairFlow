@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from datetime import UTC, datetime
 from pathlib import Path
@@ -170,7 +171,9 @@ def test_shop_sheet_uses_the_manifest_clock(tmp_path: Path) -> None:
         ),
         encoding="utf-8",
     )
-    assignments, extra = load_shop_plan(shop, problem)
+    assignments, extra, _sources, digest = load_shop_plan(shop, problem)
+    assert digest == hashlib.sha256(shop.read_bytes()).hexdigest()
+    assert digest != hashlib.sha256(shop.read_text(encoding="cp1251").encode("utf-8")).hexdigest()
     assert extra == []
     assert assignments[0].start == datetime(2026, 10, 2, 8, 0, tzinfo=UTC)
     assert assignments[0].end == datetime(2026, 10, 2, 9, 0, tzinfo=UTC)

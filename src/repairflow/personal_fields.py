@@ -1,11 +1,13 @@
-"""Reject domain_attributes keys that name a person.
+"""Reject domain_attributes keys and a few value shapes that name a person.
 
-The check reads the key, not the value. A free note can still carry a name.
+A free note that matches none of these shapes can still carry a name.
+Retention is a contract, not a number chosen here.
 This is not a personal-data compliance claim.
 """
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 _PERSONAL_KEYS = frozenset(
@@ -82,8 +84,40 @@ def _forbidden(token: str) -> bool:
     return any(part in _PERSONAL_KEYS for part in token.split("_") if part)
 
 
+_EMAIL = re.compile(r"(?i)(?<![A-Z0-9._%+-])[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}(?![A-Z0-9.-])")
+_PHONE = re.compile(r"(?<!\d)(?:\+7|8)[\s(]*\d{3}[\s)-]*\d{3}[\s-]*\d{2}[\s-]*\d{2}(?!\d)")
+_SNILS = re.compile(r"^\d{3}-?\d{3}-?\d{3}\s?\d{2}$")
+_FIO = re.compile(
+    r"(?u)(?<!\w)[А-ЯЁ][а-яё]{1,}\s+[А-ЯЁ][а-яё]{1,}\s+[А-ЯЁ][а-яё]*(?:вич|вна|ична|оглы|кызы)(?!\w)"
+)
+_INITIALS = re.compile(r"(?u)(?<!\w)[А-ЯЁ][а-яё]{1,}\s+[А-ЯЁ]\.\s*[А-ЯЁ]\.(?!\w)")
+
+
+def _snils_checksum(text: str) -> bool:
+    compact = re.sub(r"[\s-]", "", text.strip())
+    if not _SNILS.fullmatch(text.strip()) or len(compact) != 11:
+        return False
+    body, check = compact[:9], int(compact[9:])
+    total = sum(int(digit) * weight for digit, weight in zip(body, range(9, 0, -1), strict=True))
+    if total in {100, 101}:
+        expected = 0
+    elif total < 100:
+        expected = total
+    else:
+        expected = total % 101
+        if expected == 100:
+            expected = 0
+    return check == expected
+
+
+def _personal_value(value: str) -> bool:
+    if _EMAIL.search(value) or _PHONE.search(value) or _FIO.search(value) or _INITIALS.search(value):
+        return True
+    return _snils_checksum(value)
+
+
 def reject_personal_attribute_keys(attributes: dict[str, Any]) -> dict[str, Any]:
-    """Raise ValueError when a key names a person. Return the same mapping otherwise."""
+    """Raise ValueError when a key or a value shape names a person."""
 
     def walk(node: object) -> None:
         if isinstance(node, dict):
@@ -98,6 +132,11 @@ def reject_personal_attribute_keys(attributes: dict[str, Any]) -> dict[str, Any]
         elif isinstance(node, list):
             for child in node:
                 walk(child)
+        elif isinstance(node, str) and _personal_value(node):
+            raise ValueError(
+                "domain_attributes value looks like a personal record; "
+                "keep a pseudonym outside this dictionary"
+            )
 
     walk(attributes)
     return attributes

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import errno
 import hashlib
+import hmac
 import json
 import os
 import re
@@ -137,21 +138,54 @@ def log_version(path: str | Path) -> str:
     return version
 
 
-def verify_decision_log(path: str | Path, head: str | None = None) -> str:
-    """Check the chain. A known head catches a truncated tail."""
+_WITNESS_PREFIX = b"repairflow-decision-log-witness-v1\n"
 
+
+def decision_log_witness(path: str | Path, key: bytes) -> str:
+    """HMAC of the current v2 tip. The key is not stored beside the log."""
+
+    if not key:
+        raise ValueError("decision log witness key is empty")
+    version, events = _load(Path(path))
+    if version != "v2" or not events:
+        raise ValueError("decision log witness needs a v2 chain")
+    tip = events[-1].event_hash.encode("ascii")
+    return hmac.new(key, _WITNESS_PREFIX + tip, hashlib.sha256).hexdigest()
+
+
+def verify_decision_log(
+    path: str | Path,
+    head: str | None = None,
+    *,
+    witness: str | None = None,
+    witness_key: bytes | None = None,
+) -> str:
+    """Check the chain. A known head catches a truncated tail.
+
+    A witness is an HMAC of that tip. It is not a release signature.
+    A rewritten tail fails when the old witness is checked with the same key.
+    """
+
+    if (witness is None) != (witness_key is None):
+        raise ValueError("decision log witness needs both the token and the key")
     version, events = _load(Path(path))
     if version == "legacy":
-        if head is not None:
+        if head is not None or witness is not None:
             raise ValueError("legacy decision log has no chain head")
         return "legacy"
     if version == "empty":
-        if head is not None:
+        if head is not None or witness is not None:
             raise ValueError("decision log head does not match")
         return "empty"
     tip = events[-1].event_hash
     if head is not None and head.lower() != tip:
         raise ValueError("decision log head does not match")
+    if witness is not None and witness_key is not None:
+        if not witness_key:
+            raise ValueError("decision log witness key is empty")
+        expected = hmac.new(witness_key, _WITNESS_PREFIX + tip.encode("ascii"), hashlib.sha256).hexdigest()
+        if not hmac.compare_digest(expected, witness.strip().lower()):
+            raise ValueError("decision log witness does not match")
     return "v2"
 
 

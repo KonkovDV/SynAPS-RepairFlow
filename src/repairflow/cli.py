@@ -11,6 +11,7 @@ from typing import Any
 from repairflow.benchmark import run_benchmark
 from repairflow.decision_log import (
     Decision,
+    decision_log_witness,
     format_decision_stats,
     read_decision_log,
     record_checked_decision,
@@ -31,9 +32,8 @@ from repairflow.planner import (
     replan_after_inspection,
     replan_disruption,
 )
-from repairflow.reasons import REASON_RU
 from repairflow.report import render_html, render_markdown
-from repairflow.shop_plan import load_shop_plan, write_shop_plan
+from repairflow.shop_plan import format_shop_finding, load_shop_plan, write_shop_plan
 from repairflow.synthetic import PRESETS, corrupt_plan, synthesize
 from repairflow.versions import REPAIRFLOW_VERSION, SYNAPS_COMMIT
 
@@ -162,6 +162,11 @@ def main(argv: list[str] | None = None) -> int:
     p_verify = log_sub.add_parser("verify", help="Check the hash chain")
     p_verify.add_argument("log", type=Path)
     p_verify.add_argument("--head", default=None)
+    p_verify.add_argument("--witness", default=None)
+    p_verify.add_argument("--key-file", type=Path, default=None)
+    p_witness = log_sub.add_parser("witness", help="HMAC the log tip with an operator key")
+    p_witness.add_argument("log", type=Path)
+    p_witness.add_argument("--key-file", type=Path, required=True)
     p_stats = log_sub.add_parser("stats", help="Print counters without operator codes")
     p_stats.add_argument("log", type=Path)
 
@@ -250,17 +255,37 @@ def _decide(args: argparse.Namespace) -> int:
     return 0
 
 
+def _witness_key(path: Path | None) -> bytes | None:
+    if path is None:
+        return None
+    key = path.read_bytes().strip()
+    if not key:
+        raise ValueError("decision log witness key is empty")
+    return key
+
+
 def _log(args: argparse.Namespace) -> int:
     if args.log_command == "verify":
-        version = verify_decision_log(args.log, head=args.head)
+        version = verify_decision_log(
+            args.log,
+            head=args.head,
+            witness=args.witness,
+            witness_key=_witness_key(args.key_file),
+        )
         events = read_decision_log(args.log)
         tip = events[-1].event_hash if events and version == "v2" else ""
         sys.stdout.write(f"decision-log {version} events={len(events)} head={tip}\n")
         return 0
+    if args.log_command == "witness":
+        key = _witness_key(args.key_file)
+        if key is None:
+            raise ValueError("decision log witness key is empty")
+        sys.stdout.write(decision_log_witness(args.log, key) + "\n")
+        return 0
     if args.log_command == "stats":
         sys.stdout.write(format_decision_stats(read_decision_log(args.log)))
         return 0
-    raise ValueError("log command must be verify or stats")
+    raise ValueError("log command must be verify, witness, or stats")
 
 
 def _solve(input_path: Path, output: Path, solver: str, *, crew_salt: str | None) -> int:
@@ -308,8 +333,14 @@ def _verify_plan(
     crew_salt: str | None = None,
 ) -> int:
     problem = load_problem(problem_path, crew_salt=crew_salt)
-    assignments, extra = load_shop_plan(plan_path, problem)
-    result = verify_domain_plan(problem, assignments, extra_violations=extra)
+    assignments, extra, sources, digest = load_shop_plan(plan_path, problem)
+    result = verify_domain_plan(
+        problem,
+        assignments,
+        extra_violations=extra,
+        source_rows=sources,
+        shop_file=(plan_path.name, digest),
+    )
     if output is not None:
         _write_json(output, result.model_dump(mode="json"))
     if result.claim_status == "domain_verified":
@@ -317,9 +348,8 @@ def _verify_plan(
     for violation in result.violations:
         if violation.severity == "kpi":
             continue
-        text = REASON_RU.get(violation.code, violation.message)
-        where = violation.operation_id or violation.resource_id or ""
-        sys.stdout.write(f"{violation.code}\t{text}\t{where}\n")
+        text = format_shop_finding(violation)
+        sys.stdout.write(text + "\n")
     return int(result.exit_code)
 
 
@@ -482,10 +512,16 @@ def _demo(preset: str, out_dir: Path, *, skip_cpsat: bool) -> int:
     foreign = greed.result.assignments[0].model_copy(update={"work_center_id": "POST-MISSING"})
     shop_path = out_dir / "shop-plan.csv"
     write_shop_plan(shop_path, problem, [foreign])
-    shop_assignments, extra = load_shop_plan(shop_path, problem)
-    shop = verify_domain_plan(problem, shop_assignments, extra_violations=extra)
+    shop_assignments, extra, sources, digest = load_shop_plan(shop_path, problem)
+    shop = verify_domain_plan(
+        problem,
+        shop_assignments,
+        extra_violations=extra,
+        source_rows=sources,
+        shop_file=(shop_path.name, digest),
+    )
     _write_json(out_dir / "shop-verify.json", shop.model_dump(mode="json"))
-    shop_lines = [REASON_RU.get(row.code, row.message) for row in shop.violations if row.severity != "kpi"]
+    shop_lines = [format_shop_finding(row) for row in shop.violations if row.severity != "kpi"]
     (out_dir / "shop-reasons.txt").write_text("\n".join(shop_lines) + "\n", encoding="utf-8")
     shop_ok = (
         shop.exit_code == 2

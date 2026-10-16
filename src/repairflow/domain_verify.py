@@ -21,12 +21,16 @@ def verify_domain_plan(
     assignments: list[PlannedAssignment],
     *,
     extra_violations: list[Violation] | None = None,
+    source_rows: dict[str, tuple[str, int]] | None = None,
+    shop_file: tuple[str, str] | None = None,
 ) -> RepairFlowResult:
     """Check a shop plan against the domain contract. The kernel is not called."""
 
     violations = check_domain_assignments(problem, assignments)
     if extra_violations:
         violations.extend(extra_violations)
+    violations = _cite_source_rows(violations, source_rows)
+    if extra_violations or source_rows:
         violations.sort(
             key=lambda row: (row.code, row.operation_id or "", row.resource_id or "", row.message)
         )
@@ -50,19 +54,23 @@ def verify_domain_plan(
         "runtime": runtime_manifest(),
     }
     config_hash = fingerprint_payload(config_payload)
+    extra = {
+        "solver_config": "verify-plan",
+        "kernel_status": "domain_only",
+        "kernel_consulted": False,
+        "verification_origin": "domain_only",
+        "claim_status": claim_status,
+        "claim_note": "domain notary only; the kernel was not called",
+        "config_payload": config_payload,
+    }
+    if shop_file is not None:
+        extra["shop_plan_name"] = shop_file[0]
+        extra["shop_plan_sha256"] = shop_file[1]
     stamp = evidence_stamp(
         input_hash=input_hash,
         config_hash=config_hash,
         data_provenance=problem.data_provenance,
-        extra={
-            "solver_config": "verify-plan",
-            "kernel_status": "domain_only",
-            "kernel_consulted": False,
-            "verification_origin": "domain_only",
-            "claim_status": claim_status,
-            "claim_note": "domain notary only; the kernel was not called",
-            "config_payload": config_payload,
-        },
+        extra=extra,
     )
     payload = RepairFlowResult(
         instance_id=problem.instance_id,
@@ -86,3 +94,25 @@ def verify_domain_plan(
     )
     seal_result_hashes(payload)
     return payload
+
+
+def _cite_source_rows(
+    violations: list[Violation],
+    source_rows: dict[str, tuple[str, int]] | None,
+) -> list[Violation]:
+    """Attach the shop file and line. The reason text stays the notary's."""
+
+    if not source_rows:
+        return violations
+    cited: list[Violation] = []
+    for row in violations:
+        origin = None if row.operation_id is None else source_rows.get(row.operation_id)
+        if origin is None or ("source_name" in row.details and "source_line" in row.details):
+            cited.append(row)
+            continue
+        name, line = origin
+        details = dict(row.details)
+        details.setdefault("source_name", name)
+        details.setdefault("source_line", line)
+        cited.append(row.model_copy(update={"details": details}))
+    return cited

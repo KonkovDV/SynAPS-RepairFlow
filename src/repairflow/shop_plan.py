@@ -7,13 +7,14 @@ or tooling cell stays empty; the domain checker decides whether that is legal.
 from __future__ import annotations
 
 import csv
+import hashlib
 from datetime import UTC, datetime
 from io import StringIO
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from repairflow.ingest import load_manifest
-from repairflow.io import read_text_encoded, read_text_limited
+from repairflow.io import read_bytes_limited
 from repairflow.model import PlannedAssignment, RepairFlowProblem, Violation
 from repairflow.reasons import REASON_RU, SUGGESTIONS, ReasonCode
 
@@ -42,18 +43,22 @@ SHOP_HEADER = ("заказ", "операция", "пост", "бригада", "
 def load_shop_plan(
     path: Path,
     problem: RepairFlowProblem,
-) -> tuple[list[PlannedAssignment], list[Violation]]:
-    """Read a shop plan. A job that does not own the operation is a hard row."""
+) -> tuple[list[PlannedAssignment], list[Violation], dict[str, tuple[str, int]], str]:
+    """Read a shop plan once. A repeated operation is an error, not a second visit."""
 
+    raw = read_bytes_limited(path)
+    file_sha256 = hashlib.sha256(raw).hexdigest()
     manifest_path = path.parent / "manifest.json"
     zone: ZoneInfo | None = None
     if manifest_path.is_file():
         manifest = load_manifest(manifest_path)
-        text = read_text_encoded(path, manifest.encoding)
+        text = _decode_shop(path, raw, manifest.encoding)
         delimiter = manifest.separator()
         zone = manifest.zone()
     else:
-        text = read_text_limited(path)
+        text = _decode_shop(path, raw, None)
+        if not text.strip():
+            raise ValueError(f"{path} has no header")
         delimiter = ";" if text.splitlines()[0].count(";") > text.splitlines()[0].count(",") else ","
     reader = csv.DictReader(StringIO(text), delimiter=delimiter)
     if reader.fieldnames is None:
@@ -65,11 +70,15 @@ def load_shop_plan(
     jobs = {op.id: op.job_id for op in problem.operations}
     assignments: list[PlannedAssignment] = []
     issues: list[Violation] = []
-    for index, raw in enumerate(reader, start=2):
-        row = {field: (raw.get(source) or "").strip() for field, source in header.items() if field}
+    sources: dict[str, tuple[str, int]] = {}
+    for index, record in enumerate(reader, start=2):
+        row = {field: (record.get(source) or "").strip() for field, source in header.items() if field}
         operation_id = row["operation_id"]
         if not operation_id:
             raise ValueError(f"{path} line {index} has no operation")
+        if operation_id in sources:
+            raise ValueError(f"{path} line {index} repeats operation {operation_id}")
+        sources[operation_id] = (path.name, index)
         start = _instant(row["start"], path=path, line=index, column="начало", zone=zone)
         end = _instant(row["end"], path=path, line=index, column="конец", zone=zone)
         if end <= start:
@@ -103,10 +112,39 @@ def load_shop_plan(
                     operation_id=operation_id,
                     job_id=row["job_id"] or None,
                     suggested_relaxation=SUGGESTIONS[ReasonCode.JOB_MISMATCH],
-                    details={"operation_job_id": owner},
+                    details={
+                        "operation_job_id": owner,
+                        "source_name": path.name,
+                        "source_line": index,
+                    },
                 )
             )
-    return assignments, issues
+    return assignments, issues, sources, file_sha256
+
+
+def format_shop_finding(violation: Violation) -> str:
+    """One human-readable line. The notary sentence stays intact."""
+
+    text = REASON_RU.get(violation.code, violation.message)
+    place = violation.operation_id or violation.resource_id or ""
+    parts = [violation.code, text]
+    if place:
+        parts.append(place)
+    name = violation.details.get("source_name")
+    line = violation.details.get("source_line")
+    if isinstance(name, str) and isinstance(line, int):
+        parts.append(f"{name}:{line}")
+    return "\t".join(parts)
+
+
+def _decode_shop(path: Path, raw: bytes, encoding: str | None) -> str:
+    chosen = "utf-8" if encoding is None else encoding
+    try:
+        return raw.decode(chosen)
+    except UnicodeDecodeError as exc:
+        if encoding is None:
+            raise
+        raise ValueError(f"{path} is not encoded as {encoding}") from exc
 
 
 def write_shop_plan(

@@ -20,9 +20,9 @@
 | Кампания порчи не меньше 10 000 размеченных планов | implemented | префикс `docs/fault-campaign.json` v2: проверено 10080, false_accept 0, false_reject 0; локальный полный `docs/fault-campaign-nightly.json`: проверено 109665, false_accept 0, false_reject 0; синтетика; книгу обменного фонда не судили; это не артефакт CI |
 | Независимый поминутный оракул | implemented | `tests/oracle_minutes.py`, `tests/test_oracle_minutes.py`; кампания v2 им пользуется; книгу обменного фонда не судили |
 | Мутационное тестирование нотариуса | measured, not closed | ночные прогоны `37908445280`, `38037961461`, `38126032914` и `38228010896` на `b7c8c29`: убито 1587, живо 334, коды выхода совпали, пересчёт сошёлся; прогон `38618458299` на `a4e4e90`: убито 1814, живо 108, всего 1922; четыре выживших без объяснения умерли, новых не родилось; ночь `38698472141` на `7f6e9ae` прочитана: живо 175, у 126 есть причина, у 49 нет, тесты `tests/test_nightly_survivors.py` в тот счёт не входят; это не аттестация `main`; `docs/mutation-survivors.md` |
-| Цеховой план без вызова ядра | implemented | `repairflow verify-plan`; заявление `domain_verified`; `tests/test_shop_plan.py` |
+| Цеховой план без вызова ядра | implemented | `repairflow verify-plan`; заявление `domain_verified`; находка с операцией из листа хранит имя файла и номер строки; SHA-256 байтов листа в метаданных; повтор операции — ошибка разбора; пустая бригада не ошибка разбора; `tests/test_shop_plan.py` |
 | Манифест загрузки CSV, ночная смена, псевдоним бригады | implemented | `src/repairflow/ingest.py`, `tests/test_ingest_manifest.py`; образ из склада колёс на Debian, Astra не проверялась |
-| Ключ личных данных в `domain_attributes` | implemented | модель отвергает такой ключ, включая вложенный; значение и срок хранения этим списком не закрыты; `tests/test_personal_fields.py` |
+| Ключ личных данных в `domain_attributes` | implemented | ключ и несколько форм значения отвергаются; другая строка и срок хранения открыты; `tests/test_personal_fields.py` |
 | Склад колёс в финальном слое образа | implemented | стадия сборки, в финальный образ копируется `/usr/local`; запуск с корнем только для чтения; `tests/test_offline_image.py`, `Dockerfile`, `docs/runbook.md` |
 | Шаги Actions по коммиту | implemented | тег остаётся комментарием; `tests/test_action_pins.py`, `tests/test_supply_chain_workflow.py` |
 | Блокирующие запчасти | implemented | тесты запчастей нотариуса |
@@ -37,8 +37,9 @@
 | Замок зависимостей по SHA-256 архивов | implemented | `repairflow.dependency_lock`; `locked` только когда каждый хеш на месте |
 | Хеш-замок requirements | implemented | `requirements-lock.txt`; pydantic `2.13.5`; `tests/test_lock_hashes.py` |
 | Подписанный артефакт | blocked | статус подписи остаётся `absent`; ключа выпуска в этой сборке нет |
+| Нативная модель CP-SAT | documented | ADR-0006: разрешение есть, модель к `plan` не подключена |
 | Граница «без сети, теневой режим» | documented | модель угроз, ADR-0003, протокол пилота |
-| Журнал приёмки оператором | implemented | `repairflow decide`, `repairflow log verify`, хеш-цепочка; без подписи |
+| Журнал приёмки оператором | implemented | `repairflow decide`, `repairflow log verify`, хеш-цепочка; `log witness` — HMAC вершины внешним ключом, не подпись выпуска |
 | `POST_DOWN`, `PART_DELAY`, `CREW_ABSENT`, `DURATION_OVERRUN`, `URGENT_JOB` | implemented | `tests/test_disruption_events.py`, `docs/disruption-campaign.json` |
 | Каталог вариантов маршрута | blocked | `docs/limitations.md` |
 | Лаг возврата оборотной внутри модели ядра | documented | власть у доменной книги; молчание ядра не даёт `verified` |

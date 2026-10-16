@@ -9,6 +9,8 @@ RepairFlow строит график ремонта агрегатов и отд
 [![CI](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/workflows/ci.yml/badge.svg)](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
+Значок CI — последний прогон workflow. Аттестованная ревизия названа в таблице «Что уже проверено». Значок её не заменяет.
+
 ## Содержание
 
 - [Зачем разведены поиск и проверка](#зачем-разведены-поиск-и-проверка)
@@ -61,7 +63,9 @@ repairflow version
 repairflow demo --out out
 ```
 
-`demo` само собирает синтетический пример, сравнивает FIFO и GREED, перестраивает график после сбоя с замороженными назначениями и отдаёт нотариусу нарочно испорченный план. Испорченный план должен быть отвергнут. Без флага `--skip-cpsat` на маленьком примере ещё прогоняется CP-SAT. Последняя строка при успехе: `MVP readiness: PASS`. Если хоть одна проверка сорвалась, код выхода — один.
+`demo` само собирает синтетический пример, сравнивает FIFO и GREED, перестраивает график после сбоя с замороженными назначениями и отдаёт нотариусу нарочно испорченный план. Испорченный план должен быть отвергнут. Рядом появляются чужой цеховой лист, доменный отказ без ядра, минимальный по удалению свидетель и строка журнала по принятому GREED. Без флага `--skip-cpsat` на маленьком примере ещё прогоняется CP-SAT. Последняя строка при успехе: `MVP readiness: PASS`. Если хоть одна проверка сорвалась, код выхода — один.
+
+Лабораторный образ и запуск с корнем только для чтения описаны в [`docs/runbook.md`](docs/runbook.md). Проверки живости у образа нет: контейнер завершается вместе с командой.
 
 ## Команды
 
@@ -88,6 +92,10 @@ repairflow report out/tiny.json out/greed.json --md out/greed.md --html out/gree
 | `disrupt` | Перестроить график после сбоя одной операции. Остальное заморожено. | Новый JSON результата. |
 | `inspect` | Дефектовка открывает ветку карты. Остальные агрегаты заморожены. | Новый JSON результата. |
 | `benchmark` | FIFO против GREED на наборе пресетов и зёрен. | `benchmark.json`, `.md`, `.html` и отчёты по каждому примеру. |
+| `decide` | Записать решение человека по файлам задачи и результата. Ненулевой код выхода нельзя принять. | Строка JSONL в журнале. |
+| `log verify` | Пересчитать цепочку журнала. Если вершина хранится отдельно, пропавший хвост — ошибка. | Код выхода. |
+| `log witness` | HMAC вершины ключом из файла. Это не подпись выпуска. | Строка хеша. |
+| `log stats` | Счётчики журнала без кода оператора. | Текст на экран. |
 
 ## Как устроена проверка
 
@@ -136,7 +144,7 @@ false_accept_rate = invalid_plans_accepted_as_verified / invalid_plans_presented
 
 ## Что уже проверено
 
-Таблицу между метками собирает `tools/attest.py`. Она относится только к той ревизии `main`, чей собственный прогон после вливания прошёл целиком, включая `test-slow`. Проверка публичных страниц не пускает цифру вне этой таблицы. Слова «ноль» и «пусто» выше говорят о коде выхода и о цели оракула, это не новый замер.
+Таблицу между метками собирает `tools/attest.py`. Она относится только к той ревизии `main`, чей собственный прогон после вливания прошёл целиком, включая `test-slow`. На этой странице цифра допустима только внутри таблицы. Слова «ноль» и «пусто» выше говорят о коде выхода и о цели оракула, это не новый замер. Сводка для папки подачи собирается отдельно, в [`docs/submission-facts.md`](docs/submission-facts.md), и сюда не копируется.
 
 <!-- evidence:begin -->
 | Факт | Значение |
@@ -171,7 +179,7 @@ RepairFlow не предлагает новый универсальный ре�
 | --- | --- |
 | [SynAPS](https://github.com/KonkovDV/SynAPS) | Ядро, которое ищет слоты. Здесь от него только пин в таблице выше. |
 | [SynAPS-GridPlan](https://github.com/KonkovDV/SynAPS-GridPlan) | Лабораторное планирование обслуживания энергооборудования. Другой домен и другой пин. |
-| [SynAPS-ProgramPlan](https://github.com/KonkovDV/SynAPS-ProgramPlan) | Сводный план программы и журнал решений с цепочкой хешей. Здешний журнал оператора пока только договорённость о формате, писателя нет. |
+| [SynAPS-ProgramPlan](https://github.com/KonkovDV/SynAPS-ProgramPlan) | Сводный план программы и журнал решений с цепочкой хешей. Здешний журнал пишет `repairflow decide`. Подписи у него нет. |
 | [SynAPS-MobiRoute](https://github.com/KonkovDV/SynAPS-MobiRoute) | Перевозка по вызову. К ремонту и к этому нотариусу не относится. |
 | [AeroBIM](https://github.com/KonkovDV/AeroBIM) | Находка несёт пункт и идентификатор, а годность ставит отдельный контур. Оттуда взята форма ответа: код, идентификаторы, интервал. |
 | [RailBreak](https://github.com/KonkovDV/RailBreak) | Подача для жюри: один запуск, таблица с источником, явный список того, что не покрыто. |
@@ -180,7 +188,7 @@ RepairFlow не предлагает новый универсальный ре�
 
 Запись в учётную систему, диспетчеризация, SCADA и функция безопасности сюда не входят. Нет измеренного промышленного эффекта, действующего заказчика, спонсорства и сертификата. Страницы [программы пилотов](https://ftim.ru/pilotirovanie/), [профиля завода](https://www.mosgortrans.ru/about/branches/filial-sokolnicheskii-vagonoremontno-stroitelnyi-zavod-svarz-gup-mosgortrans/) и [кластера](https://i.moscow/pilot) описывают, куда можно податься. Факта внедрения в них нет.
 
-Варианты маршрута не смоделированы. Журнал оператора описан, писателя у него нет. Своя точная модель на CP-SAT не начата: её открывает решение владельца. Выше лабораторного предела операций точный прогон отвергается с `CPSAT_OPS_CAP`, такой экземпляр считают эвристики GREED, EDD или ATC.
+Варианты маршрута не смоделированы. Журнал оператора пишет `repairflow decide` и проверяет `repairflow log verify`. Вершину можно отдельно заверить HMAC через `repairflow log witness`: ключ в репозиторий не кладётся. Подписи выпуска у журнала нет. Своя точная модель на CP-SAT не начата: разрешение владельца записано в [ADR о нативной модели](docs/adr/0006-native-model-stays-unwired.md). В продукт она войдёт только после замера из плана. Выше лабораторного предела операций точный прогон отвергается с `CPSAT_OPS_CAP`, такой экземпляр считают эвристики GREED, EDD или ATC.
 
 Полный список границ — [`docs/limitations.md`](docs/limitations.md). Если пилот когда-нибудь будет, он останется теневым: один участок, обезличенный срез, заранее согласованная база, журнал решений человека и откат. Ворота описаны в [`docs/pilot-protocol.md`](docs/pilot-protocol.md).
 
@@ -211,6 +219,19 @@ python -m pytest -q -m slow
 
 Страница описывает программу. Договором и заключением о безопасности она не является.
 
+## Куда смотреть дальше
+
+| Зачем открывать | Страница |
+| --- | --- |
+| Показ | [`docs/jury-demo.md`](docs/jury-demo.md) |
+| Заявка | [`APPLICATION.md`](APPLICATION.md) |
+| Границы | [`docs/limitations.md`](docs/limitations.md) |
+| Сводка чисел подачи | [`docs/submission-facts.md`](docs/submission-facts.md) |
+| Образ | [`docs/runbook.md`](docs/runbook.md) |
+| Журнал человека | [`docs/operator-decision-log.md`](docs/operator-decision-log.md) |
+| Карта всех страниц | [`docs/README.md`](docs/README.md) |
+| Сверка страниц с командами | [`docs/documentation-audit.md`](docs/documentation-audit.md) |
+
 ## English
 
 The Russian text above is the one that is maintained. The commands are the same.
@@ -226,4 +247,4 @@ python -m pip install -e ".[dev]"
 repairflow demo --out out
 ```
 
-The only measurements on this page sit in the generated table in the Russian section. A bare number is not evidence. The machine-readable copy is [`docs/evidence-manifest.json`](docs/evidence-manifest.json).
+The only measurements on this page sit in the generated table in the Russian section. A bare number is not evidence. The CI badge is the latest workflow run. It does not replace that table. The machine-readable copy is [`docs/evidence-manifest.json`](docs/evidence-manifest.json). The operator log is written by `repairflow decide` and checked by `repairflow log verify`. `repairflow log witness` is an HMAC of the tip. The key stays outside the repository. It is not a release signature.

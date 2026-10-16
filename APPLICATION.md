@@ -12,6 +12,8 @@
 
 **Кому это показывать, если контакт есть.** Тому, кто владеет планом ремонтного производства, мастеру участка, специалисту по ТОиР или руководителю цифровизации одного ремонтного участка. Не «любому сотруднику департамента транспорта».
 
-Дальше: `docs/README.md`, `docs/jury-demo.md`, `docs/pilot-protocol.md`, `docs/evidence-protocol.md`.
+Дальше: `docs/README.md`, `docs/jury-demo.md`, `docs/pilot-protocol.md`, `docs/evidence-protocol.md`, `docs/osint-and-pilot-gates.md`.
+
+Открытые ворота ФТИМ и кластера эта страница не выполняет. Заявленный уровень — TRL 4.
 
 Лабораторные числа лежат в `benchmark/results/benchmark.json` и `benchmark/results/SHA256SUMS`. Проверенная ревизия и пин ядра — в `docs/evidence-manifest.json`. Сводка из этих файлов — `docs/submission-facts.md`. На эту страницу их цифры не переписываются.

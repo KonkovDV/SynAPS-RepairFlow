@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- Domain attributes reject a few personal value shapes, and the operator log
+  can carry an HMAC witness of its tip. The witness key is not a release key.
+  The native CP-SAT model stays unwired until it is measured.
+- A shop-plan job mismatch records the file name and source line. An empty
+  crew cell stays empty for the notary. A notary finding on that operation
+  receives the same row. A repeated operation row is rejected. The shop file
+  SHA-256 is the decoded byte string, under the same read limit as other files,
+  and the text reason names the file and line. An empty shop file is rejected.
+- The README now names the operator-log writer, separates the CI badge from
+  the attested revision, and points at the page map. A documentation audit
+  records what was wrong and what the audit does not close.
 - The evidence manifest attests main `e34f782` / push run `38754698950`,
   including `test-slow`. This commit does not attest itself.
 - The laboratory image is started with a read-only root. There is no health
