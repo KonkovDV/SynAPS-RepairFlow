@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- The notary rejects a kernel schedule whose operation or work-center ids
+  are not the compiled map, even when the operation count still matches.
+  A fixed duration is not a duration distribution, and ISO 55001 is not claimed.
 - Domain attributes reject a few personal value shapes, and the operator log
   can carry an HMAC witness of its tip. The witness key is not a release key.
   The native CP-SAT model stays unwired until it is measured.
