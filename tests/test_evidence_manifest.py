@@ -27,8 +27,8 @@ def test_evidence_manifest_matches_the_pinned_kernel() -> None:
     assert SYNAPS_COMMIT in versions
     # The manifest lands in a later docs commit than the one it names.
     assert payload["stale"] is True
-    assert payload["attests_commit"] == "c7757f385958116d0f12bba66bfd21381fc2b5a6"
-    assert payload["ci_run_id"] == "38749261423"
+    assert payload["attests_commit"] == "e34f7825b43b574fb311cca9b35edf91f7d6f31d"
+    assert payload["ci_run_id"] == "38754698950"
     assert payload["synaps_repo"] == SYNAPS_REPO
     assert len(SYNAPS_COMMIT) == 40
     assert payload["ci_result"] == "success"

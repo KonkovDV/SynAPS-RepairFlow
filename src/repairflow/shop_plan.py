@@ -57,6 +57,8 @@ def load_shop_plan(
         zone = manifest.zone()
     else:
         text = _decode_shop(path, raw, None)
+        if not text.strip():
+            raise ValueError(f"{path} has no header")
         delimiter = ";" if text.splitlines()[0].count(";") > text.splitlines()[0].count(",") else ","
     reader = csv.DictReader(StringIO(text), delimiter=delimiter)
     if reader.fieldnames is None:

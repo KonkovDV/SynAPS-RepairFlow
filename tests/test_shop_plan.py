@@ -241,3 +241,15 @@ def test_a_repeated_operation_row_is_rejected(tmp_path: Path) -> None:
         assert "repeats operation" in str(exc)
     else:
         raise AssertionError("a repeated operation row was accepted")
+
+
+def test_an_empty_shop_file_is_rejected(tmp_path: Path) -> None:
+    problem = synthesize("tiny", seed=1)
+    shop = tmp_path / "empty.csv"
+    shop.write_bytes(b"")
+    try:
+        load_shop_plan(shop, problem)
+    except ValueError as exc:
+        assert "has no header" in str(exc)
+    else:
+        raise AssertionError("an empty shop file was accepted")
