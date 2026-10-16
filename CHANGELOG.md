@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- The evidence manifest attests main `cc8acce` / push run `38933763584`,
+  including `test-slow`. This commit does not attest itself.
 - The notary rejects a kernel schedule whose operation or work-center ids
   are not the compiled map, even when the operation count still matches.
   A fixed duration is not a duration distribution, and ISO 55001 is not claimed.
