@@ -227,7 +227,21 @@ def _id_map_issues(
     kernel_ops = {operation.id for operation in schedule_problem.operations}
     mapped_centers = {id_map[key] for key in wc_keys}
     kernel_centers = {center.id for center in schedule_problem.work_centers}
-    if mapped_ops != kernel_ops or mapped_centers != kernel_centers:
+    mapped_orders = _mapped_ids(id_map, "job:")
+    kernel_orders = {order.id for order in schedule_problem.orders}
+    mapped_states = _mapped_ids(id_map, "state:")
+    kernel_states = {state.id for state in schedule_problem.states}
+    mapped_aux = (
+        _mapped_ids(id_map, "crew:") | _mapped_ids(id_map, "aux:") | _mapped_ids(id_map, "skillpool:")
+    )
+    kernel_aux = {row.id for row in schedule_problem.auxiliary_resources}
+    if (
+        mapped_ops != kernel_ops
+        or mapped_centers != kernel_centers
+        or mapped_orders != kernel_orders
+        or mapped_states != kernel_states
+        or mapped_aux != kernel_aux
+    ):
         return [
             _violation(
                 ReasonCode.INVALID_ID_MAP,
@@ -235,6 +249,10 @@ def _id_map_issues(
             )
         ]
     return []
+
+
+def _mapped_ids(id_map: dict[str, UUID], prefix: str) -> set[UUID]:
+    return {value for key, value in id_map.items() if key.startswith(prefix)}
 
 
 def _ref_and_duration(
