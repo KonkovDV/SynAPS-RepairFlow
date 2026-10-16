@@ -110,7 +110,7 @@ flowchart TB
     E --> H["Решение человека"]
 ```
 
-Опубликованный вердикт `verified` ещё читает проверку допустимости закреплённого SynAPS. Независимость относится к поиску, не ко всей обвязке ядра. `repairflow verify-plan` ядро не вызывает. Карта идентификаторов должна совпасть с объектами фактической задачи ядра: операции, посты, заказы, состояния, бригады, оснастка и пулы навыков. Совпадения числа операций недостаточно. Чужой идентификатор даёт `INVALID_ID_MAP`. Идентификаторы строк переналадки в эту карту не входят.
+Опубликованный вердикт `verified` ещё читает проверку допустимости закреплённого SynAPS. Независимость относится к поиску, не ко всей обвязке ядра. `repairflow verify-plan` ядро не вызывает. Карта идентификаторов должна совпасть с объектами фактической задачи ядра: операции, посты, заказы, состояния, бригады, оснастка и пулы навыков. Совпадения числа операций недостаточно. Чужой идентификатор даёт `INVALID_ID_MAP`. Ссылка операции, строки переналадки или требования оснастки на объект вне этой карты — тоже `INVALID_ID_MAP`. Сам идентификатор строки переналадки ключом карты не является.
 
 Несколько правил, на которых держится сверка:
 
@@ -247,4 +247,4 @@ python -m pip install -e ".[dev]"
 repairflow demo --out out
 ```
 
-The only measurements on this page sit in the generated table in the Russian section. A bare number is not evidence. The CI badge is the latest workflow run. It does not replace that table. The machine-readable copy is [`docs/evidence-manifest.json`](docs/evidence-manifest.json). The operator log is written by `repairflow decide` and checked by `repairflow log verify`. `repairflow log witness` is an HMAC of the tip. The key stays outside the repository. It is not a release signature. The notary rejects a kernel schedule whose operation, work-center, order, state, crew, tooling, or skill-pool ids are not the compiled map. Setup-row ids are not in that map. A fixed duration is not a duration distribution. One `crew_id` is a crew code. The native CP-SAT model is not wired into `plan`.
+The only measurements on this page sit in the generated table in the Russian section. A bare number is not evidence. The CI badge is the latest workflow run. It does not replace that table. The machine-readable copy is [`docs/evidence-manifest.json`](docs/evidence-manifest.json). The operator log is written by `repairflow decide` and checked by `repairflow log verify`. `repairflow log witness` is an HMAC of the tip. The key stays outside the repository. It is not a release signature. The notary rejects a kernel schedule whose operation, work-center, order, state, crew, tooling, or skill-pool ids are not the compiled map. A reference from an operation, a setup row, or an auxiliary requirement to an object outside that map is rejected too. The setup row's own id is not a map key. A fixed duration is not a duration distribution. One `crew_id` is a crew code. The native CP-SAT model is not wired into `plan`.
