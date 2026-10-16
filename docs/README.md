@@ -15,7 +15,7 @@
 
 ## Для инженерного разбора
 
-- [`domain-assumptions.md`](domain-assumptions.md) — допущения модели.
+- [`domain-assumptions.md`](domain-assumptions.md) — допущения модели, включая сверку идентификаторов ядра с картой компиляции.
 - [`core-compat.md`](core-compat.md) — закреплённый коммит SynAPS и вызовы, которыми пользуется пакет.
 - [`SYNAPS_REPAIRFLOW_MVP_SKELETON.md`](SYNAPS_REPAIRFLOW_MVP_SKELETON.md) — устройство и план MVP.
 - [`adr/0002-dag-over-chain-kernel.md`](adr/0002-dag-over-chain-kernel.md) — сходящаяся карта собирается в цепочки для ядра.

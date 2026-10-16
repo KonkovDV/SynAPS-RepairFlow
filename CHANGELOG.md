@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Public pages name the kernel-id check, the fixed duration, the crew code,
+  and the unwired native model. The nightly mutation note no longer says
+  that `7f6e9ae` still matches `checker.py`.
 - The evidence manifest attests main `8c0044e` / push run `38943321118`,
   including `test-slow`. This commit does not attest itself.
 - The notary also rejects a kernel schedule whose order, state, crew, tooling,

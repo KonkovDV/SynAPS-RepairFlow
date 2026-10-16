@@ -110,7 +110,7 @@ flowchart TB
     E --> H["Решение человека"]
 ```
 
-Опубликованный вердикт `verified` ещё читает проверку допустимости закреплённого SynAPS. Независимость относится к поиску, не ко всей обвязке ядра. `repairflow verify-plan` ядро не вызывает.
+Опубликованный вердикт `verified` ещё читает проверку допустимости закреплённого SynAPS. Независимость относится к поиску, не ко всей обвязке ядра. `repairflow verify-plan` ядро не вызывает. Карта идентификаторов должна совпасть с объектами фактической задачи ядра: операции, посты, заказы, состояния, бригады, оснастка и пулы навыков. Совпадения числа операций недостаточно. Чужой идентификатор даёт `INVALID_ID_MAP`. Идентификаторы строк переналадки в эту карту не входят.
 
 Несколько правил, на которых держится сверка:
 
@@ -140,7 +140,7 @@ false_accept_rate = invalid_plans_accepted_as_verified / invalid_plans_presented
 | Запчасти и обменный фонд | `SPARE_UNAVAILABLE`, `EXCHANGE_POOL_STOCKOUT` |
 | Замороженное | `FROZEN_MOVED` |
 | Сроки | `DEADLINE_MISSED` жёсткий. `DUE_MISSED` мягкий: это показатель, не отказ |
-| Статус ядра и сборка карты | `KERNEL_STATUS_MISSING`, `KERNEL_STATUS_UNKNOWN`, `KERNEL_STATUS_NOT_FEASIBLE`, `DAG_FIXPOINT_NOT_CONVERGED`, `CPSAT_OPS_CAP` |
+| Статус ядра и сборка карты | `KERNEL_STATUS_MISSING`, `KERNEL_STATUS_UNKNOWN`, `KERNEL_STATUS_NOT_FEASIBLE`, `DAG_FIXPOINT_NOT_CONVERGED`, `CPSAT_OPS_CAP`, `INVALID_ID_MAP` |
 
 ## Что уже проверено
 
@@ -188,7 +188,7 @@ RepairFlow не предлагает новый универсальный ре�
 
 Запись в учётную систему, диспетчеризация, SCADA и функция безопасности сюда не входят. Нет измеренного промышленного эффекта, действующего заказчика, спонсорства и сертификата. Страницы [программы пилотов](https://ftim.ru/pilotirovanie/), [профиля завода](https://www.mosgortrans.ru/about/branches/filial-sokolnicheskii-vagonoremontno-stroitelnyi-zavod-svarz-gup-mosgortrans/) и [кластера](https://i.moscow/pilot) описывают, куда можно податься. Факта внедрения в них нет.
 
-Варианты маршрута не смоделированы. Журнал оператора пишет `repairflow decide` и проверяет `repairflow log verify`. Вершину можно отдельно заверить HMAC через `repairflow log witness`: ключ в репозиторий не кладётся. Подписи выпуска у журнала нет. Своя точная модель на CP-SAT не начата: разрешение владельца записано в [ADR о нативной модели](docs/adr/0006-native-model-stays-unwired.md). В продукт она войдёт только после замера из плана. Выше лабораторного предела операций точный прогон отвергается с `CPSAT_OPS_CAP`, такой экземпляр считают эвристики GREED, EDD или ATC.
+Варианты маршрута не смоделированы. Журнал оператора пишет `repairflow decide` и проверяет `repairflow log verify`. Вершину можно отдельно заверить HMAC через `repairflow log witness`: ключ в репозиторий не кладётся. Подписи выпуска у журнала нет. Своя точная модель на CP-SAT к `plan` не подключена: разрешение владельца записано в [ADR о нативной модели](docs/adr/0006-native-model-stays-unwired.md). В продукт она войдёт только после замера из плана. Выше лабораторного предела операций точный прогон отвергается с `CPSAT_OPS_CAP`, такой экземпляр считают эвристики GREED, EDD или ATC. Длительность операции — заданное число минут. `DURATION_OVERRUN` подставляет одну новую известную длительность. Распределения длительности нет. Одна `crew_id` — код бригады, а не табель именных специалистов.
 
 Полный список границ — [`docs/limitations.md`](docs/limitations.md). Если пилот когда-нибудь будет, он останется теневым: один участок, обезличенный срез, заранее согласованная база, журнал решений человека и откат. Ворота описаны в [`docs/pilot-protocol.md`](docs/pilot-protocol.md).
 
@@ -247,4 +247,4 @@ python -m pip install -e ".[dev]"
 repairflow demo --out out
 ```
 
-The only measurements on this page sit in the generated table in the Russian section. A bare number is not evidence. The CI badge is the latest workflow run. It does not replace that table. The machine-readable copy is [`docs/evidence-manifest.json`](docs/evidence-manifest.json). The operator log is written by `repairflow decide` and checked by `repairflow log verify`. `repairflow log witness` is an HMAC of the tip. The key stays outside the repository. It is not a release signature.
+The only measurements on this page sit in the generated table in the Russian section. A bare number is not evidence. The CI badge is the latest workflow run. It does not replace that table. The machine-readable copy is [`docs/evidence-manifest.json`](docs/evidence-manifest.json). The operator log is written by `repairflow decide` and checked by `repairflow log verify`. `repairflow log witness` is an HMAC of the tip. The key stays outside the repository. It is not a release signature. The notary rejects a kernel schedule whose operation, work-center, order, state, crew, tooling, or skill-pool ids are not the compiled map. Setup-row ids are not in that map. A fixed duration is not a duration distribution. One `crew_id` is a crew code. The native CP-SAT model is not wired into `plan`.
