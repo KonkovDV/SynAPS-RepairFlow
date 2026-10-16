@@ -146,6 +146,49 @@ def test_a_dangling_aux_requirement_is_rejected() -> None:
     _assert_open_reference(mutate)
 
 
+def test_a_changed_kernel_duration_is_rejected() -> None:
+    def mutate(schedule):
+        rows = list(schedule.operations)
+        rows[0] = rows[0].model_copy(update={"base_duration_min": rows[0].base_duration_min + 1})
+        return schedule.model_copy(update={"operations": rows})
+
+    _assert_image_mismatch(mutate)
+
+
+def test_a_narrowed_eligible_post_list_is_rejected() -> None:
+    def mutate(schedule):
+        rows = list(schedule.operations)
+        assert len(rows[0].eligible_wc_ids) > 1
+        rows[0] = rows[0].model_copy(update={"eligible_wc_ids": list(rows[0].eligible_wc_ids[:-1])})
+        return schedule.model_copy(update={"operations": rows})
+
+    _assert_image_mismatch(mutate)
+
+
+def test_a_changed_setup_minute_is_rejected() -> None:
+    def mutate(schedule):
+        rows = list(schedule.setup_matrix)
+        assert rows
+        rows[0] = rows[0].model_copy(update={"setup_minutes": rows[0].setup_minutes + 1})
+        return schedule.model_copy(update={"setup_matrix": rows})
+
+    _assert_image_mismatch(mutate)
+
+
+def _assert_image_mismatch(mutate) -> None:
+    problem = synthesize("tiny", seed=1)
+    schedule, id_map = to_schedule_problem(problem)
+    violations = check_plan(
+        problem,
+        schedule_problem=mutate(schedule),
+        assignments=[],
+        id_map=id_map,
+        kernel_status="feasible",
+    )
+    assert [row.code for row in violations] == [ReasonCode.INVALID_ID_MAP]
+    assert violations[0].message == "compiled kernel image does not match the RepairFlow instance"
+
+
 def _assert_open_reference(mutate) -> None:
     problem = synthesize("tiny", seed=1)
     schedule, id_map = to_schedule_problem(problem)

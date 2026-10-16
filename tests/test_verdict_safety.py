@@ -316,4 +316,8 @@ def test_adapter_setup_mutation_is_caught(monkeypatch: pytest.MonkeyPatch) -> No
     monkeypatch.setattr("repairflow.adapter.lookup_setup_minutes", plus_five)
     outcome = plan(problem, solver_config="GREED")
     assert outcome.result.exit_code == 2
-    assert any(row.code == ReasonCode.SETUP_MISMATCH for row in outcome.result.violations)
+    assert any(row.code == ReasonCode.INVALID_ID_MAP for row in outcome.result.violations)
+    assert any(
+        row.message == "compiled kernel image does not match the RepairFlow instance"
+        for row in outcome.result.violations
+    )

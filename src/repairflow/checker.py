@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections import defaultdict
+from collections import Counter, defaultdict
 from datetime import datetime, timedelta
 from typing import Any, Literal
 from uuid import UUID
@@ -10,7 +10,7 @@ from uuid import UUID
 from synaps.model import Assignment, ScheduleProblem
 
 from repairflow.capacity import Occupancy, excess_arrivals
-from repairflow.checker_primitives import reverse_ids
+from repairflow.checker_primitives import lookup_setup_minutes, reverse_ids
 from repairflow.lane_setup import lane_setup_evidence
 from repairflow.ledger import exchange_pool_violations, spare_is_rotable
 from repairflow.model import (
@@ -262,6 +262,13 @@ def _id_map_issues(
                 "compiled kernel references are not closed over the id map",
             )
         ]
+    if not _kernel_image_matches(problem, schedule_problem, id_map):
+        return [
+            _violation(
+                ReasonCode.INVALID_ID_MAP,
+                "compiled kernel image does not match the RepairFlow instance",
+            )
+        ]
     return []
 
 
@@ -292,6 +299,72 @@ def _kernel_references_closed(
         if requirement.operation_id not in operations or requirement.aux_resource_id not in auxiliary:
             return False
     return True
+
+
+def _kernel_image_matches(
+    problem: RepairFlowProblem,
+    schedule_problem: ScheduleProblem,
+    id_map: dict[str, UUID],
+) -> bool:
+    reversed_map = reverse_ids(id_map)
+    domain_ops = {operation.id: operation for operation in problem.operations}
+    for operation in schedule_problem.operations:
+        kind, ident = reversed_map[operation.id]
+        if kind != "op" or ident not in domain_ops:
+            return False
+        domain = domain_ops[ident]
+        if operation.base_duration_min != domain.duration_min:
+            return False
+        if operation.latest_finish != domain.latest_finish:
+            return False
+        if operation.state_id != id_map[f"state:{domain.setup_state}"]:
+            return False
+        eligible = {id_map[f"wc:{center_id}"] for center_id in domain.eligible_work_center_ids}
+        if set(operation.eligible_wc_ids) != eligible or len(operation.eligible_wc_ids) != len(eligible):
+            return False
+        order_kind, order_key = reversed_map[operation.order_id]
+        if order_kind != "job":
+            return False
+        if order_key != domain.job_id and not order_key.startswith(f"{domain.job_id}:"):
+            return False
+    return _setup_image_matches(problem, schedule_problem, id_map)
+
+
+def _setup_image_matches(
+    problem: RepairFlowProblem,
+    schedule_problem: ScheduleProblem,
+    id_map: dict[str, UUID],
+) -> bool:
+    codes = [key.split(":", 1)[1] for key in id_map if key.startswith("state:")]
+    expected: Counter[tuple[UUID, UUID, UUID, int]] = Counter()
+    for center in problem.work_centers:
+        work_center_id = id_map[f"wc:{center.id}"]
+        for from_state in codes:
+            for to_state in codes:
+                minutes = lookup_setup_minutes(
+                    problem,
+                    work_center_id=center.id,
+                    from_state=from_state,
+                    to_state=to_state,
+                )
+                if minutes is None:
+                    if problem.policy.missing_setup == "zero":
+                        minutes = 0
+                    else:
+                        continue
+                expected[
+                    (
+                        work_center_id,
+                        id_map[f"state:{from_state}"],
+                        id_map[f"state:{to_state}"],
+                        minutes,
+                    )
+                ] += 1
+    actual: Counter[tuple[UUID, UUID, UUID, int]] = Counter(
+        (row.work_center_id, row.from_state_id, row.to_state_id, int(row.setup_minutes))
+        for row in schedule_problem.setup_matrix
+    )
+    return actual == expected
 
 
 def _mapped_ids(id_map: dict[str, UUID], prefix: str) -> set[UUID]:
