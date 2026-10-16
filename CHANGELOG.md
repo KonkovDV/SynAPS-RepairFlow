@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- The evidence manifest attests main `a47258f` / push run `38955200610`,
+  including `test-slow`. This commit does not attest itself.
 - The notary rejects a compiled kernel image whose duration, eligible posts,
   setup state, latest finish, job order, or setup-matrix cell differs from
   the source task. A compiler-segment predecessor is not derived again.
