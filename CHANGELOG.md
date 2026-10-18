@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- The evidence manifest attests main `09562da` / push run `39115444866`,
+  including `test-slow`. This commit does not attest itself.
 - The notary rejects a compiled horizon, eligible-post order, operation label,
   or asset code that the compiler does not store for the source task.
   A compiler segment id is not derived again.
