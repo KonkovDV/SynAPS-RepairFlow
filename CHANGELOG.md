@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Correct the ATC pages: `plan` does not call `atc_order`. The planner
+  index and the ordering module use different weights, clocks, and ties.
+  A missing setup out of `idle` stays a rejection when other gaps are zero.
 - Write the audit and metric formulas as plain expressions. The old
   inline LaTeX did not survive a normal reading of the Markdown.
 - Rewrite `README.md`, `APPLICATION.md`, `CONTRIBUTING.md`, `SECURITY.md`,
