@@ -16,6 +16,7 @@ from repairflow.lane_setup import lane_setup_evidence
 from repairflow.ledger import exchange_pool_violations, spare_is_rotable
 from repairflow.model import (
     Calendar,
+    Job,
     Operation,
     PlannedAssignment,
     RepairFlowProblem,
@@ -328,10 +329,14 @@ def _kernel_image_matches(
             return False
         if order_key != domain.job_id and not order_key.startswith(f"{domain.job_id}:"):
             return False
+        if operation.machine_duration_overrides:
+            return False
     return (
         _setup_image_matches(problem, schedule_problem, id_map)
         and _aux_image_matches(problem, schedule_problem, id_map)
         and _resource_image_matches(problem, schedule_problem, id_map)
+        and _order_image_matches(problem, schedule_problem, id_map)
+        and _state_image_matches(schedule_problem, id_map)
     )
 
 
@@ -369,7 +374,9 @@ def _setup_image_matches(
         (row.work_center_id, row.from_state_id, row.to_state_id, int(row.setup_minutes))
         for row in schedule_problem.setup_matrix
     )
-    return actual == expected
+    if actual != expected:
+        return False
+    return all(row.material_loss == 0 and row.energy_kwh == 0 for row in schedule_problem.setup_matrix)
 
 
 def _aux_image_matches(
@@ -440,6 +447,12 @@ def _resource_image_matches(
         domain = centers.get(ident)
         if kind != "wc" or domain is None or center.max_parallel != domain.max_parallel:
             return False
+        if center.speed_factor != 1 or center.code != domain.code:
+            return False
+        if center.capability_group != domain.capability_group:
+            return False
+        if center.domain_attributes != {"repairflow_id": domain.id}:
+            return False
         actual = [(row.start, row.end) for row in center.calendar]
         if actual != _post_calendar(problem, domain.calendar_id):
             return False
@@ -450,16 +463,29 @@ def _resource_image_matches(
             crew = crews.get(ident)
             if crew is None or resource.pool_size != crew.max_parallel:
                 return False
+            if resource.code != crew.code or resource.resource_type != "crew":
+                return False
+            if resource.domain_attributes != {"repairflow_id": crew.id, "skills": list(crew.skills)}:
+                return False
             if actual != _shift_calendar(problem, crew.calendar_id, crew.domain_attributes):
                 return False
         elif kind == "aux":
             aux = auxiliaries.get(ident)
             if aux is None or resource.pool_size != aux.capacity:
                 return False
+            if resource.code != aux.code or resource.resource_type != aux.resource_type:
+                return False
+            if resource.domain_attributes != {"repairflow_id": aux.id}:
+                return False
             if actual != _shift_calendar(problem, aux.calendar_id, aux.domain_attributes):
                 return False
         elif kind == "skillpool":
             if resource.pool_size != _skill_pool_size(problem, ident):
+                return False
+            skills = ident.split("|") if ident else []
+            if resource.code != f"SKILL:{ident or 'any'}" or resource.resource_type != "crew-pool":
+                return False
+            if resource.domain_attributes != {"skills": skills}:
                 return False
             if actual != _skill_pool_calendar(problem, ident):
                 return False
@@ -509,6 +535,47 @@ def _skill_pool_calendar(problem: RepairFlowProblem, skill_key: str) -> list[tup
     if len(set(encoded)) != 1:
         return []
     return list(encoded[0])
+
+
+def _order_image_matches(
+    problem: RepairFlowProblem,
+    schedule_problem: ScheduleProblem,
+    id_map: dict[str, UUID],
+) -> bool:
+    reversed_map = reverse_ids(id_map)
+    jobs = {job.id: job for job in problem.jobs}
+    for order in schedule_problem.orders:
+        kind, order_key = reversed_map[order.id]
+        job = _job_for_order_key(jobs, order_key) if kind == "job" else None
+        if job is None:
+            return False
+        due = job.due_date or problem.planning_horizon.end
+        if order.release_date != job.release_date or order.due_date != due:
+            return False
+        if order.priority != job.priority or order.external_ref != (job.external_ref or job.id):
+            return False
+        if order.quantity != 1 or order.unit != "pcs":
+            return False
+    return True
+
+
+def _job_for_order_key(jobs: dict[str, Job], order_key: str) -> Job | None:
+    exact = jobs.get(order_key)
+    if exact is not None:
+        return exact
+    matches = [job for job in jobs.values() if order_key.startswith(f"{job.id}:")]
+    if len(matches) != 1:
+        return None
+    return matches[0]
+
+
+def _state_image_matches(schedule_problem: ScheduleProblem, id_map: dict[str, UUID]) -> bool:
+    reversed_map = reverse_ids(id_map)
+    for state in schedule_problem.states:
+        kind, ident = reversed_map[state.id]
+        if kind != "state" or state.code != ident or state.label != ident or state.domain_attributes:
+            return False
+    return True
 
 
 def _mapped_ids(id_map: dict[str, UUID], prefix: str) -> set[UUID]:
