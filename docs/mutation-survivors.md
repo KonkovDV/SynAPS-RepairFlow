@@ -27,7 +27,7 @@
 | [38555693129](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/runs/38555693129) | `eef52f8` | 1798 | 123 | 1921 | Добавлены `tests/test_kernel_binding.py` и `tests/test_open_edges.py`. |
 | [38565194050](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/runs/38565194050) | `04ad612` | 1810 | 112 | 1922 | Добавлена детерминированная сортировка стоков карты в `ledger.py` и проверка максимального лага предшественника. |
 | [38618458299](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/runs/38618458299) | `a4e4e90` | 1814 | 108 | 1922 | Добиты последние четыре неэквивалентных мутанта (`_normalize_assignments` 42, 49, 50 и `_spare_receipts` 11); у всех `108` оставшихся выживших доказана семантическая эквивалентность. |
-| [38698472141](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/runs/38698472141) | `7f6e9ae` | 1962 | 175 | 2137 | Прогон после расширения `lane_setup.py` и `checker.py`: из `175` выживших `126` эквивалентны, а `49` закрыты тестами в `tests/test_nightly_survivors.py`. |
+| [38698472141](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/runs/38698472141) | `7f6e9ae` | 1962 | 175 | 2137 | После расширения `lane_setup.py` и `checker.py`: из `175` выживших `126` эквивалентны, `49` нет. `tests/test_nightly_survivors.py` фиксирует поведение этих `49` и в счёт `1962/2137` не входит. |
 
 ## Разбор последнего ночного прогона 38698472141
 
@@ -78,9 +78,9 @@
    - В `ledger.py`: `spare_is_rotable` (10, 12, 15, 16) подставляют вместо `"consumable"` значения `None`, `"CONSUMABLE"` или `"XXconsumableXX"`, которые после `.lower()` всё так же не равны `"rotable"`; `_exchange_pool_violations` (21) меняет начальную пустую строку `worst_at`, которая всегда перезаписывается в момент ухода остатка в минус; `_rotable_spare_violations` (31, 73, 109) опускают `severity="hard"`, совпадающее со значением по умолчанию у `Violation`; `_completion_times` (7) кладёт `None` в список преемников, проверяемый только на пустоту, а мутант 24 ставит `complete = None` в ветке отсутствующего стока (`if complete and ends` остаётся ложным).
    - В `lane_setup.py`: мутанты `_colour_lanes` (151, 152) портят стартовый кортеж при открытии новой полосы, который перезаписывается в следующей же строке до любого чтения; мутанты `stamp_canonical_lanes` (12–17, 21, 24, 25, 35) меняют предварительную заготовку поля `lane` перед вызовом `_colour_lanes(..., ignore_explicit=True)`, где входное поле `lane` игнорируется по флагу.
 
-### 49 неэквивалентных мутантов, закрытых в `tests/test_nightly_survivors.py`
+### 49 неэквивалентных мутантов прогона `38698472141`
 
-Следующие мутанты прогона `38698472141` меняют наблюдаемое поведение и теперь перехватываются тестами в `tests/test_nightly_survivors.py`:
+Эти мутанты в том прогоне выжили. Тесты `tests/test_nightly_survivors.py` фиксируют исходное поведение и в счёт `1962/2137` не входят. Следующий ночной прогон их ещё не пересчитывал:
 
 - `_duration_violation` (14, 15) — искажение сообщения об ошибке для интервала с нецелым числом минут;
 - `_calendar_fit` (45, 52) — удаление явно переданной подсказки `SUGGESTIONS[ReasonCode.WINDOW_BROKEN]` при формировании нарушения `CALENDAR_BROKEN` (в словаре `SUGGESTIONS` нет отдельного ключа `CALENDAR_BROKEN`, поэтому `_violation` не может восстановить подсказку автоматически);

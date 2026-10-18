@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- The nightly mutation count `1962/2137` did not kill the `49`
+  non-equivalent survivors. `tests/test_nightly_survivors.py` records
+  them and is not part of that count.
 - Correct the ATC pages: `plan` does not call `atc_order`. The planner
   index and the ordering module use different weights, clocks, and ties.
   A missing setup out of `idle` stays a rejection when other gaps are zero.
