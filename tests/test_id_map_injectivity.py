@@ -194,6 +194,38 @@ def test_a_dropped_aux_requirement_is_rejected() -> None:
     _assert_image_mismatch(mutate)
 
 
+def test_a_changed_post_capacity_is_rejected() -> None:
+    def mutate(schedule):
+        rows = list(schedule.work_centers)
+        assert rows
+        rows[0] = rows[0].model_copy(update={"max_parallel": rows[0].max_parallel + 1})
+        return schedule.model_copy(update={"work_centers": rows})
+
+    _assert_image_mismatch(mutate)
+
+
+def test_a_changed_pool_size_is_rejected() -> None:
+    def mutate(schedule):
+        rows = list(schedule.auxiliary_resources)
+        assert rows
+        rows[0] = rows[0].model_copy(update={"pool_size": rows[0].pool_size + 1})
+        return schedule.model_copy(update={"auxiliary_resources": rows})
+
+    _assert_image_mismatch(mutate)
+
+
+def test_a_dropped_compiled_shift_is_rejected() -> None:
+    def mutate(schedule):
+        rows = list(schedule.work_centers)
+        chosen = next((index for index, row in enumerate(rows) if row.calendar), None)
+        assert chosen is not None
+        center = rows[chosen]
+        rows[chosen] = center.model_copy(update={"calendar": list(center.calendar)[:-1]})
+        return schedule.model_copy(update={"work_centers": rows})
+
+    _assert_image_mismatch(mutate)
+
+
 def _assert_image_mismatch(mutate) -> None:
     problem = synthesize("tiny", seed=1)
     schedule, id_map = to_schedule_problem(problem)
