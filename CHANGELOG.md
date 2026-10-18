@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- The notary rejects a compiled auxiliary requirement that is not the source
+  operation's tooling, its single matching crew, or its skill pool.
 - The evidence manifest attests main `a47258f` / push run `38955200610`,
   including `test-slow`. This commit does not attest itself.
 - The notary rejects a compiled kernel image whose duration, eligible posts,

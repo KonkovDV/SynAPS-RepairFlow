@@ -175,6 +175,25 @@ def test_a_changed_setup_minute_is_rejected() -> None:
     _assert_image_mismatch(mutate)
 
 
+def test_a_doubled_aux_quantity_is_rejected() -> None:
+    def mutate(schedule):
+        rows = list(schedule.aux_requirements)
+        assert rows
+        rows[0] = rows[0].model_copy(update={"quantity_needed": 2})
+        return schedule.model_copy(update={"aux_requirements": rows})
+
+    _assert_image_mismatch(mutate)
+
+
+def test_a_dropped_aux_requirement_is_rejected() -> None:
+    def mutate(schedule):
+        rows = list(schedule.aux_requirements)
+        assert rows
+        return schedule.model_copy(update={"aux_requirements": rows[:-1]})
+
+    _assert_image_mismatch(mutate)
+
+
 def _assert_image_mismatch(mutate) -> None:
     problem = synthesize("tiny", seed=1)
     schedule, id_map = to_schedule_problem(problem)
