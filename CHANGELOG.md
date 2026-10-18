@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- The default CI benchmark is FIFO against GREED on six preset/seed
+  pairs. EDD, ATC, and CP-SAT stay opt-in, and that matrix is not a paper.
+  A closed attended calendar is refused before the kernel solve.
 - The nightly mutation count `1962/2137` did not kill the `49`
   non-equivalent survivors. `tests/test_nightly_survivors.py` records
   them and is not part of that count.
