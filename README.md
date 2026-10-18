@@ -149,8 +149,8 @@ false_accept_rate = invalid_plans_accepted_as_verified / invalid_plans_presented
 <!-- evidence:begin -->
 | Факт | Значение |
 |---|---|
-| Проверенный `main` | [`648ee32`](https://github.com/KonkovDV/SynAPS-RepairFlow/commit/648ee3261a99646424996b6c622bef3de9962634) |
-| CI для этого `main` | [Actions run 39106164306](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/runs/39106164306), success, включая `test-slow` |
+| Проверенный `main` | [`99d8de5`](https://github.com/KonkovDV/SynAPS-RepairFlow/commit/99d8de586539cc55cce0ba847373ad13031c6174) |
+| CI для этого `main` | [Actions run 39110546847](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/runs/39110546847), success, включая `test-slow` |
 | Sweep-line commit | [`a3621fd`](https://github.com/KonkovDV/SynAPS-RepairFlow/commit/a3621fd538019f4dcc0c681d5634c022260382e9) |
 | SynAPS pin | [`f939727`](https://github.com/KonkovDV/SynAPS/commit/f939727cd9369fd9b36438bfac7198f0c39c6d3b) |
 | Solver | `ortools==9.15.6755` |
