@@ -327,7 +327,9 @@ def _kernel_image_matches(
             return False
         if order_key != domain.job_id and not order_key.startswith(f"{domain.job_id}:"):
             return False
-    return _setup_image_matches(problem, schedule_problem, id_map)
+    return _setup_image_matches(problem, schedule_problem, id_map) and _aux_image_matches(
+        problem, schedule_problem, id_map
+    )
 
 
 def _setup_image_matches(
@@ -365,6 +367,60 @@ def _setup_image_matches(
         for row in schedule_problem.setup_matrix
     )
     return actual == expected
+
+
+def _aux_image_matches(
+    problem: RepairFlowProblem,
+    schedule_problem: ScheduleProblem,
+    id_map: dict[str, UUID],
+) -> bool:
+    expected: Counter[tuple[UUID, UUID]] = Counter()
+    for operation in problem.operations:
+        operation_id = id_map[f"op:{operation.id}"]
+        personnel = _personnel_resource(problem, operation, id_map)
+        if personnel is False:
+            return False
+        if personnel is not None:
+            expected[(operation_id, personnel)] += 1
+        for aux_id in operation.required_aux_ids:
+            mapped = id_map.get(f"aux:{aux_id}")
+            if mapped is None:
+                return False
+            expected[(operation_id, mapped)] += 1
+    actual: Counter[tuple[UUID, UUID]] = Counter()
+    for requirement in schedule_problem.aux_requirements:
+        if requirement.quantity_needed != 1:
+            return False
+        actual[(requirement.operation_id, requirement.aux_resource_id)] += 1
+    return actual == expected
+
+
+def _personnel_resource(
+    problem: RepairFlowProblem,
+    operation: Operation,
+    id_map: dict[str, UUID],
+) -> UUID | None | Literal[False]:
+    """The crew or skill pool the compiler must attach, or False when the map cannot name it."""
+
+    required = set(operation.required_skills)
+    if required:
+        matching = [crew.id for crew in problem.crews if required <= set(crew.skills)]
+    else:
+        matching = [crew.id for crew in problem.crews]
+    chosen: str | None = matching[0] if len(matching) == 1 else None
+    if chosen is None:
+        frozen = next(
+            (row for row in problem.frozen_assignments if row.operation_id == operation.id),
+            None,
+        )
+        if frozen is not None and frozen.crew_id:
+            chosen = frozen.crew_id
+    if chosen is not None:
+        return id_map.get(f"crew:{chosen}", False)
+    if not operation.required_skills:
+        return None
+    pool_key = "|".join(sorted(operation.required_skills))
+    return id_map.get(f"skillpool:{pool_key}", False)
 
 
 def _mapped_ids(id_map: dict[str, UUID], prefix: str) -> set[UUID]:
