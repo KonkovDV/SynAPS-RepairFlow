@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import timedelta
 from uuid import uuid4
 
 from repairflow.adapter import to_schedule_problem
@@ -275,6 +276,52 @@ def test_a_changed_state_code_is_rejected() -> None:
         assert rows
         rows[0] = rows[0].model_copy(update={"code": f"{rows[0].code}-other"})
         return schedule.model_copy(update={"states": rows})
+
+    _assert_image_mismatch(mutate)
+
+
+def test_a_shifted_kernel_horizon_is_rejected() -> None:
+    def mutate(schedule):
+        return schedule.model_copy(
+            update={"planning_horizon_end": schedule.planning_horizon_end + timedelta(minutes=1)}
+        )
+
+    _assert_image_mismatch(mutate)
+
+
+def test_a_reordered_eligible_post_list_is_rejected() -> None:
+    def mutate(schedule):
+        rows = list(schedule.operations)
+        chosen = next(index for index, row in enumerate(rows) if len(row.eligible_wc_ids) > 1)
+        operation = rows[chosen]
+        rows[chosen] = operation.model_copy(
+            update={"eligible_wc_ids": list(reversed(operation.eligible_wc_ids))}
+        )
+        return schedule.model_copy(update={"operations": rows})
+
+    _assert_image_mismatch(mutate)
+
+
+def test_a_changed_operation_skill_label_is_rejected() -> None:
+    def mutate(schedule):
+        rows = list(schedule.operations)
+        operation = rows[0]
+        attrs = dict(operation.domain_attributes)
+        attrs["required_skills"] = []
+        rows[0] = operation.model_copy(update={"domain_attributes": attrs})
+        return schedule.model_copy(update={"operations": rows})
+
+    _assert_image_mismatch(mutate)
+
+
+def test_a_changed_asset_code_is_rejected() -> None:
+    def mutate(schedule):
+        rows = list(schedule.orders)
+        order = rows[0]
+        attrs = dict(order.domain_attributes)
+        attrs["asset_code"] = f"{attrs['asset_code']}-other"
+        rows[0] = order.model_copy(update={"domain_attributes": attrs})
+        return schedule.model_copy(update={"orders": rows})
 
     _assert_image_mismatch(mutate)
 
