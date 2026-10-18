@@ -1,26 +1,19 @@
-# SynAPS RepairFlow agent bus
+# Координация задач через Agent Bus
 
-RepairFlow coordinates implementation work through GitHub issues and pull requests. The issue is the queue, one structured comment is the live status, and the pull request is the only place where code changes are made.
+Вспомогательный инструмент `tools/agent_bus.py` проверяет протокол координации разработки через задачи (Issues) и запросы на слияние (Pull Requests) на GitHub. Схема сообщений — `synaps.agent_bus.v1`. Протокол привязан строго к репозиторию `SynAPS-RepairFlow`: ссылки на чужие репозитории или внешние прогоны CI валидатором отклоняются.
 
-The protocol is `synaps.agent_bus.v1`. It is intentionally repository-local: AeroBIM's bus cannot attest SynAPS URLs or SynAPS CI jobs.
+## Жизненный цикл задачи
 
-## Bootstrap rule
+1. Для одного этапа работ выбирается или открывается одна задача (Issue).
+2. Перед созданием рабочей ветки в комментариях публикуется запись `claim` с текущим коммитом `main`, именем ветки, идентификатором исполнителя, узлом и временем действия аренды (ISO-8601 с часовым поясом).
+3. Пока запрос на слияние не завершён, не реже чем раз в шесть часов публикуется отметка `heartbeat`.
+4. Если продвижение заблокировано внешней зависимостью, публикуется запись `blocked` с номерами блокирующих задач.
+5. Для передачи задачи другому исполнителю без закрытия используется операция `handoff`, а для перехвата просроченной аренды — `steal`.
+6. Запись `done` публикуется только после слияния запроса и успешного завершения проверок CI.
 
-The first bootstrap pull request establishes this protocol. It may be opened from issue #4 without a prior machine-validated claim. Once this PR is merged, every later implementation phase must have a valid claim before creating a branch.
+Прямая запись в ветку `main`, повторное использование чужой рабочей ветки и подмена прогона GitHub Actions локальным запуском `pytest` не допускаются.
 
-## Lifecycle
-
-1. Create or select one open issue for exactly one phase.
-2. Read the issue and all comments.
-3. Record one `claim` object before branch work. The claim records the current `main` SHA, feature branch, agent, host, and timezone-aware lease.
-4. Send `heartbeat` at least every six hours while the PR is not green.
-5. Use `blocked` when a dependency prevents progress; include blocking issue numbers.
-6. Use `handoff` to release work without declaring completion.
-7. Use `done` only after the PR is merged and the cited CI run is completed successfully.
-
-There is one open PR per issue. Never push to `main`, reuse another agent's branch, or call a local test run CI evidence.
-
-## Comment format
+## Формат комментария
 
 ```markdown
 ### AGENT_BUS synaps.agent_bus.v1
@@ -38,11 +31,11 @@ There is one open PR per issue. Never push to `main`, reuse another agent's bran
 ```
 ```
 
-Supported operations are `claim`, `heartbeat`, `blocked`, `handoff`, `steal`, and `done`. The validator checks the first live claim, expiry, holder identity, branch binding, and CI evidence.
+Поддерживаемые операции (`op`): `claim`, `heartbeat`, `blocked`, `handoff`, `steal` и `done`. Валидатор проверяет первую активную аренду, срок её действия, совпадение исполнителя, привязку к ветке и ссылки на прогон CI. Первая задача инициализации протокола (`#4`) допускалась к закрытию без предшествующего `claim`.
 
-## CI attestation
+## Проверка прогона CI
 
-The current PR gate consists of:
+Валидатор `check-run` и `check-done` требует, чтобы указанный прогон GitHub Actions завершился со статусом `success` и содержал успешные задания обязательного набора:
 
 - `lint`
 - `test-fast`
@@ -50,15 +43,13 @@ The current PR gate consists of:
 - `demo-evidence`
 - `benchmark`
 
-`test-slow` runs only on pushes to `main`; it is not a PR gate. A green run must be completed successfully, contain every required job, report a non-zero `runner_id` and non-empty `runner_name`, and contain at least one successful step per required job. The Jobs API payload is the evidence source for runner fields.
+У каждого обязательного задания в выгрузке Jobs API должны присутствовать ненулевой `runner_id`, непустое `runner_name` и хотя бы один успешно выполненный шаг (`steps`). В самом конвейере репозитория задание `test-slow` также выполняется при слиянии в `main`, по расписанию, вручную и на запросах с меткой `slow`. Запись `done` обязана ссылаться на реальный адрес PR в этом репозитории, адрес прогона Actions и коммит, совпадающий с `head_sha` прогона.
 
-`done` must cite the real SynAPS PR URL, Actions run URL, and a SHA that is the run's `head_sha`. The local command `pytest` never becomes a CI pin.
+## Граница ответственности
 
-## Product boundary
+Комментарии `agent_bus` служат только для диспетчеризации задач разработки и не влияют на вердикт по расписанию ремонта. Валидатор явно отвергает любые попытки передать в сообщении поля продуктового вердикта или промышленной готовности (`summary_passed`, `verified`, `customer_go`, `deployment_go`, оценки точности и т. п.). Статус `verified_feasible`, код выхода и итоговое заявление по плану формирует исключительно проверочный код пакета `repairflow`.
 
-Bus comments coordinate work; they do not issue the product verdict. Validator rejects `summary_passed`, `verified`, `customer_go`, `deployment_go`, accuracy claims, customer claims, and similar product-gate fields. Only RepairFlow's evidence and verdict code may set `verified_feasible`, status, exit code, or pilot gates.
-
-## Commands
+## Команды проверки
 
 ```bash
 python tools/agent_bus.py check-comment comment.md
@@ -68,4 +59,4 @@ python tools/agent_bus.py check-done 4 comments.json run.json jobs.json
 python tools/agent_bus.py check-steal 4 comments.json compare.json
 ```
 
-The validator is deterministic and offline. It does not call GitHub.
+Инструмент работает полностью автономно по сохранённым JSON-файлам и не обращается к сети.

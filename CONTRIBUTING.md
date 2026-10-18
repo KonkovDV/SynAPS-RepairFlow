@@ -1,12 +1,24 @@
-"""Contributing
+# Руководство по внесению изменений (Contributing)
 
-Keep the kernel pin as a full SHA. Never depend on SynAPS `main`.
-Do not copy `synaps/` into this repository.
-Do not claim customer data, optimality for heuristics, or industrial effect.
+## Базовые инварианты репозитория
 
-Before a pin bump: pin-regression tests, `python tools/verify_schema.py`, recapture `repairflow demo`.
+- **Закрепление ядра SynAPS.** Зависимость от ядра задаётся только полным 40-символьным SHA коммита в `pyproject.toml`, `requirements-lock.txt` и `src/repairflow/versions.py`. Указание плавающей ветки `main` или копирование каталога `synaps/` внутрь репозитория запрещены.
+- **Независимость нотариуса.** Модуль `src/repairflow/checker.py` не должен импортировать `repairflow.adapter`, `repairflow.planner` или `synaps.solvers`. Проверки нотариуса не ослабляются ради прохождения кандидатных планов, а тестовый оракул (`tests/oracle_minutes.py`) не подгоняется под нотариус.
+- **Точность формулировок.** В публичных документах (`README.md`, `APPLICATION.md`, `docs/**/*.md`) запрещены неподтверждённые заявления из `docs/BANNED_CLAIMS.txt`, а на главной странице `README.md` числовые показатели размещаются только внутри генерируемой таблицы доказательств (`tools/attest.py`). Эвристические методы никогда не объявляются `optimal`.
 
-Review: open a pull request against `main`. Do not push experimental work straight
-to `main` when a second pair of eyes is available. The PR description must name
-the synthetic fixture, the solver path, and whether the independent checker is empty.
-"""
+## Порядок обновления пина ядра SynAPS
+
+Перед обновлением коммита `SYNAPS_COMMIT` обязательно выполните:
+
+1. обновление хеша в `pyproject.toml`, `requirements-lock.txt` и `src/repairflow/versions.py`;
+2. проверку `python tools/verify_lock.py` и `python tools/verify_schema.py`;
+3. прогон `pytest tests/test_pin_regression.py` и полного набора быстрых и медленных тестов;
+4. пересборку демонстрационного стенда `repairflow demo` и проверочных артефактов.
+
+## Оформление запроса на слияние (Pull Request)
+
+Все изменения вносятся через Pull Request в ветку `main`. В описании запроса укажите:
+
+- затрагиваемый синтетический пресет или сценарий;
+- используемый путь решателя (`GREED`, `FIFO`, `EDD`, `ATC`, `CPSAT-*`, `verify-plan`);
+- подтверждение того, что независимый нотариус и регрессионные тесты проходят без ошибок.
