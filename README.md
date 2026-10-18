@@ -18,7 +18,7 @@ RepairFlow строит график ремонта агрегатов и отд
 - [Как запустить](#как-запустить)
 - [Команды](#команды)
 - [Как устроена проверка](#как-устроена-проверка)
-- [Что именно сверяется](#что-именно-сверяется)
+- [Коды отказа](#коды-отказа)
 - [Что уже проверено](#что-уже-проверено)
 - [Соседние программы](#соседние-программы)
 - [Чего в этой сборке нет](#чего-в-этой-сборке-нет)
@@ -110,7 +110,21 @@ flowchart TB
     E --> H["Решение человека"]
 ```
 
-Опубликованный вердикт `verified` ещё читает проверку допустимости закреплённого SynAPS. Независимость относится к поиску, не ко всей обвязке ядра. `repairflow verify-plan` ядро не вызывает. Карта идентификаторов должна совпасть с объектами фактической задачи ядра: операции, посты, заказы, состояния, бригады, оснастка и пулы навыков. Совпадения числа операций недостаточно. Чужой идентификатор даёт `INVALID_ID_MAP`. Ссылка операции, строки переналадки или требования оснастки на объект вне этой карты — тоже `INVALID_ID_MAP`. Длительность, допустимые посты, состояние переналадки и клетка матрицы должны совпасть с исходной задачей. Заказ ядра должен принадлежать тому же ремонтному заказу. Сам идентификатор строки переналадки ключом карты не является. Требование оснастки должно назвать оснастку, единственную подходящую бригаду или пул навыков исходной операции. Вместимость поста, параллельность бригады, ёмкость оснастки, размер пула навыков и список смен в задаче ядра должны совпасть с тем, что собирает компилятор. Закрытый календарь с персоналом компилятор по-прежнему может записать пустым списком; закрытость судит доменный нотариус. Выпуск, срок, приоритет и внешняя ссылка заказа ядра совпадают с ремонтным заказом. Если своего срока нет, ядро получает конец горизонта, а количество остаётся одной штукой. Коэффициент скорости поста остаётся тем, который оставляет компилятор. Переопределения длительности по посту нет. Потери материала и энергия клетки переналадки остаются нулевыми. Код ресурса, группа возможностей, навыки, тип и код состояния совпадают с исходным объектом. Горизонт задачи ядра совпадает с горизонтом исходной задачи. Порядок допустимых постов совпадает с исходным списком. Имя операции, ремонтный заказ и навыки в атрибутах ядра совпадают с операцией. Код актива и тип узла заказа совпадают с ремонтным заказом. Идентификатор отрезка компилятора заново не выводится. Предшественник внутри отрезка компилятора заново не выводится.
+Опубликованный вердикт `verified` ещё читает проверку допустимости закреплённого SynAPS. Независимость относится к поиску, не ко всей обвязке ядра. `repairflow verify-plan` ядро не вызывает.
+
+Собранная для ядра задача должна быть той же, что записал компилятор. Если нет, отказ один: `INVALID_ID_MAP`.
+
+| Что должно совпасть | С чем |
+| --- | --- |
+| Набор объектов | Операции, посты, заказы, состояния, бригады, оснастка и пулы навыков. Совпадения числа операций мало. |
+| Ссылки | Заказ, состояние, предшественник, допустимый пост, клетка переналадки и требование оснастки смотрят только внутрь этой карты. Сам идентификатор строки переналадки ключом карты не является. |
+| Операция | Длительность, поздний конец, состояние переналадки и допустимые посты в исходном порядке. Имя, ремонтный заказ и навыки тоже. Переопределения длительности по посту нет. |
+| Заказ | Выпуск, срок, приоритет, внешняя ссылка, код актива и тип узла того же ремонтного заказа. Если своего срока нет, ядро получает конец горизонта. Количество остаётся одной штукой. |
+| Пост, бригада, оснастка, пул | Вместимость, параллельность, ёмкость, размер пула, коды, группа возможностей, навыки, тип и список смен — как их записал компилятор. Коэффициент скорости поста остаётся тем, который оставляет компилятор. |
+| Клетка переналадки | Минуты совпадают с собственной сверкой нотариуса. Потери материала и энергия остаются нулевыми. Требование оснастки называет оснастку, единственную подходящую бригаду или пул навыков. |
+| Горизонт | Начало и конец те же, что у исходной задачи. |
+
+Нотариус не собирает заново предшественника внутри отрезка компилятора, ранний старт и идентификатор отрезка. Закрытый календарь с персоналом компилятор по-прежнему может записать пустым списком. Закрытость судит доменный нотариус.
 
 Несколько правил, на которых держится сверка:
 
@@ -125,7 +139,7 @@ false_accept_rate = invalid_plans_accepted_as_verified / invalid_plans_presented
 
 Для примеров оракула правильности цель такая: ни один заведомо плохой план не должен пройти как проверенный. Оракул по минутам обменный фонд не судит. Если оракул и нотариус разошлись, пример разбирают руками. Оракул под нотариус не подгоняют.
 
-## Что именно сверяется
+## Коды отказа
 
 Схема отбрасывает неполный и двусмысленный вход. Дальше каждое назначение сверяется с исходной задачей. Полный список кодов и русских фраз лежит в [`src/repairflow/reasons.py`](src/repairflow/reasons.py). У каждой причины есть подсказка, что поправить: сдвинуть слот, взять другой пост, назначить бригаду с живым допуском.
 
@@ -247,4 +261,6 @@ python -m pip install -e ".[dev]"
 repairflow demo --out out
 ```
 
-The only measurements on this page sit in the generated table in the Russian section. A bare number is not evidence. The CI badge is the latest workflow run. It does not replace that table. The machine-readable copy is [`docs/evidence-manifest.json`](docs/evidence-manifest.json). The operator log is written by `repairflow decide` and checked by `repairflow log verify`. `repairflow log witness` is an HMAC of the tip. The key stays outside the repository. It is not a release signature. The notary rejects a kernel schedule whose operation, work-center, order, state, crew, tooling, or skill-pool ids are not the compiled map. A reference from an operation, a setup row, or an auxiliary requirement to an object outside that map is rejected too. Duration, eligible posts, setup state, and setup-matrix cells must match the source task. The kernel order must belong to the same repair job. The setup row's own id is not a map key. An auxiliary requirement must name the source operation's tooling, its single matching crew, or its skill pool. Post capacity, crew parallelism, tooling capacity, skill-pool size, and the compiled shift list must match the list the compiler stores. A closed attended calendar can still be stored as an empty kernel list; the domain notary still judges that closure. Kernel release, due date, priority, and external reference match the repair job. A job without its own due date receives the horizon end, and the order quantity stays at one piece. A post speed factor other than the compiler default, a per-post duration override, or a nonzero setup loss or energy term is rejected. Resource codes, capability, skills, resource type, and the state code match the source object. The kernel horizon matches the source horizon. The eligible-post list keeps the source order. The operation name, repair job, and skills stored on the kernel operation match that operation. The asset code and unit type on the kernel order match the repair job. The compiler segment id is not derived again. The predecessor inside a compiler segment is not derived again. A fixed duration is not a duration distribution. One `crew_id` is a crew code. The native CP-SAT model is not wired into `plan`.
+The only measurements on this page sit in the generated table in the Russian section. A bare number is not evidence. The CI badge is the latest workflow run. It does not replace that table. The machine-readable copy is [`docs/evidence-manifest.json`](docs/evidence-manifest.json). The operator log is written by `repairflow decide` and checked by `repairflow log verify`. `repairflow log witness` is an HMAC of the tip. The key stays outside the repository. It is not a release signature.
+
+The compiled kernel task must be the task the compiler stored. A mismatch is `INVALID_ID_MAP`. The Russian table above is the list: object sets, closed references, the operation, the order, resource capacity and shifts, setup cells, and the horizon. The setup row's own id is not a map key. A predecessor inside a compiler segment, an earliest start, and a segment id are not derived again. A closed attended calendar can still be stored as an empty kernel list. The domain notary still judges that closure. A fixed duration is not a duration distribution. One `crew_id` is a crew code. The native CP-SAT model is not wired into `plan`.
