@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Rewrite `README.md`, `APPLICATION.md`, `CONTRIBUTING.md`, `SECURITY.md`,
+  `LICENSES.md`, and the `docs/` pages in clear Russian prose, removing
+  session-diary fragments and English draft notes from `mutation-survivors.md`,
+  `atc-baseline-contract.md`, and `red-team-remediation.md`.
 - The public pages say the kernel-image check once, in the README table.
   The same list is no longer repeated on every page.
 - The evidence manifest attests main `09562da` / push run `39115444866`,

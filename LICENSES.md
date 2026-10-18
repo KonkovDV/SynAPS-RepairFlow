@@ -1,12 +1,13 @@
-# Licenses of the runtime pins
+# Лицензии прямых зависимостей
 
-RepairFlow itself is MIT. The solver stack is pulled in by the pinned SynAPS commit.
+Код репозитория `SynAPS-RepairFlow` распространяется по лицензии [MIT](LICENSE). Прямые зависимости среды выполнения зафиксированы в `pyproject.toml` и `requirements-lock.txt`:
 
-| Component | Version pin | License |
+| Компонент | Зафиксированная версия / ревизия | Лицензия |
 | --- | --- | --- |
-| synaps-repairflow | 0.1.0 | MIT |
-| synaps | git `f939727cd9369fd9b36438bfac7198f0c39c6d3b` | MIT |
-| pydantic | `>=2.9` | MIT |
-| ortools | `==9.15.6755` | Apache-2.0 |
+| `synaps-repairflow` | `0.1.0` | MIT |
+| `synaps` | git `f939727cd9369fd9b36438bfac7198f0c39c6d3b` | MIT |
+| `pydantic` | `==2.13.5` | MIT |
+| `ortools` | `==9.15.6755` | Apache-2.0 |
+| `tzdata` | `==2026.3` | Apache-2.0 |
 
-OR-Tools is pinned because 9.12 had false `INFEASIBLE` reports. The kernel constraint `ortools>=9.10` is not left floating in this repository.
+Версия `ortools==9.15.6755` закреплена явно (вместо плавающего ограничения `>=9.10`), поскольку в промежуточной серии `9.12` встречались ложные ответы `INFEASIBLE` на допустимых моделях.

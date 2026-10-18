@@ -1,65 +1,45 @@
-# Локальная база ATC
+# Локальное списочное правило ATC
 
-## Статус
+## Назначение и роль в системе
 
-В репозитории есть локальный договор об упорядочении в духе ATC, модуль
-`repairflow.atc_baseline`. Это база для сравнения, и она нарочно отделена
-от закреплённого API SynAPS.
+Модуль `src/repairflow/atc_baseline.py` реализует детерминированное правило приоритетной диспетчеризации **Apparent Tardiness Cost (ATC)**. В RepairFlow оно служит воспроизводимой эвристической базой сравнения наряду с `FIFO`, `EDD` и `GREED` и остаётся полностью отделённым от внутреннего кода ядра SynAPS.
 
-Сейчас договор упорядочивает набор идентификаторов операций, который передал вызывающий.
-Планировщикские FIFO, EDD, GREED и маршрутизацию ядра он не заменяет и не расширяет.
-Встройка в планировщик — отдельная правка, и граница независимого нотариуса при ней сохраняется.
+Планировщик `repairflow.planner` использует `atc_order` при выборе готовых к постановке операций в режиме `--preset ATC` (а также в `repairflow benchmark --solvers ATC`). Любое расписание, построенное этим правилом, проходит полную проверку независимым нотариусом `repairflow.checker` и при отсутствии нарушений получает статус `verified` (`HEURISTIC_FEASIBLE`), но никогда не объявляется `optimal`.
 
-## Score
+## Формула оценки и разрешение равенств
 
-For operation `i`, the score is:
+Для каждой готовой операции `i` в момент времени `now` вычисляется вес:
 
 ```text
 ATC_i = (w_i / p_i) * exp(-max(d_i - now - p_i, 0) / (k * p_bar))
 ```
 
-where:
+где:
 
-- `w_i` is the RepairFlow `Job.priority`; larger values are more urgent,
-  matching the existing EDD baseline;
-- `p_i` is the operation duration in minutes;
-- `d_i` is the job `due_date`, or the planning-horizon end when no due date is
-  present;
-- `now` is supplied explicitly by the caller;
-- `p_bar` is the mean duration of the supplied operation set;
-- `k` is finite and strictly positive, with the reference default `k = 2.0`.
+- `w_i` — приоритет ремонтного заказа `max(1, Job.priority)` (чем больше число, тем выше срочность заказа, как и в правиле `EDD`);
+- `p_i` — базовая длительность операции `Operation.duration_min` в минутах;
+- `d_i` — желаемый срок завершения заказа `Job.due_date`, а если он не задан — конец горизонта планирования `planning_horizon.end`;
+- `now` — текущий момент модельного времени, передаваемый вызывающим кодом явно;
+- `p_bar` — средняя длительность операций в переданном наборе готовых работ;
+- `k` — положительный конечный коэффициент горизонта взгляда вперёд (по умолчанию `k = 2.0` в `ATCConfig`).
 
-Ties are deterministic: score descending, due date ascending, duration
-ascending, then operation ID ascending.
+При совпадении весов порядок выбирается строго детерминированно по кортежу:
+`(-score, due_date, duration_min, operation_id)`.
 
-## Explicit boundary
+## Граница ответственности модуля `atc_baseline.py`
 
-The module does **not**:
+Сам модуль `repairflow.atc_baseline` решает только задачу ранжирования переданного списка идентификаторов операций:
 
-- infer readiness or precedence feasibility;
-- assign work centres, crews, auxiliary resources, or lanes;
-- model setup, calendars, spares, or disruption repair;
-- call or extend SynAPS;
-- run the independent checker;
-- produce a schedule or a `verified` verdict;
-- claim `optimal`, `safe`, production, or customer performance.
+- не вычисляет готовность по предшественникам и не назначает посты, бригады, оснастку или полосы;
+- не моделирует переналадку, календари, запчасти или пересчёт при сбоях (эту работу выполняет доменный планировщик `planner.py`);
+- не вызывает ядро SynAPS и не подменяет независимый нотариус `checker.py`;
+- отвергает дублирующиеся или неизвестные идентификаторы операций, а также неположительные или бесконечные значения `k` и `average_processing_min`;
+- принимает момент `now` явно, исключая скрытую зависимость от системных часов.
 
-A caller must pass a ready set explicitly. Duplicate or unknown operation IDs
-are rejected. The explicit `now` value makes the result reproducible and
-prevents hidden wall-clock dependence.
+## Требования к отчётности при сравнении
 
-## Evidence requirements for future integration
+В каждом результате и строке замера (`benchmark.json`), полученной с использованием `ATC`, фиксируются:
 
-A planner-integrated ATC baseline must record at least:
-
-1. the exact ATC formula and `k`;
-2. the explicit ready-set construction and precedence evidence;
-3. the `now` convention and timezone/instant representation;
-4. seed, input hash, configuration hash, result hash, and SynAPS pin;
-5. independent checker output and the same unified metrics used by FIFO, EDD,
-   GREED, and exact paths;
-6. a bounded statement that ATC is a heuristic baseline, not an optimality
-   proof.
-
-Until those fields are bound to a planner result, the module remains an
-ordering reference rather than a scheduling solver.
+1. зерно генератора, `input_hash`, `config_hash`, `schedule_hash`, `result_hash` и закреплённый коммит SynAPS;
+2. статус решателя `HEURISTIC_FEASIBLE` и вердикт независимого нотариуса;
+3. те же пересчитанные от начала горизонта показатели (`makespan_minutes`, `total_tardiness_minutes`, `total_setup_minutes`, `coverage`), что и для `FIFO`, `EDD`, `GREED` и `CPSAT`.

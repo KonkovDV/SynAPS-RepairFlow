@@ -1,51 +1,54 @@
-# Карта документов
+# Карта документации
 
-Сначала договор о том, что программа обещает. Потом, чем это подтверждено. Потом, где проходит граница пилота.
+Документация репозитория разделена на четыре части: устройство модели и проверочного контура, воспроизводимые доказательства и безопасность, материалы для демонстрации и возможного теневого пилота, а также правила сопровождения текста.
 
-Значок CI на главной странице — последний прогон workflow. Аттестованная ревизия — таблица в [`../README.md`](../README.md). Её собирает `tools/attest.py`. Значок эту таблицу не заменяет.
+Значок CI на главной странице показывает состояние последнего запуска workflow, а сведения об аттестованной ревизии `main` собираются скриптом `tools/attest.py` в таблице раздела «Проверенная ревизия и замеры» файла [`../README.md`](../README.md).
 
 ## С чего начать
 
-1. [`../README.md`](../README.md) — для кого эта программа, команды, какие слова в ответе честные.
-2. [`evidence-protocol.md`](evidence-protocol.md) — что считается доказательством.
-3. [`limitations.md`](limitations.md) — чего программа не обещает.
-4. [`runbook.md`](runbook.md) — лабораторный образ из склада колёс.
-5. [`red-team-remediation.md`](red-team-remediation.md) — что нотариус закрывает и что остаётся снаружи.
-6. [`traceability-matrix.md`](traceability-matrix.md) — требование, статус и где лежит подтверждение.
+1. [`../README.md`](../README.md) — назначение системы, возможности, команды CLI, устройство независимой проверки и таблица аттестованной ревизии.
+2. [`limitations.md`](limitations.md) — исчерпывающий список границ и допущений текущей сборки (имеет приоритет при любых разночтениях).
+3. [`evidence-protocol.md`](evidence-protocol.md) — четыре ярлыка каждого результата и лестница верификации от поминутного оракула до сбоев.
+4. [`red-team-remediation.md`](red-team-remediation.md) — результаты проверки контура на прочность: поминутный оракул, кампания порчи планов, защита импорта CSV, журнала и цепочки поставки.
+5. [`traceability-matrix.md`](traceability-matrix.md) — матрица прослеживаемости требований к коду, тестам и архитектурным решениям.
+6. [`runbook.md`](runbook.md) — сборка и запуск автономного контейнера без сети из локального склада колёс.
 
-## Для инженерного разбора
+## Архитектура, доменная модель и замеры
 
-- [`domain-assumptions.md`](domain-assumptions.md) — допущения модели. Сверка собранной задачи ядра — таблица в [`../README.md`](../README.md).
-- [`core-compat.md`](core-compat.md) — закреплённый коммит SynAPS и вызовы, которыми пользуется пакет.
-- [`SYNAPS_REPAIRFLOW_MVP_SKELETON.md`](SYNAPS_REPAIRFLOW_MVP_SKELETON.md) — устройство и план MVP.
-- [`adr/0002-dag-over-chain-kernel.md`](adr/0002-dag-over-chain-kernel.md) — сходящаяся карта собирается в цепочки для ядра.
-- [`adr/0004-exchange-pool-ledger.md`](adr/0004-exchange-pool-ledger.md) — обменный фонд считается книгой остатков.
-- [`adr/0005-inspection-rewrites-the-card.md`](adr/0005-inspection-rewrites-the-card.md) — дефектовка замораживает уже выданные слоты.
-- [`adr/0006-native-model-stays-unwired.md`](adr/0006-native-model-stays-unwired.md) — нативная модель разрешена и к `plan` не подключена.
-- [`literature-2026.md`](literature-2026.md) — обзор работ и что ещё нужно для статьи.
-- [`benchmark-protocol.md`](benchmark-protocol.md) — как повторять синтетическое сравнение.
-- [`atc-baseline-contract.md`](atc-baseline-contract.md) — локальное правило ATC и где оно кончается.
-- [`sbom-and-provenance.md`](sbom-and-provenance.md) — что покрывает опись состава и чего в ней нет.
-- [`threat-model.md`](threat-model.md) — граница автономной установки.
-- [`data-mapping-1c-toir.md`](data-mapping-1c-toir.md) — карта полей, не интеграция.
+- [`domain-assumptions.md`](domain-assumptions.md) — правила предметной области: графы работ, полосы ресурсов, переналадка, смены, запчасти и обменный фонд.
+- [`core-compat.md`](core-compat.md) — закреплённый коммит ядра SynAPS, используемые интерфейсы, предел размера для CP-SAT и передача сменных календарей.
+- [`SYNAPS_REPAIRFLOW_MVP_SKELETON.md`](SYNAPS_REPAIRFLOW_MVP_SKELETON.md) и [`MVP.md`](MVP.md) — проектная спецификация и точка входа демонстрационного контура.
+- [`adr/0002-dag-over-chain-kernel.md`](adr/0002-dag-over-chain-kernel.md) — компиляция сходящихся технологических карт в цепочки для ядра.
+- [`adr/0003-release-boundary.md`](adr/0003-release-boundary.md) — граница выпуска: работа в теневом режиме без команд внешним системам.
+- [`adr/0004-exchange-pool-ledger.md`](adr/0004-exchange-pool-ledger.md) — расчёт обменного фонда агрегатов как книги остатков по времени.
+- [`adr/0005-inspection-rewrites-the-card.md`](adr/0005-inspection-rewrites-the-card.md) — добавление вскрытых при дефектовке работ при заморозке ранее выданных слотов.
+- [`adr/0006-native-model-stays-unwired.md`](adr/0006-native-model-stays-unwired.md) — условие подключения собственной модели CP-SAT только после сравнительных замеров.
+- [`literature-2026.md`](literature-2026.md) — обзор научных публикаций и открытых планировщиков ТОиР.
+- [`benchmark-protocol.md`](benchmark-protocol.md) и [`evidence-table.md`](evidence-table.md) — методика проведения синтетических замеров и формат сводной таблицы решателей.
+- [`atc-baseline-contract.md`](atc-baseline-contract.md) — устройство локального эвристического правила диспетчеризации ATC.
+- [`mutation-survivors.md`](mutation-survivors.md) — результаты мутационного тестирования четырёх модулей нотариуса и разбор эквивалентных мутантов.
+- [`sbom-and-provenance.md`](sbom-and-provenance.md) — опись компонентов CycloneDX, замок зависимостей и устройство отпечатков `schedule_hash` и `result_hash`.
+- [`threat-model.md`](threat-model.md) — модель угроз автономной установки и контроль отсутствия персональных данных.
+- [`data-mapping-1c-toir.md`](data-mapping-1c-toir.md) — соответствие сущностей учётных систем ТОиР схеме `repairflow.problem.v1` при файловой выгрузке.
 
-## Для пилота и жюри
+## Демонстрация, заявка и подготовка к теневому пилоту
 
-- [`../APPLICATION.md`](../APPLICATION.md) — текст заявки.
-- [`jury-demo.md`](jury-demo.md) — что говорить на показе. Сводка чисел — [`submission-facts.md`](submission-facts.md). Папку этих страниц собирает `python tools/pack_submission.py`.
-- [`pilot-protocol.md`](pilot-protocol.md) — теневой протокол на 90 дней.
-- [`pilot-kpi-template.md`](pilot-kpi-template.md) — определения показателей, без придуманных результатов.
-- [`operator-decision-log.md`](operator-decision-log.md) — запись решения человека. Писатель — `repairflow decide`.
-- [`osint-and-pilot-gates.md`](osint-and-pilot-gates.md) — открытые источники и что нужно для входа.
-- [`release-checklist.md`](release-checklist.md) — лабораторный выпуск и подача на пилот — разные ворота.
-- [`adr/0003-release-boundary.md`](adr/0003-release-boundary.md) — теневой план не является командой системе управления.
+- [`../APPLICATION.md`](../APPLICATION.md) — карточка проекта и формулировка проверяемой гипотезы для пилота.
+- [`jury-demo.md`](jury-demo.md) — пошаговый сценарий демонстрации `repairflow demo` и сборка пакета подачи (`python tools/pack_submission.py`).
+- [`submission-facts.md`](submission-facts.md) — автоматически формируемая сводка показателей из манифеста доказательств и кампаний проверки.
+- [`murder-board.md`](murder-board.md) — прямые ответы на критические вопросы о зрелости, точности, безопасности и границах модели.
+- [`pilot-protocol.md`](pilot-protocol.md) и [`pilot-kpi-template.md`](pilot-kpi-template.md) — регламент теневого пилота на одном ремонтном участке и шаблон целевых показателей.
+- [`data-request.md`](data-request.md) — перечень обезличенных данных, необходимых для запуска теневого сравнения.
+- [`operator-decision-log.md`](operator-decision-log.md) — формат и проверка журнала решений оператора (`repairflow decide`, `repairflow log`).
+- [`osint-and-pilot-gates.md`](osint-and-pilot-gates.md) — обзор открытых требований площадок пилотирования и смежных отраслевых систем.
+- [`release-checklist.md`](release-checklist.md) — контрольный список перед лабораторным выпуском и перед подачей на пилот.
 
-## Как устроена работа с текстом
+## Сопровождение репозитория и контроль формулировок
 
-- [`documentation-audit.md`](documentation-audit.md) — сверка публичных страниц с командами. Соседние репозитории дали устройство страницы, не текст.
-- [`AI_USE.md`](AI_USE.md) — где в разработке мог помочь автомат и почему его вывод не доказательство.
-- [`../SECURITY.md`](../SECURITY.md) — куда сообщать об уязвимости.
-- [`BANNED_CLAIMS.txt`](BANNED_CLAIMS.txt) — фразы, которых не должно быть в публичном заявлении.
-- [`../LICENSES.md`](../LICENSES.md) — лицензии прямых зависимостей.
+- [`documentation-audit.md`](documentation-audit.md) — правила сверки документации с кодом, CLI и автоматическими тестами.
+- [`AI_USE.md`](AI_USE.md) — граница использования вспомогательных инструментов при разработке и независимость продуктового вердикта.
+- [`GH_AGENT_BUS.md`](GH_AGENT_BUS.md) — протокол координации задач разработки через Issues и Pull Requests (`tools/agent_bus.py`).
+- [`BANNED_CLAIMS.txt`](BANNED_CLAIMS.txt) — перечень запрещённых неподтверждённых формулировок, контролируемый тестом `tests/test_banned_claims.py`.
+- [`../CONTRIBUTING.md`](../CONTRIBUTING.md), [`../SECURITY.md`](../SECURITY.md), [`../LICENSES.md`](../LICENSES.md) — правила внесения изменений, политика безопасности и лицензии зависимостей.
 
-Утверждение можно публиковать, когда на месте источник, ревизия, вход, настройка решателя, вывод нотариуса и знаменатель. Иначе это допущение, гипотеза или пункт плана.
+Количественное утверждение публикуется в документации только тогда, когда указаны его источник, ревизия кода, входной набор, конфигурация решателя, вердикт независимого нотариуса и размер выборки.

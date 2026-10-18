@@ -1,15 +1,15 @@
-# Security Policy
+# Политика безопасности (Security Policy)
 
-## Supported versions
+## Поддерживаемые версии
 
-| Version | Supported |
+| Версия | Статус поддержки |
 | --- | --- |
-| 0.1.0 | best effort |
+| `0.1.x` | Актуальная лабораторная ветка (`main`) |
 
-## Reporting a vulnerability
+## Сообщение об уязвимости
 
-Use GitHub Security Advisories on this repository.
+Если вы обнаружили ошибку безопасности или обход проверочного контура нотариуса, пожалуйста, сообщите об этом через приватный механизм **GitHub Security Advisories** в этом репозитории, не публикуя эксплойт в открытых Issues.
 
-This tree does not contain customer operational data. Fixtures are labelled
-`data_provenance=synthetic`. Do not file live depot dumps, credentials, or
-named enterprise extracts as issues or pull requests.
+## Правила работы с данными
+
+Репозиторий предназначен для разработки и проверки алгоритмов на синтетических примерах (`data_provenance=synthetic`). Не прикладывайте к задачам (Issues), запросам на слияние (Pull Requests) или коммитам необработанные выгрузки действующих депо и ремонтных заводов, персональные данные сотрудников (ФИО, табельные номера, телефоны, СНИЛС), секретные соли обезличивания или учётные данные внешних систем.
