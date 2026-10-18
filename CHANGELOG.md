@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Write the audit and metric formulas as plain expressions. The old
+  inline LaTeX did not survive a normal reading of the Markdown.
 - Rewrite `README.md`, `APPLICATION.md`, `CONTRIBUTING.md`, `SECURITY.md`,
   `LICENSES.md`, and the `docs/` pages in clear Russian prose, removing
   session-diary fragments and English draft notes from `mutation-survivors.md`,

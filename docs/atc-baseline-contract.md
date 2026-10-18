@@ -11,7 +11,8 @@
 Для каждой готовой операции `i` в момент времени `now` вычисляется вес:
 
 ```text
-ATC_i = (w_i / p_i) * exp(-max(d_i - now - p_i, 0) / (k * p_bar))
+slack_i = max(d_i - now - p_i, 0)
+ATC_i   = (w_i / p_i) * exp(-slack_i / (k * p_bar))
 ```
 
 где:
