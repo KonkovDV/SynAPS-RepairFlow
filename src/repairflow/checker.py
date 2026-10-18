@@ -321,8 +321,8 @@ def _kernel_image_matches(
             return False
         if operation.state_id != id_map[f"state:{domain.setup_state}"]:
             return False
-        eligible = {id_map[f"wc:{center_id}"] for center_id in domain.eligible_work_center_ids}
-        if set(operation.eligible_wc_ids) != eligible or len(operation.eligible_wc_ids) != len(eligible):
+        eligible = [id_map[f"wc:{center_id}"] for center_id in domain.eligible_work_center_ids]
+        if list(operation.eligible_wc_ids) != eligible:
             return False
         order_kind, order_key = reversed_map[operation.order_id]
         if order_kind != "job":
@@ -331,12 +331,15 @@ def _kernel_image_matches(
             return False
         if operation.machine_duration_overrides:
             return False
+        if not _operation_attribute_image(operation, domain):
+            return False
     return (
         _setup_image_matches(problem, schedule_problem, id_map)
         and _aux_image_matches(problem, schedule_problem, id_map)
         and _resource_image_matches(problem, schedule_problem, id_map)
         and _order_image_matches(problem, schedule_problem, id_map)
         and _state_image_matches(schedule_problem, id_map)
+        and _horizon_image_matches(problem, schedule_problem)
     )
 
 
@@ -556,7 +559,48 @@ def _order_image_matches(
             return False
         if order.quantity != 1 or order.unit != "pcs":
             return False
+        if not _order_attribute_image(order, job):
+            return False
     return True
+
+
+def _operation_attribute_image(operation: Any, domain: Operation) -> bool:
+    """Copied operation labels. The compiler segment id is not derived again."""
+
+    attrs = operation.domain_attributes
+    if set(attrs) != {"repairflow_id", "job_id", "segment_id", "required_skills"}:
+        return False
+    segment_id = attrs["segment_id"]
+    if not isinstance(segment_id, str) or not segment_id:
+        return False
+    return bool(
+        attrs["repairflow_id"] == domain.id
+        and attrs["job_id"] == domain.job_id
+        and attrs["required_skills"] == list(domain.required_skills)
+    )
+
+
+def _order_attribute_image(order: Any, job: Job) -> bool:
+    """Copied order labels. The compiler segment id is not derived again."""
+
+    attrs = order.domain_attributes
+    if set(attrs) != {"repairflow_id", "segment_id", "asset_code", "unit_type"}:
+        return False
+    segment_id = attrs["segment_id"]
+    if not isinstance(segment_id, str) or not segment_id:
+        return False
+    return bool(
+        attrs["repairflow_id"] == job.id
+        and attrs["asset_code"] == job.asset_code
+        and attrs["unit_type"] == job.unit_type
+    )
+
+
+def _horizon_image_matches(problem: RepairFlowProblem, schedule_problem: ScheduleProblem) -> bool:
+    return (
+        schedule_problem.planning_horizon_start == problem.planning_horizon.start
+        and schedule_problem.planning_horizon_end == problem.planning_horizon.end
+    )
 
 
 def _job_for_order_key(jobs: dict[str, Job], order_key: str) -> Job | None:
