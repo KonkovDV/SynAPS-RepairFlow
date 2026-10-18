@@ -25,7 +25,7 @@
 - [`adr/0006-native-model-stays-unwired.md`](adr/0006-native-model-stays-unwired.md) — условие подключения собственной модели CP-SAT только после сравнительных замеров.
 - [`literature-2026.md`](literature-2026.md) — обзор научных публикаций и открытых планировщиков ТОиР.
 - [`benchmark-protocol.md`](benchmark-protocol.md) и [`evidence-table.md`](evidence-table.md) — методика проведения синтетических замеров и формат сводной таблицы решателей.
-- [`atc-baseline-contract.md`](atc-baseline-contract.md) — устройство локального эвристического правила диспетчеризации ATC.
+- [`atc-baseline-contract.md`](atc-baseline-contract.md) — договор упорядочения готового списка; планировщик этот модуль не вызывает.
 - [`mutation-survivors.md`](mutation-survivors.md) — результаты мутационного тестирования четырёх модулей нотариуса и разбор эквивалентных мутантов.
 - [`sbom-and-provenance.md`](sbom-and-provenance.md) — опись компонентов CycloneDX, замок зависимостей и устройство отпечатков `schedule_hash` и `result_hash`.
 - [`threat-model.md`](threat-model.md) — модель угроз автономной установки и контроль отсутствия персональных данных.
