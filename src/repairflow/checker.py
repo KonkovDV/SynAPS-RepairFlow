@@ -11,6 +11,7 @@ from synaps.model import Assignment, ScheduleProblem
 
 from repairflow.capacity import Occupancy, excess_arrivals
 from repairflow.checker_primitives import lookup_setup_minutes, reverse_ids
+from repairflow.kernel_compat import kernel_calendar_windows
 from repairflow.lane_setup import lane_setup_evidence
 from repairflow.ledger import exchange_pool_violations, spare_is_rotable
 from repairflow.model import (
@@ -327,8 +328,10 @@ def _kernel_image_matches(
             return False
         if order_key != domain.job_id and not order_key.startswith(f"{domain.job_id}:"):
             return False
-    return _setup_image_matches(problem, schedule_problem, id_map) and _aux_image_matches(
-        problem, schedule_problem, id_map
+    return (
+        _setup_image_matches(problem, schedule_problem, id_map)
+        and _aux_image_matches(problem, schedule_problem, id_map)
+        and _resource_image_matches(problem, schedule_problem, id_map)
     )
 
 
@@ -421,6 +424,91 @@ def _personnel_resource(
         return None
     pool_key = "|".join(sorted(operation.required_skills))
     return id_map.get(f"skillpool:{pool_key}", False)
+
+
+def _resource_image_matches(
+    problem: RepairFlowProblem,
+    schedule_problem: ScheduleProblem,
+    id_map: dict[str, UUID],
+) -> bool:
+    reversed_map = reverse_ids(id_map)
+    centers = {center.id: center for center in problem.work_centers}
+    crews = {crew.id: crew for crew in problem.crews}
+    auxiliaries = {aux.id: aux for aux in problem.aux_resources}
+    for center in schedule_problem.work_centers:
+        kind, ident = reversed_map[center.id]
+        domain = centers.get(ident)
+        if kind != "wc" or domain is None or center.max_parallel != domain.max_parallel:
+            return False
+        actual = [(row.start, row.end) for row in center.calendar]
+        if actual != _post_calendar(problem, domain.calendar_id):
+            return False
+    for resource in schedule_problem.auxiliary_resources:
+        kind, ident = reversed_map[resource.id]
+        actual = [(row.start, row.end) for row in resource.calendar]
+        if kind == "crew":
+            crew = crews.get(ident)
+            if crew is None or resource.pool_size != crew.max_parallel:
+                return False
+            if actual != _shift_calendar(problem, crew.calendar_id, crew.domain_attributes):
+                return False
+        elif kind == "aux":
+            aux = auxiliaries.get(ident)
+            if aux is None or resource.pool_size != aux.capacity:
+                return False
+            if actual != _shift_calendar(problem, aux.calendar_id, aux.domain_attributes):
+                return False
+        elif kind == "skillpool":
+            if resource.pool_size != _skill_pool_size(problem, ident):
+                return False
+            if actual != _skill_pool_calendar(problem, ident):
+                return False
+        else:
+            return False
+    return True
+
+
+def _post_calendar(problem: RepairFlowProblem, calendar_id: str | None) -> list[tuple[datetime, datetime]]:
+    calendar = next((row for row in problem.calendars if row.id == (calendar_id or "")), None)
+    if calendar is None:
+        return []
+    return [(window.start, window.end) for window in calendar.windows]
+
+
+def _shift_calendar(
+    problem: RepairFlowProblem,
+    calendar_id: str | None,
+    attributes: dict[str, Any],
+) -> list[tuple[datetime, datetime]]:
+    windows = kernel_calendar_windows(problem, calendar_id, attributes)
+    if not windows:
+        return []
+    return list(windows)
+
+
+def _skill_crews(problem: RepairFlowProblem, skill_key: str) -> list[str]:
+    required = set(skill_key.split("|")) if skill_key else set()
+    if not required:
+        return [crew.id for crew in problem.crews]
+    return [crew.id for crew in problem.crews if required <= set(crew.skills)]
+
+
+def _skill_pool_size(problem: RepairFlowProblem, skill_key: str) -> int:
+    return max(1, len(_skill_crews(problem, skill_key)))
+
+
+def _skill_pool_calendar(problem: RepairFlowProblem, skill_key: str) -> list[tuple[datetime, datetime]]:
+    crews = {crew.id: crew for crew in problem.crews}
+    encoded: list[tuple[tuple[datetime, datetime], ...]] = []
+    for crew_id in _skill_crews(problem, skill_key):
+        crew = crews[crew_id]
+        windows = kernel_calendar_windows(problem, crew.calendar_id, crew.domain_attributes)
+        if windows is None:
+            return []
+        encoded.append(tuple(windows))
+    if len(set(encoded)) != 1:
+        return []
+    return list(encoded[0])
 
 
 def _mapped_ids(id_map: dict[str, UUID], prefix: str) -> set[UUID]:

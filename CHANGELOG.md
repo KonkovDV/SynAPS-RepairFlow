@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- The notary rejects a compiled work center or auxiliary resource whose
+  capacity or shift list differs from the source resource. A closed attended
+  calendar can still be stored as an empty kernel list; the domain notary
+  still reports that closure.
 - The evidence manifest attests main `648ee32` / push run `39106164306`,
   including `test-slow`. This commit does not attest itself.
 - The notary rejects a compiled auxiliary requirement that is not the source
