@@ -21,6 +21,6 @@
   - `FIFO` — наивная укладка без учёта сопряжённых ограничений (демонстрирует, что более короткий номинальный срок при наличии жёстких нарушений непригоден для цеха);
   - `GREED` — основной конструктивный доменный планировщик, учитывающий посты, полосы, переналадку, допуски, календари и запчасти;
   - `EDD` — допустимая списочная база по раннему плановому сроку и приоритету (`--solvers FIFO GREED EDD`);
-  - `ATC` — локальное правило приоритетной диспетчеризации RepairFlow (`(priority / duration) * exp(-max(slack, 0) / (k * mean_duration))` при `k = 2.0`, см. [`atc-baseline-contract.md`](atc-baseline-contract.md));
+  - `ATC` — локальное правило приоритетной диспетчеризации RepairFlow при `k = 2.0`. Полная запись и разрешение равенств — в [`atc-baseline-contract.md`](atc-baseline-contract.md).
   - `CPSAT-*` — точный решатель ядра, получающий расписание доменного `GREED` в качестве начального приближения (`warm_start_assignments`).
-- **Единый пересчёт целевых показателей:** `makespan_minutes`, `total_tardiness_minutes`, `total_setup_minutes` и `coverage` в поле `objective` заново вычисляются от начала горизонта планирования по единым формулам (`metrics.py`), а внутренняя оценка самого решателя сохраняется отдельно в `metadata.solver_objective`.
+- **Единый пересчёт целевых показателей:** `makespan_minutes`, `total_tardiness_minutes`, `total_setup_minutes` и `coverage` в поле `objective` заново вычисляются от начала горизонта планирования. Запись формул — в [`evidence-table.md`](evidence-table.md), код — `metrics.py`. Внутренняя оценка самого решателя сохраняется отдельно в `metadata.solver_objective`.
