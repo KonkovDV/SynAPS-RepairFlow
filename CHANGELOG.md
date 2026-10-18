@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- The public pages say the kernel-image check once, in the README table.
+  The same list is no longer repeated on every page.
 - The evidence manifest attests main `09562da` / push run `39115444866`,
   including `test-slow`. This commit does not attest itself.
 - The notary rejects a compiled horizon, eligible-post order, operation label,
