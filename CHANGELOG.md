@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- The notary rejects a compiled order, post speed, duration override, setup
+  loss, or resource code that the compiler does not store for the source task.
 - The evidence manifest attests main `99d8de5` / push run `39110546847`,
   including `test-slow`. This commit does not attest itself.
 - The notary rejects a compiled work center or auxiliary resource whose

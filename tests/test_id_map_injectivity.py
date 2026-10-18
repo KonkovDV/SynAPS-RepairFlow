@@ -226,6 +226,59 @@ def test_a_dropped_compiled_shift_is_rejected() -> None:
     _assert_image_mismatch(mutate)
 
 
+def test_a_changed_order_priority_is_rejected() -> None:
+    def mutate(schedule):
+        rows = list(schedule.orders)
+        assert rows
+        rows[0] = rows[0].model_copy(update={"priority": rows[0].priority + 1})
+        return schedule.model_copy(update={"orders": rows})
+
+    _assert_image_mismatch(mutate)
+
+
+def test_a_post_speed_factor_is_rejected() -> None:
+    def mutate(schedule):
+        rows = list(schedule.work_centers)
+        assert rows
+        rows[0] = rows[0].model_copy(update={"speed_factor": 2})
+        return schedule.model_copy(update={"work_centers": rows})
+
+    _assert_image_mismatch(mutate)
+
+
+def test_a_machine_duration_override_is_rejected() -> None:
+    def mutate(schedule):
+        rows = list(schedule.operations)
+        operation = rows[0]
+        assert operation.eligible_wc_ids
+        rows[0] = operation.model_copy(
+            update={"machine_duration_overrides": {operation.eligible_wc_ids[0]: operation.base_duration_min}}
+        )
+        return schedule.model_copy(update={"operations": rows})
+
+    _assert_image_mismatch(mutate)
+
+
+def test_a_setup_energy_term_is_rejected() -> None:
+    def mutate(schedule):
+        rows = list(schedule.setup_matrix)
+        assert rows
+        rows[0] = rows[0].model_copy(update={"energy_kwh": 1})
+        return schedule.model_copy(update={"setup_matrix": rows})
+
+    _assert_image_mismatch(mutate)
+
+
+def test_a_changed_state_code_is_rejected() -> None:
+    def mutate(schedule):
+        rows = list(schedule.states)
+        assert rows
+        rows[0] = rows[0].model_copy(update={"code": f"{rows[0].code}-other"})
+        return schedule.model_copy(update={"states": rows})
+
+    _assert_image_mismatch(mutate)
+
+
 def _assert_image_mismatch(mutate) -> None:
     problem = synthesize("tiny", seed=1)
     schedule, id_map = to_schedule_problem(problem)
