@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "synaps-repairflow"
 version = "0.1.0"
-description = "Auditable repair-maintenance planning contour on SynAPS (MVP)"
+description = "Workshop repair schedules with a notary that did not search for the slots"
 readme = "README.md"
 requires-python = ">=3.12"
 license = "MIT"
