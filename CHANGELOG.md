@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- The README opens the way the sibling pages do: centered marks,
+  a short "where to look" path, the place in the chain, and a
+  repository map.
 - The README header centers the wordmark. The full brand sheet stays in
   `docs/brand/repairflow-brand.jpg`.
 - The README, the application card, and the repository description
