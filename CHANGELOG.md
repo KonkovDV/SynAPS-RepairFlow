@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- The README, the application card, and the repository description
+  lead with the shop and the notary. The boundary list stays in
+  `docs/limitations.md` and in the attestation table.
 - The default CI benchmark is FIFO against GREED on six preset/seed
   pairs. EDD, ATC, and CP-SAT stay opt-in, and that matrix is not a paper.
   A closed attended calendar is refused before the kernel solve.
