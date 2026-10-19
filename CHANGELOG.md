@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- The README header centers the wordmark. The full brand sheet stays in
+  `docs/brand/repairflow-brand.jpg`.
 - The README, the application card, and the repository description
   lead with the shop and the notary. The boundary list stays in
   `docs/limitations.md` and in the attestation table.
