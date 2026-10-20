@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- A second fact check. `suggested_relaxation` is absent for the reason
+  codes that have no hint. The plan's optimal rule matches the one-pass
+  check, and the README digit gate is stricter than a provenance note.
 - Fact check of the documentation series. `repairflow check` prints the
   English violation message; the Russian hint stays in
   `suggested_relaxation`. The eight-hour window is not applied by `demo`.
