@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+- The README command table lists every `repairflow` command and matches
+  the parser. `disrupt` frees named operations; the five typed events run
+  through `replan_disruption`. `decide` has no manual-fallback flag;
+  `tools/append_decision.py` writes `manual_fallback`. The verdict table
+  names `error`, the reason table names every code, and the CI table says
+  when each job runs.
+- `tests/test_doc_links.py` keeps relative links and anchors alive and holds
+  the README command and reason tables to the code. It found a broken link
+  in `docs/red-team-remediation.md`.
+- `docs/jury-demo.md` separates the one-operation replan from the post-down
+  scenario. The documentation map is grouped by what the reader came to do.
+- `SECURITY.md` names what counts as a vulnerability and where to report it
+  privately. `CODE_OF_CONDUCT.md`, a pull request template, and a bug report
+  template are added. The pages no longer say a native CP-SAT model exists:
+  ADR-0006 names the measurement it needs before it is wired.
 - The README opens the way the sibling pages do: centered marks,
   a short "where to look" path, the place in the chain, and a
   repository map.
