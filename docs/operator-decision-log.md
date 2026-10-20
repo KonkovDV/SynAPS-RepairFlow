@@ -66,6 +66,8 @@ python tools/append_decision.py \
   --decision accepted
 ```
 
+У `repairflow decide` флага ручного отката нет. Решение `manual_fallback` пишет этот скрипт: `--decision manual_fallback` с обязательной причиной `--reason` и, если есть, ссылкой на возврат к штатному графику `--rollback-reference`.
+
 Программный вызов из Python:
 
 ```python

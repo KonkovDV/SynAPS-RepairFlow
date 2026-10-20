@@ -42,7 +42,8 @@
 | Журнал решений оператора с хеш-цепочкой и внешним HMAC-свидетелем | implemented | `repairflow decide`, `repairflow log verify`, `repairflow log witness`, `tests/test_decision_log.py` |
 | Минимальный по удалению свидетель конфликтующих операций | implemented | `src/repairflow/explanations.py` (для одного доменного кода отказа; не является CP-MUS/MCS) |
 | Автоматический контроль запрещённых фраз и генерируемых сводок | implemented | `tests/test_banned_claims.py`, `tools/attest.py`, `tools/render_submission_facts.py`, `tools/pack_submission.py` |
-| Собственная нативная модель CP-SAT | documented | [`adr/0006-native-model-stays-unwired.md`](adr/0006-native-model-stays-unwired.md): к `plan` не подключена до завершения замеров |
+| Живые ссылки и таблицы README в согласии с кодом | implemented | `tests/test_doc_links.py`: относительные ссылки и якоря, команды против парсера, каждый код отказа в таблице |
+| Собственная нативная модель CP-SAT | documented | В коде её нет. [`adr/0006-native-model-stays-unwired.md`](adr/0006-native-model-stays-unwired.md) называет замер, без которого её к `plan` не подключают |
 | Работа в теневом режиме без сети и без записи в EAM/ERP | documented | [`threat-model.md`](threat-model.md), [`adr/0003-release-boundary.md`](adr/0003-release-boundary.md), [`pilot-protocol.md`](pilot-protocol.md) |
 | Вероятностное распределение длительности ремонта | documented | Длительность задаётся числом минут; `DURATION_OVERRUN` проверяет чувствительность к конкретному удлинению |
 | Вывод минимальных несовместных подмножеств ограничений (MUS/MCS) | blocked | Назван как следующий исследовательский шаг в [`literature-2026.md`](literature-2026.md) |

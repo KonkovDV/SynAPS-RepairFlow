@@ -1,24 +1,46 @@
-# Руководство по внесению изменений (Contributing)
+# Как вносить изменения
 
-## Базовые инварианты репозитория
+## Перед запросом на слияние
 
-- **Закрепление ядра SynAPS.** Зависимость от ядра задаётся только полным 40-символьным SHA коммита в `pyproject.toml`, `requirements-lock.txt` и `src/repairflow/versions.py`. Указание плавающей ветки `main` или копирование каталога `synaps/` внутрь репозитория запрещены.
-- **Независимость нотариуса.** Модуль `src/repairflow/checker.py` не должен импортировать `repairflow.adapter`, `repairflow.planner` или `synaps.solvers`. Проверки нотариуса не ослабляются ради прохождения кандидатных планов, а тестовый оракул (`tests/oracle_minutes.py`) не подгоняется под нотариус.
-- **Точность формулировок.** В публичных документах (`README.md`, `APPLICATION.md`, `docs/**/*.md`) запрещены неподтверждённые заявления из `docs/BANNED_CLAIMS.txt`, а на главной странице `README.md` числовые показатели размещаются только внутри генерируемой таблицы доказательств (`tools/attest.py`). Эвристические методы никогда не объявляются `optimal`.
+Те же проверки, что в CI:
 
-## Порядок обновления пина ядра SynAPS
+```bash
+python tools/verify_schema.py
+python tools/export_schemas.py
+python -m ruff format --check src tests tools
+python -m ruff check src tests tools
+python -m mypy --strict src/repairflow
+python -m pytest -q -m "not slow"
+```
 
-Перед обновлением коммита `SYNAPS_COMMIT` обязательно выполните:
+Медленный набор (`python -m pytest -q -m slow`) на запросе включает метка `slow`. Её ставят, когда трогают нотариус, планировщик, компилятор графа, привязку к ядру или кампании порчи.
 
-1. обновление хеша в `pyproject.toml`, `requirements-lock.txt` и `src/repairflow/versions.py`;
-2. проверку `python tools/verify_lock.py` и `python tools/verify_schema.py`;
-3. прогон `pytest tests/test_pin_regression.py` и полного набора быстрых и медленных тестов;
-4. пересборку демонстрационного стенда `repairflow demo` и проверочных артефактов.
+## Что держит репозиторий
 
-## Оформление запроса на слияние (Pull Request)
+- **Пин ядра.** SynAPS подключается только полным SHA из 40 символов — в `pyproject.toml`, `requirements-lock.txt` и `src/repairflow/versions.py`. Ветку `main` ядра не указывают, каталог `synaps/` в дерево не копируют.
+- **Нотариус отдельно.** `src/repairflow/checker.py` не импортирует `repairflow.adapter`, `repairflow.planner` и `synaps.solvers`. Проверку не ослабляют, чтобы план прошёл. Оракул `tests/oracle_minutes.py` под нотариус не подгоняют.
+- **Слово `optimal`.** Только чистый `OPTIMAL` CP-SAT на исходной цепочке за один проход компилятора. Эвристика его не получает.
 
-Все изменения вносятся через Pull Request в ветку `main`. В описании запроса укажите:
+## Тексты
 
-- затрагиваемый синтетический пресет или сценарий;
-- используемый путь решателя (`GREED`, `FIFO`, `EDD`, `ATC`, `CPSAT-*`, `verify-plan`);
-- подтверждение того, что независимый нотариус и регрессионные тесты проходят без ошибок.
+- Фраз из `docs/BANNED_CLAIMS.txt` на публичных страницах нет. Следит `tests/test_banned_claims.py`.
+- В `README.md` цифры живут только в таблице доказательств между метками `evidence`. Эту таблицу, `docs/submission-facts.md` и фразы между метками `attest` пишет `tools/attest.py` — отдельным запросом после зелёного push в `main`. Руками их не правят.
+- Число на странице идёт вместе с ревизией, пресетом, зерном, решателем, выводом нотариуса и знаменателем.
+- Относительные ссылки, якоря и таблицы команд и кодов в `README.md` сверяет `tests/test_doc_links.py`.
+
+## Обновление пина ядра
+
+1. Обновить SHA в трёх файлах.
+2. Прогнать `python tools/verify_lock.py` и `python tools/verify_schema.py`.
+3. Прогнать `pytest tests/test_pin_regression.py`, затем быстрый и медленный наборы.
+4. Пересобрать `repairflow demo` и проверочные артефакты.
+
+## Запрос на слияние
+
+Изменения идут через запрос в `main`. Шаблон запроса спросит:
+
+- синтетический пресет или сценарий;
+- путь решателя: `GREED`, `FIFO`, `EDD`, `ATC`, `CPSAT-*` или `verify-plan`;
+- что нотариус и регрессии зелёные.
+
+Правила общения — [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md). Уязвимость присылают по [`SECURITY.md`](SECURITY.md), не открытой задачей.

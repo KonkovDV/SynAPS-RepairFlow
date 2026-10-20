@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Уязвимость или обход нотариуса
+    url: https://github.com/KonkovDV/SynAPS-RepairFlow/security/advisories/new
+    about: Приватно, не открытой задачей.
