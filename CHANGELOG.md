@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- The eight-hour freeze applies only when `replan_disruption` is given
+  `now`. The demo and the disruption campaign do not pass it. A closed
+  attended calendar is refused before the kernel solve; the image check
+  still does not tell an empty kernel list from a calendar with no windows.
+  Default disruption repair stays on the domain list, not `repair_schedule`.
 - The README command table lists every `repairflow` command and matches
   the parser. `disrupt` frees named operations; the five typed events run
   through `replan_disruption`. `decide` has no manual-fallback flag;
