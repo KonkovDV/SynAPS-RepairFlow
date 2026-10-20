@@ -22,6 +22,7 @@ def test_mutmut_targets_are_the_notary_modules() -> None:
     assert "src/repairflow" not in mutmut["also_copy"]
     assert "tools" in mutmut["also_copy"]
     assert "docs" in mutmut["also_copy"]
+    assert "Dockerfile" in mutmut["also_copy"]
     assert mutmut["pytest_add_cli_args_test_selection"] == ["-m", "not slow", "tests"]
     for path in _TARGETS:
         text = Path(path).read_text(encoding="utf-8")

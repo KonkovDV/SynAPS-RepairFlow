@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- The nightly mutation job died while collecting tests: the sandbox had
+  no `Dockerfile`, and `tests/test_offline_image.py` reads it at import.
+  The file is now copied with the rest of the sandbox.
 - A second fact check. `suggested_relaxation` is absent for the reason
   codes that have no hint. The plan's optimal rule matches the one-pass
   check, and the README digit gate is stricter than a provenance note.
