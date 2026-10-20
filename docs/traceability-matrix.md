@@ -35,7 +35,7 @@
 | Обменный фонд агрегатов как книга остатков по времени | implemented | `src/repairflow/ledger.py`, [`adr/0004-exchange-pool-ledger.md`](adr/0004-exchange-pool-ledger.md) |
 | Включение ветки дефектовки при заморозке ранее выданных слотов | implemented | `repairflow inspect`, [`adr/0005-inspection-rewrites-the-card.md`](adr/0005-inspection-rewrites-the-card.md) |
 | Разделение мягкого планового срока и жёсткого директивного срока | implemented | `DUE_MISSED` (показатель `kpi`) против `DEADLINE_MISSED` (жёсткий отказ) |
-| Перепланирование пяти типов цеховых сбоев при заморозке окна | implemented | `POST_DOWN`, `PART_DELAY`, `CREW_ABSENT`, `DURATION_OVERRUN`, `URGENT_JOB`; `tests/test_disruption_events.py`, `docs/disruption-campaign.json` |
+| Перепланирование пяти типов цеховых сбоев | implemented | `replan_disruption` в `planner.py`: `POST_DOWN`, `PART_DELAY`, `CREW_ABSENT`, `DURATION_OVERRUN`, `URGENT_JOB`. Восьмичасовое окно только при переданном `now`. Команда `disrupt` освобождает названные операции и событие не принимает. `tests/test_disruption_events.py`, `docs/disruption-campaign.json` |
 | Единые метрики и проверка отпечатков `schedule_hash` и `result_hash` | implemented | `src/repairflow/metrics.py`, `repairflow check --verify-hashes`, `tests/test_metrics_and_hashes.py` |
 | Закрепление коммита SynAPS, версии OR-Tools и хеш-замка колёс | implemented | `tools/verify_lock.py`, `requirements-lock.txt`, `ortools==9.15.6755`, `tests/test_lock_hashes.py` |
 | Прямая опись состава CycloneDX и проверка установленных файлов | implemented | `src/repairflow/sbom.py`, `src/repairflow/artifact_record.py`, `src/repairflow/dependency_lock.py` |
