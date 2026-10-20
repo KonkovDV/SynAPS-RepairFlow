@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- The nightly mutation job died while collecting tests: the sandbox had
+  no `Dockerfile`, and `tests/test_offline_image.py` reads it at import.
+  The file is now copied with the rest of the sandbox.
+- A second fact check. `suggested_relaxation` is absent for the reason
+  codes that have no hint. The plan's optimal rule matches the one-pass
+  check, and the README digit gate is stricter than a provenance note.
+- Fact check of the documentation series. `repairflow check` prints the
+  English violation message; the Russian hint stays in
+  `suggested_relaxation`. The eight-hour window is not applied by `demo`.
+  `optimal` is one compiler pass with an empty notary, and
+  `compiled_windows` records cross-segment edges rather than cancelling
+  that pass.
 - The eight-hour freeze applies only when `replan_disruption` is given
   `now`. The demo and the disruption campaign do not pass it. A closed
   attended calendar is refused before the kernel solve; the image check

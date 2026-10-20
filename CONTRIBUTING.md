@@ -19,7 +19,7 @@ python -m pytest -q -m "not slow"
 
 - **Пин ядра.** SynAPS подключается только полным SHA из 40 символов — в `pyproject.toml`, `requirements-lock.txt` и `src/repairflow/versions.py`. Ветку `main` ядра не указывают, каталог `synaps/` в дерево не копируют.
 - **Нотариус отдельно.** `src/repairflow/checker.py` не импортирует `repairflow.adapter`, `repairflow.planner` и `synaps.solvers`. Проверку не ослабляют, чтобы план прошёл. Оракул `tests/oracle_minutes.py` под нотариус не подгоняют.
-- **Слово `optimal`.** Только чистый `OPTIMAL` CP-SAT на исходной цепочке за один проход компилятора. Эвристика его не получает.
+- **Слово `optimal`.** Только чистый `OPTIMAL` CP-SAT при пустом нотариусе и не больше чем одном проходе компилятора. Эвристика его не получает. Метка `compiled_windows` значит, что между отрезками были рёбра.
 
 ## Тексты
 

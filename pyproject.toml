@@ -119,6 +119,7 @@ also_copy = [
   "README.md",
   "APPLICATION.md",
   "requirements-lock.txt",
+  "Dockerfile",
   ".github",
 ]
 pytest_add_cli_args_test_selection = ["-m", "not slow", "tests"]
