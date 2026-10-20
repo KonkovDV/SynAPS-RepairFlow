@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Fact check of the documentation series. `repairflow check` prints the
+  English violation message; the Russian hint stays in
+  `suggested_relaxation`. The eight-hour window is not applied by `demo`.
+  `optimal` is one compiler pass with an empty notary, and
+  `compiled_windows` records cross-segment edges rather than cancelling
+  that pass.
 - The eight-hour freeze applies only when `replan_disruption` is given
   `now`. The demo and the disruption campaign do not pass it. A closed
   attended calendar is refused before the kernel solve; the image check
