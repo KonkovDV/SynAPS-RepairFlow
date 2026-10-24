@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- The OR-Tools note on the README no longer treats cross-segment edges as
+  a cancelled `optimal`. Security, the threat model, and the contributor
+  notes name the report exit and the zero-lag chain.
 - The README and the living pages now say what the code already does:
   `report` refuses a forged `domain_verified` file, every refusal has a
   Russian hint, and the pinned CP-SAT solver is a zero-lag chain. The
