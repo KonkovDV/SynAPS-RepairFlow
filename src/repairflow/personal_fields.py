@@ -1,7 +1,9 @@
-"""Reject domain_attributes keys and a few value shapes that name a person.
+"""Reject domain_attributes keys and value shapes that name a person.
 
-A free note that matches none of these shapes can still carry a name.
-Retention is a contract, not a number chosen here.
+A capitalized word outside the shop lexicon is rejected, and so is a short
+value made only of words outside that lexicon (a two-word name, with or
+without capitals). A lowercase name hidden inside a longer shop sentence
+is still not detected. Retention is a contract, not a number chosen here.
 This is not a personal-data compliance claim.
 """
 
@@ -52,6 +54,47 @@ _PERSONAL_KEYS = frozenset(
         "табельный",
         "табельный_номер",
         "табель",
+        "employee",
+        "worker",
+        "person",
+        "contact",
+        "address",
+        "operator_name",
+        "contact_name",
+        "person_name",
+        "employee_name",
+        "home_address",
+        "postal_address",
+        "адрес",
+        "сотрудник",
+        "работник",
+        "контакт",
+    }
+)
+
+# Words a shop note may use. A capitalized word outside this list is a name.
+_SHOP = frozenset(
+    {
+        "капитальный",
+        "ремонт",
+        "агрегата",
+        "агрегат",
+        "пост",
+        "смена",
+        "бригада",
+        "деталь",
+        "узел",
+        "линия",
+        "участок",
+        "стенд",
+        "календарь",
+        "допуск",
+        "сборка",
+        "разборка",
+        "диагностика",
+        "испытание",
+        "механический",
+        "электрический",
     }
 )
 
@@ -91,6 +134,8 @@ _FIO = re.compile(
     r"(?u)(?<!\w)[А-ЯЁ][а-яё]{1,}\s+[А-ЯЁ][а-яё]{1,}\s+[А-ЯЁ][а-яё]*(?:вич|вна|ична|оглы|кызы)(?!\w)"
 )
 _INITIALS = re.compile(r"(?u)(?<!\w)[А-ЯЁ][а-яё]{1,}\s+[А-ЯЁ]\.\s*[А-ЯЁ]\.(?!\w)")
+_TOKEN = re.compile(r"(?u)[A-Za-zА-ЯЁа-яё][A-Za-z0-9_А-ЯЁа-яё-]{1,}")
+_PROPER = re.compile(r"(?u)[A-ZА-ЯЁ][a-zа-яё-]{2,}")
 
 
 def _snils_checksum(text: str) -> bool:
@@ -110,8 +155,17 @@ def _snils_checksum(text: str) -> bool:
     return check == expected
 
 
+def _bare_name(value: str) -> bool:
+    words = _TOKEN.findall(value)
+    if any(_PROPER.fullmatch(word) and word.casefold() not in _SHOP for word in words):
+        return True
+    return 2 <= len(words) <= 3 and all(word.casefold() not in _SHOP for word in words)
+
+
 def _personal_value(value: str) -> bool:
     if _EMAIL.search(value) or _PHONE.search(value) or _FIO.search(value) or _INITIALS.search(value):
+        return True
+    if _bare_name(value):
         return True
     return _snils_checksum(value)
 

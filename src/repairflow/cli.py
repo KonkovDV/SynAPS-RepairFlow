@@ -388,7 +388,10 @@ def _report(
     if html_path is not None:
         html_path.parent.mkdir(parents=True, exist_ok=True)
         html_path.write_text(render_html(problem, result), encoding="utf-8")
-    return 0 if result.verified_feasible else 2
+    domain_clean = (
+        result.claim_status == "domain_verified" and result.exit_code == 0 and not result.verified_feasible
+    )
+    return 0 if result.verified_feasible or domain_clean else 2
 
 
 def _inspect(

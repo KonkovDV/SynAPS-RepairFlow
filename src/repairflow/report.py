@@ -19,15 +19,19 @@ KIND_COLOR = {
 }
 
 
+def _cell(value: object) -> str:
+    return str(value).replace("|", "/").replace("\n", " ").replace("\r", " ")
+
+
 def render_markdown(problem: RepairFlowProblem, result: RepairFlowResult) -> str:
-    if result.claim_status == "domain_verified":
+    if result.claim_status == "domain_verified" and result.exit_code == 0 and not result.verified_feasible:
         banner = "домен проверен без ядра, exit 0"
-    elif result.verified_feasible:
+    elif result.verified_feasible and result.exit_code == 0:
         banner = "проверен, exit 0"
     else:
         banner = f"не выпускать, exit {result.exit_code}"
     lines = [
-        f"# RepairFlow {problem.instance_id}",
+        f"# RepairFlow {_cell(problem.instance_id)}",
         "",
         f"- статус: **{result.status.value}** · claim `{result.claim_status or '—'}` ({banner})",
         f"- solver: `{result.solver_config}` · kernel `{result.kernel_status}`",
@@ -60,16 +64,17 @@ def render_markdown(problem: RepairFlowProblem, result: RepairFlowResult) -> str
         lines.append(
             "| "
             + " | ".join(
-                [
+                _cell(part)
+                for part in (
                     row.operation_id,
                     jobs.get(row.operation_id, ""),
                     row.work_center_id,
                     row.crew_id or "—",
                     row.start.isoformat(),
                     row.end.isoformat(),
-                    str(row.setup_minutes),
-                    row.reason.replace("|", "/"),
-                ]
+                    row.setup_minutes,
+                    row.reason,
+                )
             )
             + " |"
         )
@@ -78,7 +83,10 @@ def render_markdown(problem: RepairFlowProblem, result: RepairFlowResult) -> str
         lines.append("Чекер пуст. Это не слово «оптимально», если solver не CP-SAT OPTIMAL.")
     else:
         for item in result.violations:
-            lines.append(f"- `{item.code}` {item.message}")
+            russian = REASON_RU.get(item.code, "")
+            hint = f" — {russian}" if russian and russian != item.message else ""
+            relaxation = f" Подсказка: {item.suggested_relaxation}" if item.suggested_relaxation else ""
+            lines.append(f"- `{item.code}` {_cell(item.message)}{_cell(hint)}{_cell(relaxation)}")
     lines.extend(
         [
             "",
@@ -95,7 +103,9 @@ def render_markdown(problem: RepairFlowProblem, result: RepairFlowResult) -> str
 
 
 def render_html(problem: RepairFlowProblem, result: RepairFlowResult) -> str:
-    domain = result.claim_status == "domain_verified"
+    domain = (
+        result.claim_status == "domain_verified" and result.exit_code == 0 and not result.verified_feasible
+    )
     dirty = not result.verified_feasible and not domain
     if domain:
         banner = (
@@ -141,7 +151,13 @@ def _violations(rows: list[Violation]) -> str:
         return "<p class='meta'>Чекер пуст. Independent proof of hard constraints only.</p>"
     items = "".join(
         f"<li><code>{escape(row.code)}</code> {escape(row.message)}"
-        f" <span class='hint'>{escape(REASON_RU.get(row.code, ''))}</span></li>"
+        f" <span class='hint'>{escape(REASON_RU.get(row.code, ''))}</span>"
+        + (
+            f" <span class='hint'>{escape(row.suggested_relaxation)}</span>"
+            if row.suggested_relaxation
+            else ""
+        )
+        + "</li>"
         for row in rows
     )
     return f'<section class="red-list"><h2>Нарушения</h2><ul>{items}</ul></section>'

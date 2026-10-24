@@ -2,12 +2,26 @@
 
 ## Unreleased
 
+- Every refusal code has a Russian `suggested_relaxation`. `CALENDAR_BROKEN`
+  repeats the window hint, so a mutant that drops the explicit argument
+  still shows the same sentence.
+- `domain_attributes` rejects a capitalized word outside the shop lexicon
+  and a two- or three-word value that is not a shop note, including a
+  name without a patronymic. A lowercase name inside a longer shop
+  sentence is still not detected.
+- The installed CP-SAT solver is pinned by the mechanisms it actually
+  builds. It has no lag term: the adapter sends a zero-lag chain, and
+  the notary checks min and max lag. This is not a line-by-line proof.
+- `repairflow report` exits 0 for a clean `domain_verified` shop plan.
+  A file that only claims that status while its exit code is 2 is rendered
+  as a refusal. Markdown cells no longer split on `|`, and both report
+  surfaces show the Russian reason and the hint when one exists.
 - The nightly mutation job died while collecting tests: the sandbox had
   no `Dockerfile`, and `tests/test_offline_image.py` reads it at import.
   The file is now copied with the rest of the sandbox.
-- A second fact check. `suggested_relaxation` is absent for the reason
-  codes that have no hint. The plan's optimal rule matches the one-pass
+- A second fact check. The plan's optimal rule matches the one-pass
   check, and the README digit gate is stricter than a provenance note.
+  The missing hints from that check now exist for every refusal code.
 - Fact check of the documentation series. `repairflow check` prints the
   English violation message; the Russian hint stays in
   `suggested_relaxation`. The eight-hour window is not applied by `demo`.

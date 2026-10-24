@@ -56,6 +56,20 @@ def test_a_note_rejects_email_phone_name_and_snils() -> None:
             crew.model_copy(update={"domain_attributes": {"comment": value}})
 
 
+def test_a_two_word_name_is_rejected_even_without_a_patronymic() -> None:
+    problem = synthesize("tiny", seed=1)
+    crew = problem.crews[0]
+    for value in ("Иван Петров", "иван петров", "John Smith", "пост Иван Петров"):
+        with pytest.raises(ValidationError, match="personal record"):
+            crew.model_copy(update={"domain_attributes": {"comment": value}})
+
+
+def test_a_person_key_in_another_spelling_is_rejected() -> None:
+    problem = synthesize("tiny", seed=1)
+    with pytest.raises(ValidationError, match="сотрудник"):
+        problem.crews[0].model_copy(update={"domain_attributes": {"сотрудник": "пост"}})
+
+
 def test_a_shop_note_without_those_shapes_still_loads() -> None:
     problem = synthesize("tiny", seed=1)
     crew = problem.crews[0].model_copy(
