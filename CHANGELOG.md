@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- The README and the living pages now say what the code already does:
+  `report` refuses a forged `domain_verified` file, every refusal has a
+  Russian hint, and the pinned CP-SAT solver is a zero-lag chain. The
+  literature page places that chain next to current open practice.
 - Every refusal code has a Russian `suggested_relaxation`. `CALENDAR_BROKEN`
   repeats the window hint, so a mutant that drops the explicit argument
   still shows the same sentence.

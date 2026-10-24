@@ -63,6 +63,10 @@
 
 Тесты: `tests/test_ingest_manifest.py`, `tests/test_personal_fields.py`.
 
+## Читаемый отчёт
+
+`repairflow report` завершается с кодом `0` для плана `verified` и для чистого цехового `domain_verified` с `exit_code` равным `0`. Файл, который только носит `domain_verified`, а `exit_code` в нём равен `2`, печатается как отказ, и команда завершается с кодом `2`. Ячейка Markdown заменяет `|` и перевод строки. Обе страницы показывают русскую формулировку и подсказку. HTML экранирует поля плана, включая идентификатор операции. Тест: `tests/test_report_surface.py`. Подсказка `suggested_relaxation` задана для каждого кода отказа (`tests/test_reason_hints.py`).
+
 ## Перепланирование при цеховых сбоях
 
 Модуль `src/repairflow/planner.py` поддерживает пять формализованных типов цеховых сбоев (`POST_DOWN`, `PART_DELAY`, `CREW_ABSENT`, `DURATION_OVERRUN`, `URGENT_JOB`) с обязательной перепроверкой прежнего и нового расписаний:

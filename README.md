@@ -91,7 +91,7 @@ RepairFlow закрывает этот разрыв:
 
 | Код выхода | Значение |
 | --- | --- |
-| ноль | План получил статус `verified`, `optimal` или `domain_verified`. Для `compare` — ни одно замороженное назначение не сдвинуто. Для `demo` — все проверки стенда прошли успешно. |
+| ноль | План получил статус `verified` или `optimal`, либо это чистый цеховой `domain_verified` с нулевым кодом в файле. Для `compare` — ни одно замороженное назначение не сдвинуто. Для `demo` — все проверки стенда прошли успешно. Команда `report` на файле, который только носит `domain_verified`, а код внутри равен двум, завершается двумя. |
 | два | План отклонён по правилам домена: жёсткое нарушение, неполное покрытие, невыполнимость, неподтверждённый статус ядра, сдвиг замороженного слота или статус `error`. |
 | один | Входной файл не прочитан или не прошёл схему, не сошлись отпечатки при `check --verify-hashes`, неверно заданы аргументы или сорвалась проверка готовности `demo`. |
 
@@ -143,7 +143,7 @@ repairflow report out/tiny.json out/greed.json --md out/greed.md --html out/gree
 | `check` | Перепроверить готовый план нотариусом. С флагом `--verify-hashes` предварительно сверяются отпечатки входа, настроек и расписания. | Список нарушений в консоли и полный отчёт в файле `--report`. |
 | `verify-plan` | Проверить внешний цеховой план из таблицы CSV по [шаблону](schemas/templates/shop-plan.csv) без обращения к ядру. | Русские формулировки причин с номерами строк CSV и JSON-отчёт в `--out`. |
 | `compare` | Сопоставить два расписания одной задачи, оценить сдвиги и проверить сохранность замороженных назначений. | Отчёт сравнения в формате JSON по [схеме разницы](schemas/repairflow.diff.v1.json). |
-| `report` | Собрать читаемую сводку и интерактивную диаграмму Ганта по задаче и плану. | Текстовый отчёт `--md` и автономная страница `--html`. |
+| `report` | Собрать сводку и диаграмму Ганта. Нулевой код — у `verified` и у чистого `domain_verified` с нулевым кодом в файле. Файл, который только носит этот статус, а код внутри равен двум, печатается как отказ, и команда завершается двумя. Вертикальная черта и перевод строки в ячейке таблицу не рвут. Обе страницы пишут русскую формулировку и подсказку. HTML экранирует текст плана. | Текстовый отчёт `--md` и автономная страница `--html`. |
 | `disrupt` | Освободить названные операции (`--operation-id`, можно несколько раз) и пересчитать их доменным GREED вместе с хвостом их полосы и прямыми преемниками. Остальные слоты заморожены. Типизированные сбои — через `replan_disruption` в Python. | Обновлённый JSON результата с пересчитанным вердиктом нотариуса. |
 | `inspect` | Вставить в заказ вскрытую при дефектовке ветку из файла события, сохранив все ранее выданные слоты замороженными. | Новый JSON результата после доменного достроения и проверки. |
 | `demo` | Один прогон стенда: FIFO и GREED, CP-SAT (флаг `--skip-cpsat` его отключает), сбой, порча, цеховой лист, журнал. | Файлы в `--out` и строка `MVP readiness: PASS`. |
@@ -191,6 +191,8 @@ flowchart TB
 | **Горизонт планирования** | Начало и окончание горизонта в задаче ядра совпадают с горизонтом исходной ремонтной задачи. |
 
 При этой сверке нотариус не пересобирает внутренние рёбра скомпилированного отрезка, расчётный ранний старт и служебный идентификатор отрезка: исходные рёбра карты и времена выпуска он проверяет по доменной модели. Календарь с персоналом без единого окна планировщик решателю не отдаёт: пустой список ядра значил бы круглосуточную работу. Работу на таком ресурсе режет доменный нотариус.
+
+Установленный CP-SAT закреплён тестом `tests/test_kernel_formulation.py`. В решателе есть ровно одно назначение, интервал длины операции, непересечение и накопительная ёмкость, контур переналадки, предшественник без лага, пустой календарь как круглосуточная работа и замороженные интервалы. Запчасть, прерывание и лаг этот файл не называет. Компилятор отдаёт ядру цепочку без лага. Лаг и окна между отрезками судит нотариус. Это сверка конструкций установленного пакета. Вердикт остаётся у нотариуса.
 
 Базовые правила, на которых стоит проверка расписания:
 
@@ -271,7 +273,7 @@ false_accept_rate = invalid_plans_accepted_as_verified / invalid_plans_presented
 Что важно учитывать при оценке технической части:
 
 - **Длительность и сбои.** Время выполнения операции задаётся фиксированным числом минут. Событие `DURATION_OVERRUN` подставляет новое известное значение длительности и проверяет устойчивость графика при пересчёте, но вероятностные распределения длительности в этой сборке не моделируются.
-- **Бригады и смены.** Поле `crew_id` обозначает обезличенный код ремонтной бригады с набором допусков, а не поимённый табель сотрудников или график отпусков по трудовому законодательству.
+- **Бригады и смены.** Поле `crew_id` обозначает обезличенный код ремонтной бригады с набором допусков, а не поимённый табель сотрудников или график отпусков по трудовому законодательству. Словарь `domain_attributes` отвергает ключ и короткую строку, похожие на имя, телефон, почту или СНИЛС. Имя строчными буквами внутри длинной цеховой фразы фильтр не выделяет. Полный перечень — в [`docs/limitations.md`](docs/limitations.md).
 - **Точный решатель и масштаб.** Выше лабораторного порога по числу операций CP-SAT отказывает с кодом `CPSAT_OPS_CAP`, и эвристика вместо него не подставляется. Такой экземпляр считают доменными `GREED`, `EDD` или `ATC` — нотариус проверяет их так же строго. Своей модели CP-SAT в коде нет: [ADR о нативной модели](docs/adr/0006-native-model-stays-unwired.md) называет замер, без которого её к `plan` не подключают. Точный путь сейчас один — ядро SynAPS.
 - **Журнал решений.** Целостность журнала проверяет `repairflow log verify`. Вершину цепочки заверяет внешний ключ через `repairflow log witness`.
 
@@ -347,7 +349,7 @@ python -m pytest -q -m slow
 | [Запуск автономного образа](docs/runbook.md) | Сборка контейнера без сети из локального склада колёс и запуск с корнем только для чтения |
 | [Соответствие полей учётных систем](docs/data-mapping-1c-toir.md) | Карта перевода сущностей ремонтного учёта в схему `repairflow.problem` и правила обезличивания |
 | [Протокол теневого пилота](docs/pilot-protocol.md) | Порядок проведения безопасного сравнения на одном ремонтном участке и [шаблон показателей](docs/pilot-kpi-template.md) |
-| [Обзор литературы и аналогов](docs/literature-2026.md) | Профильные работы по планированию ТОиР, сравнение с открытыми решателями и научная новизна контура |
+| [Обзор литературы и аналогов](docs/literature-2026.md) | Профильные работы по планированию ТОиР и чем открытые решатели отличаются от отдельного нотариуса |
 | [Неудобные вопросы](docs/murder-board.md) | Прямые ответы на жёсткие вопросы о зрелости, точности, безопасности и границах модели |
 | [Сверка документации](docs/documentation-audit.md) | Проверка соответствия публичных страниц командам CLI, схемам и тестовым воротам |
 | [Аудит нотариуса](AUDIT.md) | Формальная модель ограничений, соответствие коду и два раунда разбора с находками |
@@ -361,7 +363,11 @@ The Russian sections above are the primary documentation; all CLI commands and J
 
 - `verified` requires full operation coverage, zero hard notary violations, and a kernel status of `feasible` or `optimal`.
 - `domain_verified` is issued by `repairflow verify-plan` for a clean shop CSV checked without invoking the kernel (`verified_feasible` remains `false`).
+- `repairflow report` exits zero for a `verified` plan and for a clean `domain_verified` plan whose stored exit is zero. A file that only claims that status while its stored exit is two is rendered as a refusal, and the command exits two. A pipe or a line break in a Markdown cell does not split the table. Both surfaces show the Russian reason and the hint. HTML escapes plan text.
+- Every refusal code has a Russian `suggested_relaxation`.
 - `optimal` is a clean CP-SAT `OPTIMAL` with an empty notary and at most one compiler pass. Cross-segment edges leave `optimality_scope=compiled_windows`: the kernel proved the compiled chains, and the notary checked the original edges. More than one pass stays `verified`. Heuristics never inherit `optimal`.
+- The installed CP-SAT file is pinned by `tests/test_kernel_formulation.py`: one assignment, an interval of the operation length, no-overlap and cumulative capacity, a setup circuit, a predecessor without lag, an empty calendar as round-the-clock work, and frozen intervals. That file does not name spares, preemption or lag. The compiler sends a zero-lag chain. The notary checks lag. The pin holds those constructs. The notary still decides.
+- `domain_attributes` rejects a personal key and a short name-shaped value. A lowercase name inside a longer shop sentence is still not detected.
 - `error` means the kernel did not solve: the CP-SAT size cap, a calendar the kernel cannot express, or a solver error. No heuristic is put in its place.
 - The compiled kernel problem is checked against the source `RepairFlowProblem` (`INVALID_ID_MAP`) across object sets, closed references, operation and order attributes, resource capacities and shift calendars, setup cells, and horizon bounds, as listed in the Russian table above.
 

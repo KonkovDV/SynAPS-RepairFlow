@@ -21,7 +21,7 @@
 ## Справка
 
 - [`limitations.md`](limitations.md) — полный перечень границ. При разночтении прав он.
-- [`core-compat.md`](core-compat.md) — пин ядра SynAPS, вызовы, предел CP-SAT, передача смен.
+- [`core-compat.md`](core-compat.md) — пин ядра SynAPS, вызовы, предел CP-SAT, передача смен и конструкции решателя, включая цепочку без лага.
 - [`evidence-table.md`](evidence-table.md) и [`benchmark-protocol.md`](benchmark-protocol.md) — сводная таблица решателей, формулы показателей и правила замера.
 - [`submission-facts.md`](submission-facts.md) — числовая сводка подачи; собирается автоматически.
 - [`traceability-matrix.md`](traceability-matrix.md) — требование, код, тест.
