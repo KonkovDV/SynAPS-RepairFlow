@@ -5,6 +5,9 @@ from __future__ import annotations
 from datetime import timedelta
 from uuid import uuid4
 
+from synaps.model import OperationMode
+from synaps.precedence import PrecedenceEdge
+
 from repairflow.adapter import to_schedule_problem
 from repairflow.checker import check_plan
 from repairflow.reasons import ReasonCode
@@ -298,6 +301,27 @@ def test_a_reordered_eligible_post_list_is_rejected() -> None:
             update={"eligible_wc_ids": list(reversed(operation.eligible_wc_ids))}
         )
         return schedule.model_copy(update={"operations": rows})
+
+    _assert_image_mismatch(mutate)
+
+
+def test_execution_modes_on_a_kernel_operation_are_rejected() -> None:
+    def mutate(schedule):
+        rows = list(schedule.operations)
+        operation = rows[0]
+        rows[0] = operation.model_copy(
+            update={"modes": [OperationMode(code="fast", duration_min=operation.base_duration_min)]}
+        )
+        return schedule.model_copy(update={"operations": rows})
+
+    _assert_image_mismatch(mutate)
+
+
+def test_kernel_precedence_edges_are_rejected() -> None:
+    def mutate(schedule):
+        source, target = schedule.operations[0], schedule.operations[1]
+        edge = PrecedenceEdge(src_op_id=source.id, dst_op_id=target.id, min_lag=5)
+        return schedule.model_copy(update={"precedence_edges": [edge]})
 
     _assert_image_mismatch(mutate)
 

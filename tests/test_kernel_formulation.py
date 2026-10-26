@@ -56,3 +56,6 @@ def test_the_compiler_does_not_send_execution_modes() -> None:
     problem = synthesize("tiny", seed=1)
     schedule, _id_map = to_schedule_problem(problem)
     assert all(not operation.modes for operation in schedule.operations)
+    assert not schedule.precedence_edges
+    assert "precedence_edges" not in inspect.getsource(adapter)
+    assert "add_precedence_edge_constraints" in inspect.getsource(cpsat_solver)

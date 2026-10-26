@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- The notary rejects a kernel problem that carries `precedence_edges`.
+  The pinned solver applies those edges, including lag. The compiler
+  still sends only a zero-lag chain.
 - The SynAPS pin is `6250abd`. An operation with an empty mode list still
   has exactly one assignment; that constraint now lives in `mode_choice`.
   RepairFlow does not send execution modes, and the notary rejects a kernel
