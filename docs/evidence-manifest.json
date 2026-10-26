@@ -7,7 +7,7 @@
   "ci_includes_test_slow": true,
   "stale": true,
   "sweep_line_commit": "a3621fd538019f4dcc0c681d5634c022260382e9",
-  "synaps_commit": "f939727cd9369fd9b36438bfac7198f0c39c6d3b",
+  "synaps_commit": "6250abd3fd4ee0ce71c82c284a530b086927fc99",
   "synaps_repo": "https://github.com/KonkovDV/SynAPS",
   "claim_level": "experiment",
   "trl": 4,

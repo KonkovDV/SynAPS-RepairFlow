@@ -7,7 +7,7 @@ from pathlib import Path
 from tools.verify_lock import HASH_RE, audit_lock, requirement_blocks, split_lock
 
 ROOT = Path(__file__).resolve().parents[1]
-SHA = "f939727cd9369fd9b36438bfac7198f0c39c6d3b"
+SHA = "6250abd3fd4ee0ce71c82c284a530b086927fc99"
 PIN = f"synaps @ git+https://github.com/KonkovDV/SynAPS.git@{SHA}"
 FAKE_HASH = "--hash=sha256:" + ("ab" * 32)
 

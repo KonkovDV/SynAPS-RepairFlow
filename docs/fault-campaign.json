@@ -216,7 +216,7 @@
   "false_accept_examples": [],
   "false_reject_examples": [],
   "input_hash": "5908eeda569fde0dc8322e43862c19786bd6380e42acb8b503f4a2cfd2656e5b",
-  "synaps_commit": "f939727cd9369fd9b36438bfac7198f0c39c6d3b",
+  "synaps_commit": "6250abd3fd4ee0ce71c82c284a530b086927fc99",
   "claim_level": "experiment",
   "data_provenance": "synthetic",
   "oracle": "tests.oracle_minutes"

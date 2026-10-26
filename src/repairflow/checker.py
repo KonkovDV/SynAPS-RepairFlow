@@ -329,7 +329,7 @@ def _kernel_image_matches(
             return False
         if order_key != domain.job_id and not order_key.startswith(f"{domain.job_id}:"):
             return False
-        if operation.machine_duration_overrides:
+        if operation.machine_duration_overrides or operation.modes:
             return False
         if not _operation_attribute_image(operation, domain):
             return False
