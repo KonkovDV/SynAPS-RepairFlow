@@ -10,7 +10,7 @@
 | Манифест отстаёт от HEAD | да |
 | Заявление | `experiment` |
 | Зрелость | TRL 4 |
-| Пин SynAPS | `f939727cd9369fd9b36438bfac7198f0c39c6d3b` |
+| Пин SynAPS | `6250abd3fd4ee0ce71c82c284a530b086927fc99` |
 | Кампания порчи | checked 10080, false_accept 0, false_reject 0 |
 | Кампания сбоев | checked 150, false_accept 0, replanned 150, пресет `tiny` |
 

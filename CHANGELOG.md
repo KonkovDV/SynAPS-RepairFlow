@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- The SynAPS pin is `6250abd`. An operation with an empty mode list still
+  has exactly one assignment; that constraint now lives in `mode_choice`.
+  RepairFlow does not send execution modes, and the notary rejects a kernel
+  operation that carries modes or a per-post duration override.
 - The OR-Tools note on the README no longer treats cross-segment edges as
   a cancelled `optimal`. Security, the threat model, and the contributor
   notes name the report exit and the zero-lag chain.

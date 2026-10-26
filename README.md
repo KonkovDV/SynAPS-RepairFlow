@@ -192,7 +192,7 @@ flowchart TB
 
 При этой сверке нотариус не пересобирает внутренние рёбра скомпилированного отрезка, расчётный ранний старт и служебный идентификатор отрезка: исходные рёбра карты и времена выпуска он проверяет по доменной модели. Календарь с персоналом без единого окна планировщик решателю не отдаёт: пустой список ядра значил бы круглосуточную работу. Работу на таком ресурсе режет доменный нотариус.
 
-Установленный CP-SAT закреплён тестом `tests/test_kernel_formulation.py`. В решателе есть ровно одно назначение, интервал длины операции, непересечение и накопительная ёмкость, контур переналадки, предшественник без лага, пустой календарь как круглосуточная работа и замороженные интервалы. Запчасть, прерывание и лаг этот файл не называет. Компилятор отдаёт ядру цепочку без лага. Лаг и окна между отрезками судит нотариус. Это сверка конструкций установленного пакета. Вердикт остаётся у нотариуса.
+Установленный CP-SAT закреплён тестом `tests/test_kernel_formulation.py`. Для операции без режимов выполнения ровно одно назначение собирает `mode_choice`. Рядом остаются интервал длины операции, непересечение и накопительная ёмкость, контур переналадки, предшественник без лага, пустой календарь как круглосуточная работа и замороженные интервалы. Запчасть, прерывание и лаг эти файлы не называют. Компилятор режимы не передаёт и отдаёт ядру цепочку без лага. Лаг и окна между отрезками судит нотариус. Это сверка конструкций установленного пакета. Вердикт остаётся у нотариуса.
 
 Базовые правила, на которых стоит проверка расписания:
 
@@ -236,9 +236,9 @@ false_accept_rate = invalid_plans_accepted_as_verified / invalid_plans_presented
 | Проверенный `main` | [`09562da`](https://github.com/KonkovDV/SynAPS-RepairFlow/commit/09562dad6af918b3e0f5ff78e93880884626fa98) |
 | CI для этого `main` | [Actions run 39115444866](https://github.com/KonkovDV/SynAPS-RepairFlow/actions/runs/39115444866), success, включая `test-slow` |
 | Sweep-line commit | [`a3621fd`](https://github.com/KonkovDV/SynAPS-RepairFlow/commit/a3621fd538019f4dcc0c681d5634c022260382e9) |
-| SynAPS pin | [`f939727`](https://github.com/KonkovDV/SynAPS/commit/f939727cd9369fd9b36438bfac7198f0c39c6d3b) |
+| SynAPS pin | [`6250abd`](https://github.com/KonkovDV/SynAPS/commit/6250abd3fd4ee0ce71c82c284a530b086927fc99) |
 | Solver | `ortools==9.15.6755` |
-| Benchmark | [`benchmark/results/benchmark.json`](benchmark/results/benchmark.json), SHA-256 `5cccd7d9045d36ca1d920f291f3263d2ed311685db79adf12c9769f14324b381`, claim `experiment` |
+| Benchmark | [`benchmark/results/benchmark.json`](benchmark/results/benchmark.json), SHA-256 `3f0aab2a7f007932a04f8b161613c9a471d62284cdf77ec9d917caeb2c642b68`, claim `experiment` |
 | Fault campaign | checked 10080, false_accept 0, false_reject 0, presets `tiny, repair-site-mvp`, solvers `GREED, EDD, ATC` |
 | Манифест отстаёт от HEAD | да |
 | Данные | committed synthetic fixtures; customer data отсутствуют |
@@ -371,7 +371,7 @@ The Russian sections above are the primary documentation; all CLI commands and J
 - `repairflow report` exits zero for a `verified` plan and for a clean `domain_verified` plan whose stored exit is zero. A file that only claims that status while its stored exit is two is rendered as a refusal, and the command exits two. A pipe or a line break in a Markdown cell does not split the table. Both surfaces show the Russian reason and the hint. HTML escapes plan text.
 - Every refusal code has a Russian `suggested_relaxation`.
 - `optimal` is a clean CP-SAT `OPTIMAL` with an empty notary and at most one compiler pass. Cross-segment edges leave `optimality_scope=compiled_windows`: the kernel proved the compiled chains, and the notary checked the original edges. More than one pass stays `verified`. Heuristics never inherit `optimal`.
-- The installed CP-SAT file is pinned by `tests/test_kernel_formulation.py`: one assignment, an interval of the operation length, no-overlap and cumulative capacity, a setup circuit, a predecessor without lag, an empty calendar as round-the-clock work, and frozen intervals. That file does not name spares, preemption or lag. The compiler sends a zero-lag chain. The notary checks lag. The pin holds those constructs. The notary still decides.
+- The installed CP-SAT package is pinned by `tests/test_kernel_formulation.py`. An operation with no execution modes still gets exactly one assignment. The pin also holds an interval of the operation length, no-overlap and cumulative capacity, a setup circuit, a predecessor without lag, an empty calendar as round-the-clock work, and frozen intervals. Those files do not name spares, preemption or lag. The compiler sends no execution modes and a zero-lag chain. The notary checks lag. The pin holds those constructs. The notary still decides.
 - `domain_attributes` rejects a personal key and a short name-shaped value. A lowercase name inside a longer shop sentence is still not detected.
 - `error` means the kernel did not solve: the CP-SAT size cap, a calendar the kernel cannot express, or a solver error. No heuristic is put in its place.
 - The compiled kernel problem is checked against the source `RepairFlowProblem` (`INVALID_ID_MAP`) across object sets, closed references, operation and order attributes, resource capacities and shift calendars, setup cells, and horizon bounds, as listed in the Russian table above.

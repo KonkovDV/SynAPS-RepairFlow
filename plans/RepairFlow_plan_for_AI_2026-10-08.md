@@ -18,7 +18,7 @@
 
 | Пункт | Где закрыт | Как проверяется |
 |---|---|---|
-| Пин ядра один везде (`f939727`) | #67, #68 | `tools/verify_lock.py`, `test_evidence_manifest_matches_the_pinned_kernel` |
+| Пин ядра один везде (`6250abd`) | #67, #68 | `tools/verify_lock.py`, `test_evidence_manifest_matches_the_pinned_kernel` |
 | Таблица evidence в README генерируется из манифеста | #68 + `tools/attest.py` | `test_readme_evidence_table_is_generated` |
 | Бенчмарк закоммичен с суммой | #68 | `benchmark/results/benchmark.json`, `SHA256SUMS` (хэш LF-блоба) |
 | `SKILL_EXPIRED` по концу визита | #68 | `test_visit_crossing_noon_expires_a_permit_that_ends_at_noon` |

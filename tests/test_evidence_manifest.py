@@ -18,7 +18,7 @@ def test_evidence_manifest_matches_the_pinned_kernel() -> None:
     payload = json.loads(_MANIFEST.read_text(encoding="utf-8"))
     assert payload["schema"] == "repairflow.evidence_manifest.v1"
     assert payload["synaps_commit"] == SYNAPS_COMMIT
-    assert payload["synaps_commit"] == "f939727cd9369fd9b36438bfac7198f0c39c6d3b"
+    assert payload["synaps_commit"] == "6250abd3fd4ee0ce71c82c284a530b086927fc99"
     lock = Path("requirements-lock.txt").read_text(encoding="utf-8")
     project = Path("pyproject.toml").read_text(encoding="utf-8")
     versions = Path("src/repairflow/versions.py").read_text(encoding="utf-8")

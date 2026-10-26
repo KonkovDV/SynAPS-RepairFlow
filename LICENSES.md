@@ -5,7 +5,7 @@
 | Компонент | Зафиксированная версия / ревизия | Лицензия |
 | --- | --- | --- |
 | `synaps-repairflow` | `0.1.0` | MIT |
-| `synaps` | git `f939727cd9369fd9b36438bfac7198f0c39c6d3b` | MIT |
+| `synaps` | git `6250abd3fd4ee0ce71c82c284a530b086927fc99` | MIT |
 | `pydantic` | `==2.13.5` | MIT |
 | `ortools` | `==9.15.6755` | Apache-2.0 |
 | `tzdata` | `==2026.3` | Apache-2.0 |
