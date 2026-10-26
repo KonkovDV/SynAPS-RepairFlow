@@ -308,6 +308,8 @@ def _kernel_image_matches(
     schedule_problem: ScheduleProblem,
     id_map: dict[str, UUID],
 ) -> bool:
+    if schedule_problem.precedence_edges:
+        return False
     reversed_map = reverse_ids(id_map)
     domain_ops = {operation.id: operation for operation in problem.operations}
     for operation in schedule_problem.operations:
