@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import Any, Literal
@@ -156,6 +157,7 @@ def plan(
         kwargs_for_hash={"apply_frozen": apply_frozen, **kwargs},
         fixpoint=fixpoint,
         bind_crews=True,
+        release_windows=compiled.window_lb,
     )
 
 
@@ -548,6 +550,7 @@ def wrap(
     bind_crews: bool = False,
     domain_assignments: list[PlannedAssignment] | None = None,
     stamp_lanes: bool = True,
+    release_windows: Mapping[str, datetime] | None = None,
 ) -> PlanOutcome:
     kernel_status = result.status.value if result.status is not None else None
     if kernel_status_override is not ...:
@@ -567,6 +570,7 @@ def wrap(
         assignments=planned,
         id_map=id_map,
         kernel_status=kernel_status,
+        release_windows=release_windows,
     )
     if binding_issues or extra_violations:
         domain_violations.extend(binding_issues)

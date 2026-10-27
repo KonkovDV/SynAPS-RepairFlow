@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- The notary recomputes the compiled segment chain, the earliest start,
+  and the segment id. A substituted predecessor or a shifted release
+  inside the kernel problem is `INVALID_ID_MAP`.
 - The notary rejects a kernel problem that carries `precedence_edges`.
   The pinned solver applies those edges, including lag. The compiler
   still sends only a zero-lag chain.
