@@ -113,6 +113,29 @@ def test_a_dangling_setup_state_is_rejected() -> None:
     _assert_open_reference(mutate)
 
 
+def test_a_shifted_kernel_release_is_rejected() -> None:
+    def mutate(schedule):
+        rows = list(schedule.operations)
+        moment = rows[0].earliest_start
+        assert moment is not None
+        rows[0] = rows[0].model_copy(update={"earliest_start": moment + timedelta(minutes=1)})
+        return schedule.model_copy(update={"operations": rows})
+
+    _assert_image_mismatch(mutate)
+
+
+def test_a_segment_predecessor_pointing_at_another_operation_is_rejected() -> None:
+    def mutate(schedule):
+        rows = list(schedule.operations)
+        donor = next(row for row in rows if row.predecessor_op_id is not None)
+        other = next(row.id for row in rows if row.id not in {donor.id, donor.predecessor_op_id})
+        index = rows.index(donor)
+        rows[index] = donor.model_copy(update={"predecessor_op_id": other})
+        return schedule.model_copy(update={"operations": rows})
+
+    _assert_image_mismatch(mutate)
+
+
 def test_a_dangling_predecessor_is_rejected() -> None:
     def mutate(schedule):
         rows = list(schedule.operations)

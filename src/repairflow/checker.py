@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import Counter, defaultdict
+from collections.abc import Mapping
 from datetime import datetime, timedelta
 from typing import Any, Literal
 from uuid import UUID
@@ -11,6 +12,7 @@ from synaps.model import Assignment, ScheduleProblem
 
 from repairflow.capacity import Occupancy, excess_arrivals
 from repairflow.checker_primitives import lookup_setup_minutes, reverse_ids
+from repairflow.dag_compiler import compile_dag
 from repairflow.kernel_compat import kernel_calendar_windows
 from repairflow.lane_setup import lane_setup_evidence
 from repairflow.ledger import exchange_pool_violations, spare_is_rotable
@@ -45,6 +47,7 @@ def check_plan(
     id_map: dict[str, UUID],
     kernel_status: str | None,
     subset_mode: bool = False,
+    release_windows: Mapping[str, datetime] | None = None,
 ) -> list[Violation]:
     try:
         problem = RepairFlowProblem.model_validate(problem.model_dump(mode="python"))
@@ -57,7 +60,12 @@ def check_plan(
         ]
 
     mapped, binding_issues = _normalize_assignments(assignments, id_map)
-    issues = _id_map_issues(problem, schedule_problem, id_map)
+    issues = _id_map_issues(
+        problem,
+        schedule_problem,
+        id_map,
+        release_windows=release_windows or {},
+    )
     if issues:
         return _sorted([*issues, *binding_issues])
 
@@ -204,6 +212,8 @@ def _id_map_issues(
     problem: RepairFlowProblem,
     schedule_problem: ScheduleProblem,
     id_map: dict[str, UUID],
+    *,
+    release_windows: Mapping[str, datetime],
 ) -> list[Violation]:
     op_keys = {f"op:{op.id}" for op in problem.operations}
     wc_keys = {f"wc:{wc.id}" for wc in problem.work_centers}
@@ -264,7 +274,12 @@ def _id_map_issues(
                 "compiled kernel references are not closed over the id map",
             )
         ]
-    if not _kernel_image_matches(problem, schedule_problem, id_map):
+    if not _kernel_image_matches(
+        problem,
+        schedule_problem,
+        id_map,
+        release_windows=release_windows,
+    ):
         return [
             _violation(
                 ReasonCode.INVALID_ID_MAP,
@@ -303,12 +318,100 @@ def _kernel_references_closed(
     return True
 
 
+def _compiled_chain_matches(
+    problem: RepairFlowProblem,
+    schedule_problem: ScheduleProblem,
+    id_map: dict[str, UUID],
+    release_windows: Mapping[str, datetime],
+) -> bool:
+    """Recompute segment chains and release floors. Do not ask the adapter."""
+
+    try:
+        compiled = compile_dag(problem)
+    except ValueError:
+        return False
+    cross_targets = {edge.dst for edge in compiled.cross_edges}
+    if any(op_id not in cross_targets for op_id in release_windows):
+        return False
+    domain_ops = {op.id: op for op in problem.operations}
+    jobs = {job.id: job for job in problem.jobs}
+    kernel_by_domain: dict[str, Any] = {}
+    for operation in schedule_problem.operations:
+        ident = operation.domain_attributes.get("repairflow_id")
+        if not isinstance(ident, str) or ident in kernel_by_domain:
+            return False
+        kernel_by_domain[ident] = operation
+    if set(kernel_by_domain) != set(domain_ops):
+        return False
+    for segment in compiled.segments:
+        preserve = _segment_keeps_sequence(segment.op_ids, domain_ops)
+        previous: str | None = None
+        order_ids: set[UUID] = set()
+        for index, op_id in enumerate(segment.op_ids, start=1):
+            kernel = kernel_by_domain[op_id]
+            domain = domain_ops[op_id]
+            if kernel.domain_attributes.get("segment_id") != segment.id:
+                return False
+            if kernel.domain_attributes.get("job_id") != segment.job_id:
+                return False
+            expected_pred = None if previous is None else id_map.get(f"op:{previous}")
+            if expected_pred is None and previous is not None:
+                return False
+            if kernel.predecessor_op_id != expected_pred:
+                return False
+            expected_seq = domain.sequence if preserve else index
+            if kernel.seq_in_order != expected_seq:
+                return False
+            job = jobs.get(domain.job_id)
+            if job is None:
+                return False
+            if kernel.earliest_start != _compiled_earliest(problem, domain, job, release_windows):
+                return False
+            order_ids.add(kernel.order_id)
+            previous = op_id
+        if len(order_ids) != 1:
+            return False
+        order_id = next(iter(order_ids))
+        order = next((row for row in schedule_problem.orders if row.id == order_id), None)
+        if order is None or order.domain_attributes.get("segment_id") != segment.id:
+            return False
+    return True
+
+
+def _segment_keeps_sequence(op_ids: tuple[str, ...], ops_by_id: dict[str, Operation]) -> bool:
+    rows = [ops_by_id[op_id] for op_id in op_ids]
+    if len({row.sequence for row in rows}) != len(rows):
+        return False
+    ordered = sorted(rows, key=lambda row: (row.sequence, row.id))
+    return [row.id for row in ordered] == list(op_ids)
+
+
+def _compiled_earliest(
+    problem: RepairFlowProblem,
+    operation: Operation,
+    job: Job,
+    release_windows: Mapping[str, datetime],
+) -> datetime | None:
+    earliest = operation.earliest_start or job.release_date
+    for spare in problem.spares:
+        if spare.id in operation.required_spare_ids and spare.available_from is not None:
+            earliest = spare.available_from if earliest is None else max(earliest, spare.available_from)
+    window = release_windows.get(operation.id)
+    if window is not None:
+        earliest = window if earliest is None else max(earliest, window)
+    return earliest
+
+
 def _kernel_image_matches(
     problem: RepairFlowProblem,
     schedule_problem: ScheduleProblem,
     id_map: dict[str, UUID],
+    *,
+    release_windows: Mapping[str, datetime],
 ) -> bool:
     if schedule_problem.precedence_edges:
+        return False
+    if not _compiled_chain_matches(problem, schedule_problem, id_map, release_windows):
         return False
     reversed_map = reverse_ids(id_map)
     domain_ops = {operation.id: operation for operation in problem.operations}
