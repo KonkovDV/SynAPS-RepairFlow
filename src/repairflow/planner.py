@@ -860,6 +860,7 @@ def _kernel_fixpoint(
     last_result: ScheduleResult | None = None
     last_problem: ScheduleProblem | None = None
     last_map: dict[str, UUID] | None = None
+    last_built = current
     for index in range(problem.policy.max_fixpoint_iter):
         core, id_map = to_schedule_problem(problem, current)
         try:
@@ -882,12 +883,13 @@ def _kernel_fixpoint(
             )
             return result, core, id_map, current, False, index + 1
         starts, ends = _domain_times(result, id_map)
-        current, changed = propagate_windows(current, starts=starts, ends=ends)
-        last_result, last_problem, last_map = result, core, id_map
+        lifted, changed = propagate_windows(current, starts=starts, ends=ends)
+        last_result, last_problem, last_map, last_built = result, core, id_map, current
+        current = lifted
         if not changed:
-            return result, core, id_map, current, True, index + 1
+            return result, core, id_map, last_built, True, index + 1
     assert last_result is not None and last_problem is not None and last_map is not None
-    return last_result, last_problem, last_map, current, False, problem.policy.max_fixpoint_iter
+    return last_result, last_problem, last_map, last_built, False, problem.policy.max_fixpoint_iter
 
 
 def _domain_times(

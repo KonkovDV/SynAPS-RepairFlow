@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- A fixpoint that stops on the iteration cap keeps the windows of the
+  problem that was solved. The next lift is not shown to the notary as if
+  it had already been compiled in.
 - The notary recomputes the compiled segment chain, the earliest start,
   and the segment id. A substituted predecessor or a shifted release
   inside the kernel problem is `INVALID_ID_MAP`.
