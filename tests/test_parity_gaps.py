@@ -105,6 +105,20 @@ def test_rotable_explanation_is_minimal_and_does_not_change_the_verdict() -> Non
     assert "optimal" not in witness
 
 
+def test_an_unconverged_lift_does_not_blame_the_id_map() -> None:
+    problem = _kernel_compatible(_diamond())
+    problem = problem.model_copy(
+        update={"policy": problem.policy.model_copy(update={"max_fixpoint_iter": 1})}
+    )
+    outcome = plan(problem, solver_config="CPSAT-10")
+    fixpoint = outcome.result.metadata["fixpoint"]
+
+    assert fixpoint["converged"] is False
+    assert fixpoint["iterations"] == 1
+    assert any(row.code == ReasonCode.DAG_FIXPOINT_NOT_CONVERGED for row in outcome.result.violations)
+    assert all(row.code != ReasonCode.INVALID_ID_MAP for row in outcome.result.violations)
+
+
 def test_converged_dag_fixpoint_is_clean_for_both_verifiers_and_not_optimal() -> None:
     problem = _kernel_compatible(_diamond())
     compiled = compile_dag(problem)
