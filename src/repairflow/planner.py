@@ -23,6 +23,7 @@ from repairflow.adapter import (
     reverse_ids,
     to_schedule_problem,
 )
+from repairflow.capacity import Occupancy, excess_arrivals
 from repairflow.checker import binding_from_aux, check_plan
 from repairflow.checker_primitives import spare_available_from
 from repairflow.dag_compiler import CompiledDag, compile_dag, propagate_windows
@@ -1470,9 +1471,30 @@ def _conflict_end(
     occ_a = candidate.start - timedelta(minutes=candidate.setup_minutes)
     blocker: datetime | None = None
     center_rows = [row for row in placed if row.work_center_id == candidate.work_center_id]
-    try:
-        lane_local_setup_placements(problem, [*center_rows, candidate])
-    except ValueError:
+    named_lanes = candidate.lane is not None or any(row.lane is not None for row in center_rows)
+    overflow = False
+    if named_lanes:
+        try:
+            lane_local_setup_placements(problem, [*center_rows, candidate])
+        except ValueError:
+            overflow = True
+    else:
+        cap = 1
+        for center in problem.work_centers:
+            if center.id == candidate.work_center_id:
+                cap = center.max_parallel
+                break
+        intervals = [
+            Occupancy(
+                row.start - timedelta(minutes=row.setup_minutes),
+                row.end,
+                row.operation_id,
+            )
+            for row in center_rows
+        ]
+        intervals.append(Occupancy(occ_a, candidate.end, candidate.operation_id))
+        overflow = bool(excess_arrivals(intervals, cap))
+    if overflow:
         releases = [
             other.end
             for other in center_rows

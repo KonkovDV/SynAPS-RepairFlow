@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- A plan asks the operating system for the platform string once per process.
+  The list scheduler detects a lane overflow with the half-open sweep when
+  no visit names a lane, and still colours the lanes when a lane id is present.
 - The minute oracle counts half-open overlap with a sweep instead of a
   walk over every minute. A small Rust kernel repeats that peak when it
   has been compiled. The notary stays Python, and the exact search stays
