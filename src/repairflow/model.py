@@ -235,6 +235,10 @@ class Operation(RepairFlowModel):
             raise ValueError(f"operation {self.id}: predecessor_ids and predecessors disagree")
         if link_ids and not self.predecessor_ids:
             self.predecessor_ids = link_ids
+        if len(self.predecessor_ids) != len(set(self.predecessor_ids)):
+            raise ValueError(f"operation {self.id}: duplicate predecessor")
+        if len(self.required_aux_ids) != len(set(self.required_aux_ids)):
+            raise ValueError(f"operation {self.id}: duplicate auxiliary resource")
         if len(self.predecessor_ids) > MAX_PRED_PER_OP:
             raise ValueError(f"operation {self.id}: too many predecessors")
         if self.id in self.predecessor_ids:

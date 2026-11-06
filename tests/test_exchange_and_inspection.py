@@ -22,6 +22,24 @@ def _with_pool(problem: RepairFlowProblem, *, hard: bool, initial: int, qty: int
     )
 
 
+def test_the_minute_oracle_sees_the_same_hard_stockout() -> None:
+    from tests.oracle_minutes import hard_codes
+
+    problem = synthesize("tiny", seed=1)
+    greed = plan(problem, solver_config="GREED")
+    tight = _with_pool(problem, hard=True, initial=0, qty=1)
+    oracle = hard_codes(tight, list(greed.result.assignments))
+    checker = {
+        row.code
+        for row in exchange_pool_violations(tight, list(greed.result.assignments))
+        if row.severity == "hard"
+    }
+    assert ReasonCode.EXCHANGE_POOL_STOCKOUT in oracle
+    assert ReasonCode.EXCHANGE_POOL_STOCKOUT in checker
+    soft = _with_pool(problem, hard=False, initial=0, qty=1)
+    assert ReasonCode.EXCHANGE_POOL_STOCKOUT not in hard_codes(soft, list(greed.result.assignments))
+
+
 def test_hard_stockout_rejects_a_feasible_schedule() -> None:
     problem = synthesize("tiny", seed=1)
     greed = plan(problem, solver_config="GREED")

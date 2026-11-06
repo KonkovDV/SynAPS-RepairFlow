@@ -15,11 +15,13 @@ from repairflow.model import (
     CalendarWindow,
     Crew,
     DataProvenance,
+    ExchangePool,
     FrozenAssignment,
     Job,
     Operation,
     PlannedAssignment,
     PlanningHorizon,
+    PoolDemand,
     PredecessorLink,
     RepairFlowProblem,
     SetupEntry,
@@ -253,6 +255,35 @@ def test_consumable_quantity_and_receipts() -> None:
     timed = _problem([operation], spares=[receipt])
     assert hard_codes(timed, [_place("OP", 10)]) == frozenset()
     assert "SPARE_UNAVAILABLE" in hard_codes(timed, [_place("OP", 8)])
+
+
+def test_a_hard_exchange_stockout_is_visible_and_a_soft_pool_is_not() -> None:
+    problem = _problem()
+    demand = PoolDemand(at=_at(8), qty=1)
+    hard = problem.model_copy(
+        update={
+            "exchange_pools": [
+                ExchangePool(unit_type="engine", initial_serviceable=0, hard=True, demand=[demand])
+            ]
+        }
+    )
+    assert "EXCHANGE_POOL_STOCKOUT" in hard_codes(hard, [_place()])
+    soft = problem.model_copy(
+        update={
+            "exchange_pools": [
+                ExchangePool(unit_type="engine", initial_serviceable=0, hard=False, demand=[demand])
+            ]
+        }
+    )
+    assert "EXCHANGE_POOL_STOCKOUT" not in hard_codes(soft, [_place()])
+    covered = problem.model_copy(
+        update={
+            "exchange_pools": [
+                ExchangePool(unit_type="engine", initial_serviceable=1, hard=True, demand=[demand])
+            ]
+        }
+    )
+    assert "EXCHANGE_POOL_STOCKOUT" not in hard_codes(covered, [_place()])
 
 
 def test_rotable_reuse_waits_for_the_return_lag() -> None:

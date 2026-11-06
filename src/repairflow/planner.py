@@ -43,6 +43,7 @@ from repairflow.evidence import (
 from repairflow.kernel_compat import (
     KERNEL_CALENDAR_UNSUPPORTED,
     assert_kernel_calendar_compatibility,
+    unmatched_skill_operations,
     unsupported_auxiliary_calendars,
 )
 from repairflow.kernel_report import kernel_hard_violations
@@ -133,6 +134,9 @@ def plan(
         refused = _kernel_calendar_refusal(problem, solver_config=solver_config, compiled=compiled)
         if refused is not None:
             return refused
+        refused_skill = _unmatched_skill_refusal(problem, solver_config=solver_config, compiled=compiled)
+        if refused_skill is not None:
+            return refused_skill
         if solver_config.upper().startswith("CPSAT"):
             # Reproducibility: a single CP-SAT worker with a fixed seed is deterministic
             # up to the wall-clock limit; the kernel default (8 workers) is not.
@@ -252,6 +256,9 @@ def replan_after_disruption(
     refused = _kernel_calendar_refusal(problem, solver_config=f"repair:{solver_config}")
     if refused is not None:
         return refused
+    refused_skill = _unmatched_skill_refusal(problem, solver_config=f"repair:{solver_config}")
+    if refused_skill is not None:
+        return refused_skill
     schedule_problem, id_map = to_schedule_problem(problem)
     skip = set(disrupted_operation_ids)
     locked = extract_frozen_from_planned(
@@ -608,6 +615,7 @@ def wrap(
         usage_error=usage_error,
         fixpoint_iterations=int(fixpoint_info.get("iterations", 0)),
         fixpoint_converged=bool(fixpoint_info.get("converged", True)),
+        release_windows_applied=bool(release_windows),
     )
     input_hash = fingerprint_payload(problem.model_dump(mode="json"))
     config_payload = {
@@ -687,12 +695,15 @@ def classify_result(
     usage_error: bool,
     fixpoint_iterations: int = 1,
     fixpoint_converged: bool = True,
+    release_windows_applied: bool = False,
 ) -> tuple[ResultStatus, bool, int, ClaimStatus]:
     """Return status, verified, exit code, and claim_status.
 
     `verified` means the notary is empty. `optimal` is only a clean CP-SAT
-    OPTIMAL on a single compiled pass. `heuristic_feasible` is reserved for a
-    heuristic candidate that has not been through this check.
+    OPTIMAL whose fixpoint ran for exactly one pass and did not apply a
+    cross-segment release window. A missing pass count cannot mint it.
+    `heuristic_feasible` is reserved for a heuristic candidate that has not
+    been through this check.
     """
 
     if any(row.code == ReasonCode.KERNEL_STATUS_MISSING for row in violations):
@@ -716,7 +727,8 @@ def classify_result(
         kernel_status is SolverStatus.OPTIMAL
         and solver_config.upper().startswith("CPSAT")
         and fixpoint_converged
-        and fixpoint_iterations <= 1
+        and fixpoint_iterations == 1
+        and not release_windows_applied
     )
     if exact_optimal:
         return ResultStatus.OPTIMAL, True, 0, "optimal"
@@ -836,6 +848,48 @@ def _kernel_calendar_refusal(
         severity="hard",
         suggested_relaxation=SUGGESTIONS[ReasonCode.KERNEL_CALENDAR_UNSUPPORTED],
         details={"resources": unsupported_auxiliary_calendars(problem)},
+    )
+    return wrap(
+        problem,
+        schedule_problem,
+        id_map,
+        result,
+        solver_config=solver_config,
+        extra_violations=[violation],
+        fixpoint=_fixpoint_meta(current, iterations=0, converged=True),
+    )
+
+
+def _unmatched_skill_refusal(
+    problem: RepairFlowProblem,
+    *,
+    solver_config: str,
+    compiled: CompiledDag | None = None,
+) -> PlanOutcome | None:
+    """Refuse a kernel solve that would staff a skill no crew holds."""
+
+    missing = unmatched_skill_operations(problem)
+    if not missing:
+        return None
+    current = compiled if compiled is not None else compile_dag(problem)
+    schedule_problem, id_map = to_schedule_problem(problem, current)
+    detail = "no crew holds the required skills: " + ", ".join(missing)
+    result = ScheduleResult(
+        status=SolverStatus.ERROR,
+        solver_name=solver_config,
+        assignments=[],
+        objective=ObjectiveValues(
+            coverage=0.0,
+            unscheduled_operations=len(problem.operations),
+        ),
+        metadata={"error": ReasonCode.SKILL_MISMATCH.value, "detail": detail, "cpsat_invoked": False},
+    )
+    violation = Violation(
+        code=ReasonCode.SKILL_MISMATCH,
+        message=detail,
+        severity="hard",
+        suggested_relaxation=SUGGESTIONS[ReasonCode.SKILL_MISMATCH],
+        details={"operations": missing, "cpsat_invoked": False},
     )
     return wrap(
         problem,
