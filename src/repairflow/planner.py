@@ -1357,11 +1357,7 @@ def _slot_from_lane(
         # Occupancy begins ``setup`` minutes before the processing start, so the
         # next try must clear the blocker by that same setup. A one-minute step
         # leaves the setup still overlapping.
-        nxt = (
-            start + timedelta(minutes=1)
-            if blocker is None
-            else blocker + timedelta(minutes=int(setup))
-        )
+        nxt = start + timedelta(minutes=1) if blocker is None else blocker + timedelta(minutes=int(setup))
         cursor = nxt if nxt > cursor else cursor + timedelta(minutes=1)
     return None
 
