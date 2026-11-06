@@ -36,6 +36,26 @@ def spare_available_from(problem: RepairFlowProblem, operation: Operation) -> da
     return ready
 
 
+_SETUP_INDEX: dict[int, tuple[int, int, dict[tuple[str | None, str, str], int]]] = {}
+
+
+def _setup_index(problem: RepairFlowProblem) -> dict[tuple[str | None, str, str], int]:
+    """Last cell wins, matching a linear scan. The matrix is not mutated in place."""
+
+    matrix = problem.setup_matrix
+    mark = (id(matrix), len(matrix))
+    cached = _SETUP_INDEX.get(id(problem))
+    if cached is not None and cached[0] == mark[0] and cached[1] == mark[1]:
+        return cached[2]
+    index: dict[tuple[str | None, str, str], int] = {}
+    for entry in matrix:
+        index[(entry.work_center_id, entry.from_state, entry.to_state)] = entry.duration_min
+    if len(_SETUP_INDEX) > 64:
+        _SETUP_INDEX.clear()
+    _SETUP_INDEX[id(problem)] = (mark[0], mark[1], index)
+    return index
+
+
 def lookup_setup_minutes(
     problem: RepairFlowProblem,
     *,
@@ -82,18 +102,11 @@ def _setup_cell(
     from_state: str,
     to_state: str,
 ) -> int | None:
-    specific = None
-    generic = None
-    for entry in problem.setup_matrix:
-        if entry.from_state != from_state or entry.to_state != to_state:
-            continue
-        if entry.work_center_id == work_center_id:
-            specific = entry.duration_min
-        elif entry.work_center_id is None:
-            generic = entry.duration_min
+    index = _setup_index(problem)
+    specific = index.get((work_center_id, from_state, to_state))
     if specific is not None:
         return specific
-    return generic
+    return index.get((None, from_state, to_state))
 
 
 def _pick_free_crew(

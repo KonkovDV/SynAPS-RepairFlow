@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- The minute oracle counts half-open overlap with a sweep instead of a
+  walk over every minute. A small Rust kernel repeats that peak when it
+  has been compiled. The notary stays Python, and the exact search stays
+  in the pinned SynAPS kernel. Setup cells are indexed for repeated lookup.
 - `optimal` requires exactly one compiled pass and an empty cross-segment
   window map. A closed attended post is refused before the kernel solve, and
   a skill nobody holds is not staffed by a phantom pool. The minute oracle

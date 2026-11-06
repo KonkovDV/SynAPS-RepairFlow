@@ -18,3 +18,9 @@ htmlcov/
 mutants/
 mutmut-results.txt
 files/
+native/*.dll
+native/*.so
+native/*.dylib
+native/*.pdb
+native/*.exp
+native/*.lib
