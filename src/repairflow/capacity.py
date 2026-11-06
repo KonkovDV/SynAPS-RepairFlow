@@ -21,6 +21,7 @@ class Occupancy:
     start: datetime
     end: datetime
     operation_id: str
+    weight: int = 1
 
 
 @dataclass(frozen=True, slots=True)
@@ -39,11 +40,12 @@ def peak_concurrency(intervals: list[Occupancy]) -> int:
 
     peak = 0
     active = 0
-    for _time, kind, _index in _events(intervals):
+    for _time, kind, index in _events(intervals):
+        weight = intervals[index].weight
         if kind == 0:
-            active -= 1
+            active -= weight
         else:
-            active += 1
+            active += weight
             if active > peak:
                 peak = active
     return peak
@@ -62,7 +64,7 @@ def excess_arrivals(intervals: list[Occupancy], capacity: int) -> list[Excess]:
             continue
         row = intervals[index]
         open_rows[index] = row
-        active = len(open_rows)
+        active = sum(item.weight for item in open_rows.values())
         if active <= capacity:
             continue
         others = sorted(item.operation_id for key, item in open_rows.items() if key != index)

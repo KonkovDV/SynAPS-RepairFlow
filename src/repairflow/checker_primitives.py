@@ -20,6 +20,22 @@ def reverse_ids(id_map: dict[str, UUID]) -> dict[UUID, tuple[str, str]]:
     return out
 
 
+def spare_available_from(problem: RepairFlowProblem, operation: Operation) -> datetime | None:
+    """Latest ``available_from`` among spares this operation actually draws.
+
+    ``spare_demand`` counts both ``required_spare_ids`` and ``required_spares``.
+    A spare named only on the explicit need still holds the start.
+    """
+
+    ready: datetime | None = None
+    demand = operation.spare_demand()
+    for spare in problem.spares:
+        if demand.get(spare.id, 0) < 1 or spare.available_from is None:
+            continue
+        ready = spare.available_from if ready is None else max(ready, spare.available_from)
+    return ready
+
+
 def lookup_setup_minutes(
     problem: RepairFlowProblem,
     *,

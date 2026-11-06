@@ -24,6 +24,7 @@ from repairflow.checker_primitives import (
 )
 from repairflow.checker_primitives import (
     lookup_setup_minutes,
+    spare_available_from,
 )
 from repairflow.checker_primitives import (
     reverse_ids as reverse_ids,
@@ -156,12 +157,9 @@ def to_schedule_problem(
                 )
             eligible = [id_map[f"wc:{wc_id}"] for wc_id in operation.eligible_work_center_ids]
             earliest = operation.earliest_start or job.release_date
-            for spare in problem.spares:
-                if spare.id in operation.required_spare_ids and spare.available_from is not None:
-                    if earliest is None:
-                        earliest = spare.available_from
-                    else:
-                        earliest = max(earliest, spare.available_from)
+            spare_ready = spare_available_from(problem, operation)
+            if spare_ready is not None:
+                earliest = spare_ready if earliest is None else max(earliest, spare_ready)
             window = compiled_dag.window_lb.get(operation.id)
             if window is not None:
                 earliest = window if earliest is None else max(earliest, window)

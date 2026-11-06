@@ -24,6 +24,7 @@ from repairflow.adapter import (
     to_schedule_problem,
 )
 from repairflow.checker import binding_from_aux, check_plan
+from repairflow.checker_primitives import spare_available_from
 from repairflow.dag_compiler import CompiledDag, compile_dag, propagate_windows
 from repairflow.events import (
     DisruptionEvent,
@@ -1101,18 +1102,9 @@ def _best_slot(
     deadline: datetime | None,
 ) -> PlannedAssignment | None:
     job = next(job for job in problem.jobs if job.id == operation.job_id)
-    pred_end = job.release_date or problem.planning_horizon.start
-    for pred_id in operation.predecessor_ids:
-        current = next((row for row in placed if row.operation_id == pred_id), None)
-        if current is None:
-            return None
-        pred_end = max(pred_end, current.end)
-    if operation.earliest_start is not None:
-        pred_end = max(pred_end, operation.earliest_start)
-    for spare in problem.spares:
-        if spare.id in operation.required_spare_ids and spare.available_from is not None:
-            pred_end = max(pred_end, spare.available_from)
-
+    bounds = _slot_bounds(problem, operation, placed)
+    if bounds is None:
+        return None
     eligible_centers = list(operation.eligible_work_center_ids)
     eligible_crews = [
         crew
@@ -1126,7 +1118,7 @@ def _best_slot(
         if center.eligible_unit_types and job.unit_type and job.unit_type not in center.eligible_unit_types:
             continue
         for crew in eligible_crews:
-            candidate = _scan_slot(problem, operation, placed, center, crew, pred_end, deadline)
+            candidate = _scan_slot(problem, operation, placed, center, crew, bounds, deadline)
             if candidate is None:
                 continue
             if best is None or (candidate.start, center.code, crew.code) < (
@@ -1138,13 +1130,49 @@ def _best_slot(
     return best
 
 
+def _slot_bounds(
+    problem: RepairFlowProblem,
+    operation: Operation,
+    placed: list[PlannedAssignment],
+) -> tuple[datetime, datetime, datetime | None] | None:
+    """Work-start floor, occupancy floor, and the tightest max-lag cap.
+
+    Release and ``earliest_start`` bound the setup, because the notary
+    measures them from occupancy. Predecessor lag and a spare's
+    ``available_from`` bound the processing start. ``max_lag`` caps that start.
+    """
+
+    horizon = problem.planning_horizon.start
+    work_lb = horizon
+    occ_lb = horizon
+    job = next(row for row in problem.jobs if row.id == operation.job_id)
+    if job.release_date is not None:
+        occ_lb = max(occ_lb, job.release_date)
+    if operation.earliest_start is not None:
+        occ_lb = max(occ_lb, operation.earliest_start)
+    max_start: datetime | None = None
+    by_op = {row.operation_id: row for row in placed}
+    for pred_id, min_lag, max_lag in operation.predecessor_links():
+        current = by_op.get(pred_id)
+        if current is None:
+            return None
+        work_lb = max(work_lb, current.end + timedelta(minutes=min_lag))
+        if max_lag is not None:
+            cap = current.end + timedelta(minutes=max_lag)
+            max_start = cap if max_start is None else min(max_start, cap)
+    spare_ready = spare_available_from(problem, operation)
+    if spare_ready is not None:
+        work_lb = max(work_lb, spare_ready)
+    return work_lb, occ_lb, max_start
+
+
 def _scan_slot(
     problem: RepairFlowProblem,
     operation: Operation,
     placed: list[PlannedAssignment],
     center: WorkCenter,
     crew: Crew,
-    pred_end: datetime,
+    bounds: tuple[datetime, datetime, datetime | None],
     deadline: datetime | None,
 ) -> PlannedAssignment | None:
     try:
@@ -1162,7 +1190,7 @@ def _scan_slot(
             placed,
             center,
             crew,
-            pred_end,
+            bounds,
             deadline,
             lane_index=lane_index,
             prev_end=prev_end,
@@ -1240,7 +1268,7 @@ def _slot_from_lane(
     placed: list[PlannedAssignment],
     center: WorkCenter,
     crew: Crew,
-    pred_end: datetime,
+    bounds: tuple[datetime, datetime, datetime | None],
     deadline: datetime | None,
     *,
     lane_index: int,
@@ -1259,6 +1287,7 @@ def _slot_from_lane(
             setup = 0
         else:
             return None
+    work_lb, occ_lb, max_start = bounds
     last_crew = _last_on_crew(crew.id, placed, before=deadline)
     crew_free = last_crew.end if last_crew is not None else problem.planning_horizon.start
     last_aux = problem.planning_horizon.start
@@ -1267,10 +1296,11 @@ def _slot_from_lane(
         if last is not None:
             last_aux = max(last_aux, last.end)
     cursor = max(
-        pred_end,
+        work_lb,
+        occ_lb + timedelta(minutes=setup),
         prev_end + timedelta(minutes=setup),
         crew_free + timedelta(minutes=setup),
-        last_aux,
+        last_aux + timedelta(minutes=setup),
     )
     for _ in range(256):
         preemptive = policy_of(operation.domain_attributes) == "preemptive"
@@ -1284,6 +1314,8 @@ def _slot_from_lane(
             preemptive=preemptive,
         )
         if start is None:
+            return None
+        if max_start is not None and start > max_start:
             return None
         if preemptive:
             end = end_covering_open_minutes(
@@ -1322,8 +1354,14 @@ def _slot_from_lane(
             prev_state=prev_state,
         ):
             return candidate
-        step = blocker if blocker is not None else start
-        nxt = step + timedelta(minutes=1)
+        # Occupancy begins ``setup`` minutes before the processing start, so the
+        # next try must clear the blocker by that same setup. A one-minute step
+        # leaves the setup still overlapping.
+        nxt = (
+            start + timedelta(minutes=1)
+            if blocker is None
+            else blocker + timedelta(minutes=int(setup))
+        )
         cursor = nxt if nxt > cursor else cursor + timedelta(minutes=1)
     return None
 

@@ -11,7 +11,7 @@ from uuid import UUID
 from synaps.model import Assignment, ScheduleProblem
 
 from repairflow.capacity import Occupancy, excess_arrivals
-from repairflow.checker_primitives import lookup_setup_minutes, reverse_ids
+from repairflow.checker_primitives import lookup_setup_minutes, reverse_ids, spare_available_from
 from repairflow.dag_compiler import compile_dag
 from repairflow.kernel_compat import kernel_calendar_windows
 from repairflow.lane_setup import lane_setup_evidence
@@ -393,9 +393,9 @@ def _compiled_earliest(
     release_windows: Mapping[str, datetime],
 ) -> datetime | None:
     earliest = operation.earliest_start or job.release_date
-    for spare in problem.spares:
-        if spare.id in operation.required_spare_ids and spare.available_from is not None:
-            earliest = spare.available_from if earliest is None else max(earliest, spare.available_from)
+    spare_ready = spare_available_from(problem, operation)
+    if spare_ready is not None:
+        earliest = spare_ready if earliest is None else max(earliest, spare_ready)
     window = release_windows.get(operation.id)
     if window is not None:
         earliest = window if earliest is None else max(earliest, window)

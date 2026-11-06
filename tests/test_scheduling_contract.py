@@ -9,7 +9,14 @@ import pytest
 from repairflow.adapter import to_schedule_problem
 from repairflow.checker import check_plan
 from repairflow.dependency_lock import build_dependency_lock
-from repairflow.model import Calendar, CalendarWindow, PlannedAssignment, RepairFlowProblem
+from repairflow.model import (
+    Calendar,
+    CalendarWindow,
+    FrozenAssignment,
+    PlannedAssignment,
+    PredecessorLink,
+    RepairFlowProblem,
+)
 from repairflow.planner import plan, recheck
 from repairflow.reasons import ReasonCode
 from repairflow.synthetic import synthesize
@@ -25,6 +32,139 @@ def _check(problem: RepairFlowProblem, rows: list[PlannedAssignment]) -> list[st
         kernel_status="feasible",
     )
     return [f"{row.code}:{row.resource_id or ''}:{row.message}" for row in violations]
+
+
+def test_overlapping_calendar_windows_count_a_minute_once() -> None:
+    problem = synthesize("tiny", seed=1)
+    start = problem.planning_horizon.start
+    calendar = Calendar(
+        id="CAL-OVER",
+        code="CAL-OVER",
+        windows=[
+            CalendarWindow(start=start + timedelta(hours=8), end=start + timedelta(hours=12)),
+            CalendarWindow(start=start + timedelta(hours=10), end=start + timedelta(hours=14)),
+        ],
+    )
+    operation = problem.operations[0].model_copy(
+        update={
+            "duration_min": 480,
+            "required_aux_ids": [],
+            "domain_attributes": {"duration_policy": "preemptive"},
+        }
+    )
+    loaded = RepairFlowProblem.model_validate(
+        problem.model_copy(
+            update={
+                "operations": [operation, *problem.operations[1:]],
+                "calendars": [calendar],
+                "work_centers": [
+                    row.model_copy(update={"calendar_id": "CAL-OVER"}) for row in problem.work_centers
+                ],
+                "crews": [row.model_copy(update={"calendar_id": None}) for row in problem.crews],
+                "aux_resources": [
+                    row.model_copy(update={"calendar_id": None}) for row in problem.aux_resources
+                ],
+            }
+        ).model_dump(mode="python")
+    )
+    visit = PlannedAssignment(
+        operation_id=operation.id,
+        work_center_id=operation.eligible_work_center_ids[0],
+        start=start + timedelta(hours=8),
+        end=start + timedelta(hours=14),
+    )
+    doubled = _check(loaded, [visit])
+    assert any(message.startswith(f"{ReasonCode.INVALID_DURATION}:") for message in doubled)
+
+    honest = operation.model_copy(update={"duration_min": 360})
+    counted_once = RepairFlowProblem.model_validate(
+        loaded.model_copy(update={"operations": [honest, *loaded.operations[1:]]}).model_dump(mode="python")
+    )
+    once = _check(counted_once, [visit])
+    assert not any(message.startswith(f"{ReasonCode.INVALID_DURATION}:") for message in once)
+
+
+def test_list_schedule_keeps_setup_inside_release_and_min_lag() -> None:
+    problem = synthesize("tiny", seed=1)
+    start = problem.planning_horizon.start
+    release = start + timedelta(hours=10)
+    jobs = [row.model_copy(update={"release_date": release}) for row in problem.jobs]
+    setup = [
+        row.model_copy(update={"duration_min": 30}) if row.from_state == "idle" else row
+        for row in problem.setup_matrix
+    ]
+    successor = next(row for row in problem.operations if row.predecessor_ids)
+    predecessor_id = successor.predecessor_ids[0]
+    operations = []
+    for row in problem.operations:
+        if row.id != successor.id:
+            operations.append(row)
+            continue
+        operations.append(
+            row.model_copy(
+                update={
+                    "predecessors": [PredecessorLink(id=predecessor_id, min_lag_min=45)],
+                    "predecessor_ids": [predecessor_id],
+                }
+            )
+        )
+    loaded = RepairFlowProblem.model_validate(
+        problem.model_copy(update={"jobs": jobs, "setup_matrix": setup, "operations": operations}).model_dump(
+            mode="python"
+        )
+    )
+    outcome = plan(loaded, solver_config="GREED")
+    by_op = {row.operation_id: row for row in outcome.result.assignments}
+    placed = by_op[successor.id]
+    earlier = by_op[predecessor_id]
+    assert placed.start >= earlier.end + timedelta(minutes=45)
+    for row in outcome.result.assignments:
+        assert row.start - timedelta(minutes=row.setup_minutes) >= release
+    assert not any(row.code == ReasonCode.RELEASE_VIOLATION for row in outcome.result.violations)
+    assert not any(row.code == ReasonCode.PRECEDENCE_BROKEN for row in outcome.result.violations)
+
+
+def test_frozen_pair_outside_max_lag_is_rejected_at_load() -> None:
+    problem = synthesize("tiny", seed=1)
+    earlier = problem.operations[0]
+    later = next(row for row in problem.operations if earlier.id in row.predecessor_ids)
+    start = problem.planning_horizon.start + timedelta(hours=8)
+    first_end = start + timedelta(minutes=earlier.duration_min)
+    second_start = first_end + timedelta(hours=3)
+    operations = [
+        row.model_copy(
+            update={
+                "predecessors": [PredecessorLink(id=earlier.id, min_lag_min=0, max_lag_min=30)],
+                "predecessor_ids": [earlier.id],
+            }
+        )
+        if row.id == later.id
+        else row
+        for row in problem.operations
+    ]
+    frozen = problem.model_copy(
+        update={
+            "operations": operations,
+            "frozen_assignments": [
+                FrozenAssignment(
+                    operation_id=earlier.id,
+                    work_center_id=earlier.eligible_work_center_ids[0],
+                    start=start,
+                    end=first_end,
+                    immutable=True,
+                ),
+                FrozenAssignment(
+                    operation_id=later.id,
+                    work_center_id=later.eligible_work_center_ids[0],
+                    start=second_start,
+                    end=second_start + timedelta(minutes=later.duration_min),
+                    immutable=True,
+                ),
+            ],
+        }
+    )
+    with pytest.raises(ValueError, match="max lag"):
+        RepairFlowProblem.model_validate(frozen.model_dump(mode="python"))
 
 
 def test_exact_duration_rejects_a_stretched_visit() -> None:

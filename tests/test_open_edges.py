@@ -18,6 +18,7 @@ from repairflow.model import (
     PlannedAssignment,
     PredecessorLink,
     RepairFlowProblem,
+    SpareNeed,
     SpareReceipt,
 )
 from repairflow.reasons import ReasonCode
@@ -63,6 +64,89 @@ def test_a_zero_spare_keeps_the_operation_that_needs_it() -> None:
     assert hit.resource_id == spare.id
     assert hit.start == row.start
     assert hit.end == row.end
+
+
+def test_a_rotable_named_only_as_a_need_still_blocks_a_second_draw() -> None:
+    problem = synthesize("tiny", seed=1)
+    spare = problem.spares[0]
+    first, second = problem.operations[0], problem.operations[1]
+    start = problem.planning_horizon.start + timedelta(hours=8)
+    operations = []
+    for row in problem.operations:
+        if row.id not in {first.id, second.id}:
+            operations.append(row)
+            continue
+        operations.append(
+            row.model_copy(
+                update={
+                    "required_spare_ids": [],
+                    "required_spares": [SpareNeed(spare_id=spare.id, qty=1)],
+                    "required_skills": [],
+                    "required_aux_ids": [],
+                    "predecessor_ids": [],
+                    "predecessors": [],
+                }
+            )
+        )
+    spares = [
+        row.model_copy(
+            update={
+                "quantity": 1,
+                "receipts": [],
+                "domain_attributes": {"kind": "rotable", "return_lag_min": 0},
+            }
+        )
+        if row.id == spare.id
+        else row
+        for row in problem.spares
+    ]
+    loaded = _reload(problem, operations=operations, spares=spares)
+    edited_first = next(row for row in loaded.operations if row.id == first.id)
+    edited_second = next(row for row in loaded.operations if row.id == second.id)
+    overlap = [
+        _visit(edited_first, start),
+        _visit(edited_second, start),
+    ]
+    assert any(row.code == ReasonCode.SPARE_UNAVAILABLE for row in check_domain_assignments(loaded, overlap))
+    sequential = [
+        _visit(edited_first, start),
+        _visit(edited_second, start + timedelta(minutes=edited_first.duration_min)),
+    ]
+    quiet = check_domain_assignments(loaded, sequential)
+    assert not any(row.code == ReasonCode.SPARE_UNAVAILABLE for row in quiet)
+
+
+def test_a_rotable_need_of_two_units_does_not_fit_in_one() -> None:
+    problem = synthesize("tiny", seed=1)
+    spare = problem.spares[0]
+    op = problem.operations[0]
+    start = problem.planning_horizon.start + timedelta(hours=8)
+    edited = op.model_copy(
+        update={
+            "required_spare_ids": [],
+            "required_spares": [SpareNeed(spare_id=spare.id, qty=2)],
+            "required_skills": [],
+            "required_aux_ids": [],
+            "predecessor_ids": [],
+            "predecessors": [],
+        }
+    )
+    spares = [
+        row.model_copy(
+            update={
+                "quantity": 1,
+                "receipts": [],
+                "domain_attributes": {"mode": "rotable", "return_lag_min": 0},
+            }
+        )
+        if row.id == spare.id
+        else row
+        for row in problem.spares
+    ]
+    operations = [edited if row.id == op.id else row for row in problem.operations]
+    loaded = _reload(problem, operations=operations, spares=spares)
+    found = check_domain_assignments(loaded, [_visit(edited, start)])
+    assert any(row.code == ReasonCode.SPARE_UNAVAILABLE for row in found)
 
 
 def test_a_rotable_with_no_stock_is_not_a_consumable_zero() -> None:
