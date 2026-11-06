@@ -16,23 +16,32 @@ from pydantic import BaseModel
 from repairflow.model import RepairFlowProblem, RepairFlowResult
 from repairflow.versions import CLAIM_LEVEL, ISO16290_TRL, REPAIRFLOW_VERSION, SYNAPS_COMMIT
 
+_RUNTIME: dict[str, str] | None = None
+
 
 def runtime_manifest() -> dict[str, str]:
-    """Versions that must travel with a plan hash. Missing wheels stay explicit."""
+    """Versions that must travel with a plan hash. Missing wheels stay explicit.
 
-    versions = {
-        "python": platform.python_version(),
-        "implementation": platform.python_implementation(),
-        "platform": platform.platform(),
-        "repairflow": REPAIRFLOW_VERSION,
-        "synaps_commit": SYNAPS_COMMIT,
-    }
-    for dist in ("ortools", "pydantic"):
-        try:
-            versions[dist] = metadata.version(dist)
-        except metadata.PackageNotFoundError:
-            versions[dist] = "absent"
-    return versions
+    The first call asks the OS for the platform string. Later calls in the
+    same process return a copy, so a caller can edit its own dict.
+    """
+
+    global _RUNTIME
+    if _RUNTIME is None:
+        versions = {
+            "python": platform.python_version(),
+            "implementation": platform.python_implementation(),
+            "platform": platform.platform(),
+            "repairflow": REPAIRFLOW_VERSION,
+            "synaps_commit": SYNAPS_COMMIT,
+        }
+        for dist in ("ortools", "pydantic"):
+            try:
+                versions[dist] = metadata.version(dist)
+            except metadata.PackageNotFoundError:
+                versions[dist] = "absent"
+        _RUNTIME = versions
+    return dict(_RUNTIME)
 
 
 def to_canonical(data: Any) -> Any:
