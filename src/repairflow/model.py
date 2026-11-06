@@ -634,7 +634,7 @@ def _frozen_batch_issues(problem: RepairFlowProblem) -> list[str]:
                 issues.append(
                     f"frozen {row.operation_id} starts after max lag from frozen predecessor {pred_id}"
                 )
-        _frozen_calendar(problem, row, centers, crews, calendars, issues)
+        _frozen_calendar(problem, row, operation, centers, crews, calendars, issues)
         _frozen_duration(problem, row, operation, centers, crews, calendars, issues)
     issues.extend(_frozen_lane_issues(rows, centers, crews))
     issues.extend(_frozen_aux_issues(rows, ops, {aux.id: aux for aux in problem.aux_resources}))
@@ -800,29 +800,50 @@ def _lane_clause(rows: list[FrozenAssignment], lanes: int, label: str) -> list[s
 def _frozen_calendar(
     problem: RepairFlowProblem,
     row: FrozenAssignment,
+    operation: Operation,
     centers: dict[str, WorkCenter],
     crews: dict[str, Crew],
     calendars: dict[str, Calendar],
     issues: list[str],
 ) -> None:
+    """Same window rule as the notary, including attended auxiliary calendars."""
+
     occ = row.start - timedelta(minutes=row.setup_minutes)
+    preemptive = policy_of(operation.domain_attributes) == "preemptive"
     targets: list[Calendar] = []
-    center = centers.get(row.work_center_id)
-    if center is not None and center.calendar_id is not None and not is_unattended(center.domain_attributes):
-        calendar = calendars.get(center.calendar_id)
+
+    def consider(calendar_id: str | None, attributes: dict[str, Any]) -> None:
+        if calendar_id is None or is_unattended(attributes):
+            return
+        calendar = calendars.get(calendar_id)
         if calendar is not None:
             targets.append(calendar)
+
+    center = centers.get(row.work_center_id)
+    if center is not None:
+        consider(center.calendar_id, center.domain_attributes)
     if row.crew_id is not None:
         crew = crews.get(row.crew_id)
-        if crew is not None and crew.calendar_id is not None and not is_unattended(crew.domain_attributes):
-            calendar = calendars.get(crew.calendar_id)
-            if calendar is not None:
-                targets.append(calendar)
+        if crew is not None:
+            consider(crew.calendar_id, crew.domain_attributes)
+    auxes = {aux.id: aux for aux in problem.aux_resources}
+    for aux_id in operation.required_aux_ids:
+        aux = auxes.get(aux_id)
+        if aux is not None:
+            consider(aux.calendar_id, aux.domain_attributes)
     for calendar in targets:
-        fits = any(occ >= left and row.end <= right for left, right in merge_windows(calendar.windows))
-        if not calendar.windows or not fits:
+        if not calendar.windows:
             issues.append(f"frozen {row.operation_id} is outside calendar {calendar.id}")
-    _ = problem
+            continue
+        merged = merge_windows(calendar.windows)
+        if preemptive and row.start <= occ:
+            continue
+        if preemptive:
+            fits = any(occ >= left and row.start <= right for left, right in merged)
+        else:
+            fits = any(occ >= left and row.end <= right for left, right in merged)
+        if not fits:
+            issues.append(f"frozen {row.operation_id} is outside calendar {calendar.id}")
 
 
 def _dag_issues(operations: list[Operation]) -> list[str]:

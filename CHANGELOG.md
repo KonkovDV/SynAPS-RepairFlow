@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- The list scheduler reads shifts in time order, keeps a preemptive setup
+  inside one window, and waits for an attended auxiliary calendar. A plan
+  diff treats a changed setup on a freeze as a broken freeze, and a freeze
+  outside that auxiliary shift is refused at load.
 - Overlapping windows of one calendar count as one open stretch, so a
   preemptive visit cannot collect the same minute twice. A rotable draw
   follows `spare_demand`, including an explicit need and a quantity above

@@ -79,7 +79,17 @@ def test_aux_calendar_rejects_work_outside_the_window(solver: str) -> None:
     assert outcome.result.exit_code == 2
     assert outcome.result.verified_feasible is False
     assert not any(row.code == ReasonCode.KERNEL_CALENDAR_UNSUPPORTED for row in outcome.result.violations)
-    if solver != "CPSAT-10":
+    target = next(row.id for row in loaded.operations if row.earliest_start == start + timedelta(hours=10))
+    if solver == "GREED":
+        # The crane is closed before the operation may start, so the list
+        # scheduler leaves it unplaced instead of handing the notary a visit
+        # outside the shift.
+        assert all(row.operation_id != target for row in outcome.result.assignments)
+        assert any(
+            row.code == ReasonCode.PARTIAL_COVERAGE and row.operation_id == target
+            for row in outcome.result.violations
+        )
+    elif solver != "CPSAT-10":
         assert any(
             row.code == ReasonCode.CALENDAR_BROKEN and row.resource_id == "AUX-CRANE"
             for row in outcome.result.violations
