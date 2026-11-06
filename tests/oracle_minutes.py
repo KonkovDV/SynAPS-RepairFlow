@@ -3,8 +3,11 @@
 The only RepairFlow import is ``repairflow.model``. A horizon longer than
 eight days, or a timestamp off the minute, raises ``OracleLimit``. That
 refusal is not an acceptance. Eight days covers the committed presets:
-``tiny`` is two days and ``repair-site-mvp`` is seven. The same minute loop
-is used throughout.
+``tiny`` is two days and ``repair-site-mvp`` is seven.
+
+Aligned minutes are judged by a half-open sweep, which is the same count as
+walking each minute. When ``native/interval_kernel`` has been compiled, the
+peak of that sweep runs there. The notary does not call it.
 
 A hard exchange-pool stockout is judged with the same cumulative ledger.
 A soft pool stays a kpi and is not a hard code. Consumable stock and rotable
@@ -13,7 +16,10 @@ reuse are judged too.
 
 from __future__ import annotations
 
+import ctypes
+import os
 from datetime import datetime, timedelta
+from pathlib import Path
 
 from repairflow.model import (
     Calendar,
@@ -294,16 +300,14 @@ def _calendar_fit(
     if calendar is None or not calendar.windows:
         return {"CALENDAR_BROKEN"}
     occ_start = _occupancy_start(assignment)
-    # Minute semantics: every minute of the half-open occupancy must be open. Touching
-    # windows [a, b) and [b, c) therefore cover [a, c) without a separate merge step.
+    # Minute semantics: every aligned minute of the half-open occupancy must be open.
+    # Touching windows [a, b) and [b, c) cover [a, c). The sweep is that union.
     end = assignment.start if preemptive else assignment.end
     if end <= occ_start:
         return set()
-    minute = occ_start
-    while minute < end:
-        if not any(window.start <= minute < window.end for window in calendar.windows):
-            return {"CALENDAR_BROKEN"}
-        minute += timedelta(minutes=1)
+    windows = [(window.start, window.end) for window in calendar.windows]
+    if not _span_covered(occ_start, end, windows):
+        return {"CALENDAR_BROKEN"}
     return set()
 
 
@@ -341,15 +345,16 @@ def _open_minutes(
     end: datetime,
     masks: list[list[tuple[datetime, datetime]]],
 ) -> int:
+    if end <= start:
+        return 0
     if not masks:
         return _held(start, end)
-    count = 0
-    moment = start
-    while moment < end:
-        if all(any(left <= moment < right for left, right in windows) for windows in masks):
-            count += 1
-        moment += timedelta(minutes=1)
-    return count
+    pieces: list[tuple[datetime, datetime]] = [(start, end)]
+    for windows in masks:
+        pieces = _intersect_spans(pieces, _merge_spans(windows))
+        if not pieces:
+            return 0
+    return sum(_held(left, right) for left, right in pieces)
 
 
 def _capacity(problem: RepairFlowProblem, assignments: list[PlannedAssignment]) -> set[str]:
@@ -384,15 +389,74 @@ def _capacity(problem: RepairFlowProblem, assignments: list[PlannedAssignment]) 
 def _minute_exceeds(intervals: list[tuple[datetime, datetime]], cap: int) -> bool:
     """True when more than ``cap`` half-open intervals cover one minute."""
 
-    start = min(left for left, _right in intervals)
-    end = max(right for _left, right in intervals)
-    moment = start
-    while moment < end:
-        active = sum(1 for left, right in intervals if left <= moment < right)
-        if active > cap:
-            return True
-        moment += timedelta(minutes=1)
+    native = _native_kernel()
+    if native is not None:
+        return native.exceeds(intervals, cap)
+    return _sweep_exceeds(intervals, cap)
+
+
+def _sweep_exceeds(intervals: list[tuple[datetime, datetime]], cap: int) -> bool:
+    """Ends sort before starts at one timestamp, so a shared endpoint is one lane."""
+
+    if cap < 0:
+        return True
+    events: list[tuple[datetime, int]] = []
+    for start, end in intervals:
+        if start >= end:
+            continue
+        events.append((end, 0))
+        events.append((start, 1))
+    events.sort()
+    active = 0
+    for _moment, kind in events:
+        if kind == 0:
+            active -= 1
+        else:
+            active += 1
+            if active > cap:
+                return True
     return False
+
+
+def _merge_spans(windows: list[tuple[datetime, datetime]]) -> list[tuple[datetime, datetime]]:
+    merged: list[tuple[datetime, datetime]] = []
+    for start, end in sorted(windows):
+        if end <= start:
+            continue
+        if merged and start <= merged[-1][1]:
+            merged[-1] = (merged[-1][0], max(merged[-1][1], end))
+        else:
+            merged.append((start, end))
+    return merged
+
+
+def _span_covered(start: datetime, end: datetime, windows: list[tuple[datetime, datetime]]) -> bool:
+    if end <= start:
+        return True
+    cursor = start
+    for left, right in _merge_spans(windows):
+        if right <= cursor:
+            continue
+        if left > cursor:
+            return False
+        if right >= end:
+            return True
+        cursor = right
+    return False
+
+
+def _intersect_spans(
+    pieces: list[tuple[datetime, datetime]],
+    windows: list[tuple[datetime, datetime]],
+) -> list[tuple[datetime, datetime]]:
+    out: list[tuple[datetime, datetime]] = []
+    for left, right in pieces:
+        for win_start, win_end in windows:
+            lo = left if left >= win_start else win_start
+            hi = right if right <= win_end else win_end
+            if hi > lo:
+                out.append((lo, hi))
+    return out
 
 
 def _setup(problem: RepairFlowProblem, assignments: list[PlannedAssignment]) -> set[str]:
@@ -682,3 +746,56 @@ def _rotable(spare: Spare) -> bool:
     attrs = spare.domain_attributes
     mode = attrs.get("mode", attrs.get("kind", "consumable"))
     return str(mode).lower() == "rotable"
+
+
+class _IntervalKernel:
+    def __init__(self, library: ctypes.CDLL) -> None:
+        self._peak = library.rf_peak_exceeds
+        self._peak.argtypes = [
+            ctypes.POINTER(ctypes.c_int64),
+            ctypes.POINTER(ctypes.c_int64),
+            ctypes.c_size_t,
+            ctypes.c_int64,
+        ]
+        self._peak.restype = ctypes.c_int32
+
+    def exceeds(self, intervals: list[tuple[datetime, datetime]], cap: int) -> bool:
+        count = len(intervals)
+        if count == 0:
+            return cap < 0
+        starts = (ctypes.c_int64 * count)(*(_minute_number(start) for start, _end in intervals))
+        ends = (ctypes.c_int64 * count)(*(_minute_number(end) for _start, end in intervals))
+        return bool(self._peak(starts, ends, count, cap))
+
+
+_KERNEL: _IntervalKernel | None | bool = None
+
+
+def reset_native_interval_kernel() -> None:
+    """Drop a cached load so a freshly built library can be opened."""
+
+    global _KERNEL
+    _KERNEL = None
+
+
+def _minute_number(moment: datetime) -> int:
+    return int(moment.timestamp() // 60)
+
+
+def _native_kernel() -> _IntervalKernel | None:
+    global _KERNEL
+    if isinstance(_KERNEL, _IntervalKernel):
+        return _KERNEL
+    if _KERNEL is False:
+        return None
+    root = Path(__file__).resolve().parents[1] / "native"
+    opened: _IntervalKernel | None = None
+    for name in ("interval_kernel.dll", "libinterval_kernel.so", "libinterval_kernel.dylib"):
+        path = root / name
+        if path.is_file():
+            opened = _IntervalKernel(ctypes.CDLL(str(path)))
+            break
+    if opened is None and os.environ.get("REPAIRFLOW_REQUIRE_INTERVAL_RS") == "1":
+        raise RuntimeError("the Rust interval kernel was required but has not been built")
+    _KERNEL = opened if opened is not None else False
+    return opened

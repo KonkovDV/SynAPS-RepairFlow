@@ -137,7 +137,7 @@ def _place(
     )
 
 
-def test_oracle_imports_only_the_model() -> None:
+def test_oracle_does_not_import_the_notary() -> None:
     tree = ast.parse(Path("tests/oracle_minutes.py").read_text(encoding="utf-8"))
     modules: list[str] = []
     for node in ast.walk(tree):
@@ -145,10 +145,11 @@ def test_oracle_imports_only_the_model() -> None:
             modules.extend(alias.name for alias in node.names)
         elif isinstance(node, ast.ImportFrom) and node.module:
             modules.append(node.module)
-    assert modules
     imported = [name for name in modules if name != "__future__"]
+    allowed = {"datetime", "repairflow.model", "ctypes", "os", "pathlib"}
     assert imported
-    assert all(name == "datetime" or name == "repairflow.model" for name in imported)
+    assert set(imported) <= allowed
+    assert not any(name.startswith("repairflow.") and name != "repairflow.model" for name in imported)
 
 
 def test_a_clean_visit_is_accepted() -> None:
