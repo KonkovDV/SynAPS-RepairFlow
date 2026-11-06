@@ -1302,6 +1302,10 @@ def _slot_from_lane(
         crew_free + timedelta(minutes=setup),
         last_aux + timedelta(minutes=setup),
     )
+    aux_by_id = {row.id: row for row in problem.aux_resources}
+    aux_cals = tuple(
+        aux_by_id[aux_id].calendar_id for aux_id in operation.required_aux_ids if aux_id in aux_by_id
+    )
     for _ in range(256):
         preemptive = policy_of(operation.domain_attributes) == "preemptive"
         start = _advance_calendar(
@@ -1312,6 +1316,7 @@ def _slot_from_lane(
             setup,
             operation.duration_min,
             preemptive=preemptive,
+            extra_cals=aux_cals,
         )
         if start is None:
             return None
@@ -1321,7 +1326,7 @@ def _slot_from_lane(
             end = end_covering_open_minutes(
                 start,
                 operation.duration_min,
-                _attended_window_masks(problem, center.calendar_id, crew.calendar_id),
+                _attended_window_masks(problem, center.calendar_id, crew.calendar_id, *aux_cals),
                 problem.planning_horizon.end,
             )
             if end is None:
@@ -1445,10 +1450,11 @@ def _attended_window_masks(
     problem: RepairFlowProblem,
     center_cal: str | None,
     crew_cal: str | None,
+    *extra_cals: str | None,
 ) -> list[list[tuple[datetime, datetime]]]:
     calendars = {row.id: row for row in problem.calendars}
     masks: list[list[tuple[datetime, datetime]]] = []
-    for cal_id in (center_cal, crew_cal):
+    for cal_id in (center_cal, crew_cal, *extra_cals):
         if not cal_id or _calendar_is_unattended(problem, cal_id):
             continue
         calendar = calendars.get(cal_id)
@@ -1467,11 +1473,20 @@ def _advance_calendar(
     duration: int,
     *,
     preemptive: bool = False,
+    extra_cals: tuple[str | None, ...] = (),
 ) -> datetime | None:
-    occupancy = timedelta(minutes=setup + duration)
+    """Earliest processing start whose occupancy fits every attended calendar.
+
+    Windows are read in time order, so a later shift listed first cannot hide
+    an earlier one. A preemptive visit only has to keep its setup inside one
+    window; open minutes of the processing span are counted by the caller.
+    """
+
+    fit = 0 if preemptive else duration
+    occupancy = timedelta(minutes=setup + fit)
     calendars = {row.id: row for row in problem.calendars}
     windows = []
-    for cal_id in (center_cal, crew_cal):
+    for cal_id in (center_cal, crew_cal, *extra_cals):
         if not cal_id:
             continue
         calendar = calendars.get(cal_id)
@@ -1481,26 +1496,19 @@ def _advance_calendar(
             if _calendar_is_unattended(problem, cal_id):
                 continue
             return None
-        windows.append(calendar.windows)
-    if preemptive:
-        occ_start = start
-        if occ_start - timedelta(minutes=setup) < problem.planning_horizon.start:
-            occ_start = problem.planning_horizon.start + timedelta(minutes=setup)
-        if occ_start >= problem.planning_horizon.end:
-            return None
-        return occ_start
+        windows.append(sorted(calendar.windows, key=lambda row: (row.start, row.end)))
     if not windows:
         occ_start = start
-        end = start + timedelta(minutes=duration)
+        end = start + timedelta(minutes=fit)
         if occ_start - timedelta(minutes=setup) < problem.planning_horizon.start:
             occ_start = problem.planning_horizon.start + timedelta(minutes=setup)
-            end = occ_start + timedelta(minutes=duration)
+            end = occ_start + timedelta(minutes=fit)
         return occ_start if end <= problem.planning_horizon.end else None
     # Intersect: candidate must fit in one window of each calendar.
     cursor = start
     for _ in range(256):
         occ_start = cursor
-        end = cursor + timedelta(minutes=duration)
+        end = cursor + timedelta(minutes=fit)
         setup_start = occ_start - timedelta(minutes=setup)
         ok = True
         shifted = None
@@ -1512,7 +1520,7 @@ def _advance_calendar(
                     break
                 if window.end > setup_start and (window.end - window.start) >= occupancy:
                     trial = max(window.start + timedelta(minutes=setup), occ_start)
-                    if trial + timedelta(minutes=duration) <= window.end:
+                    if trial + timedelta(minutes=fit) <= window.end:
                         fitted = trial
                         break
             if fitted is None:

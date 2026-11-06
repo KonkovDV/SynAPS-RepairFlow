@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import timedelta
+from typing import Any
 
 import pytest
 
@@ -165,6 +166,167 @@ def test_frozen_pair_outside_max_lag_is_rejected_at_load() -> None:
     )
     with pytest.raises(ValueError, match="max lag"):
         RepairFlowProblem.model_validate(frozen.model_dump(mode="python"))
+
+
+def _solo(
+    problem: RepairFlowProblem,
+    operation: Any,
+    *,
+    calendars: list[Calendar],
+    center_calendar: str,
+    aux_calendar: dict[str, str] | None = None,
+    setup_idle: int | None = None,
+) -> RepairFlowProblem:
+    start = problem.planning_horizon.start
+    job = next(row for row in problem.jobs if row.id == operation.job_id)
+    job = job.model_copy(update={"release_date": start, "deadline": None})
+    operation = operation.model_copy(
+        update={
+            "predecessor_ids": [],
+            "predecessors": [],
+            "required_skills": [],
+            "required_spare_ids": [],
+            "required_spares": [],
+            "earliest_start": None,
+        }
+    )
+    setup = list(problem.setup_matrix)
+    if setup_idle is not None:
+        setup = [
+            row.model_copy(update={"duration_min": setup_idle}) if row.from_state == "idle" else row
+            for row in setup
+        ]
+    aux_calendar = aux_calendar or {}
+    return RepairFlowProblem.model_validate(
+        problem.model_copy(
+            update={
+                "jobs": [job],
+                "operations": [operation],
+                "calendars": calendars,
+                "work_centers": [
+                    row.model_copy(update={"calendar_id": center_calendar}) for row in problem.work_centers
+                ],
+                "crews": [row.model_copy(update={"calendar_id": None}) for row in problem.crews],
+                "aux_resources": [
+                    row.model_copy(update={"calendar_id": aux_calendar.get(row.id)})
+                    for row in problem.aux_resources
+                ],
+                "setup_matrix": setup,
+                "frozen_assignments": [],
+            }
+        ).model_dump(mode="python")
+    )
+
+
+def test_list_schedule_reads_shifts_in_time_order() -> None:
+    problem = synthesize("tiny", seed=1)
+    start = problem.planning_horizon.start
+    calendar = Calendar(
+        id="CAL-REV",
+        code="CAL-REV",
+        windows=[
+            CalendarWindow(start=start + timedelta(hours=14), end=start + timedelta(hours=18)),
+            CalendarWindow(start=start + timedelta(hours=8), end=start + timedelta(hours=12)),
+        ],
+    )
+    loaded = _solo(
+        problem,
+        problem.operations[0].model_copy(update={"duration_min": 60, "required_aux_ids": []}),
+        calendars=[calendar],
+        center_calendar="CAL-REV",
+    )
+    outcome = plan(loaded, solver_config="GREED")
+    assert outcome.result.assignments[0].start == start + timedelta(hours=8)
+    assert outcome.result.verified_feasible
+
+
+def test_list_schedule_keeps_preemptive_setup_inside_one_window() -> None:
+    problem = synthesize("tiny", seed=1)
+    start = problem.planning_horizon.start
+    calendar = Calendar(
+        id="CAL-ONE",
+        code="CAL-ONE",
+        windows=[CalendarWindow(start=start + timedelta(hours=8), end=start + timedelta(hours=12))],
+    )
+    operation = problem.operations[0].model_copy(
+        update={
+            "duration_min": 60,
+            "required_aux_ids": [],
+            "domain_attributes": {"duration_policy": "preemptive"},
+        }
+    )
+    loaded = _solo(problem, operation, calendars=[calendar], center_calendar="CAL-ONE", setup_idle=30)
+    outcome = plan(loaded, solver_config="GREED")
+    placed = outcome.result.assignments[0]
+    assert placed.start == start + timedelta(hours=8, minutes=30)
+    assert placed.setup_minutes == 30
+    assert not any(row.code == ReasonCode.CALENDAR_BROKEN for row in outcome.result.violations)
+
+
+def test_list_schedule_waits_for_an_attended_aux_shift() -> None:
+    problem = synthesize("tiny", seed=1)
+    start = problem.planning_horizon.start
+    post = Calendar(
+        id="CAL-POST",
+        code="CAL-POST",
+        windows=[CalendarWindow(start=start + timedelta(hours=8), end=start + timedelta(hours=18))],
+    )
+    crane = Calendar(
+        id="CAL-AUX",
+        code="CAL-AUX",
+        windows=[CalendarWindow(start=start + timedelta(hours=10), end=start + timedelta(hours=16))],
+    )
+    operation = problem.operations[0].model_copy(
+        update={"duration_min": 60, "required_aux_ids": ["AUX-CRANE"]}
+    )
+    loaded = _solo(
+        problem,
+        operation,
+        calendars=[post, crane],
+        center_calendar="CAL-POST",
+        aux_calendar={"AUX-CRANE": "CAL-AUX"},
+    )
+    outcome = plan(loaded, solver_config="GREED")
+    placed = outcome.result.assignments[0]
+    assert placed.start == start + timedelta(hours=10)
+    assert "AUX-CRANE" in placed.aux_ids
+    assert not any(row.code == ReasonCode.CALENDAR_BROKEN for row in outcome.result.violations)
+
+
+def test_frozen_aux_outside_its_shift_is_rejected_at_load() -> None:
+    problem = synthesize("tiny", seed=1)
+    operation = problem.operations[0]
+    shift = problem.calendars[0]
+    start = problem.planning_horizon.start
+    operations = [
+        row.model_copy(update={"required_aux_ids": ["AUX-CRANE"], "required_skills": []})
+        if row.id == operation.id
+        else row
+        for row in problem.operations
+    ]
+    loaded = problem.model_copy(
+        update={
+            "operations": operations,
+            "work_centers": [row.model_copy(update={"calendar_id": None}) for row in problem.work_centers],
+            "crews": [row.model_copy(update={"calendar_id": None}) for row in problem.crews],
+            "aux_resources": [
+                row.model_copy(update={"calendar_id": shift.id}) if row.id == "AUX-CRANE" else row
+                for row in problem.aux_resources
+            ],
+            "frozen_assignments": [
+                FrozenAssignment(
+                    operation_id=operation.id,
+                    work_center_id=operation.eligible_work_center_ids[0],
+                    start=start,
+                    end=start + timedelta(minutes=operation.duration_min),
+                    setup_minutes=0,
+                    immutable=True,
+                )
+            ],
+        }
+    )
+    with pytest.raises(ValueError, match="outside calendar"):
+        RepairFlowProblem.model_validate(loaded.model_dump(mode="python"))
 
 
 def test_exact_duration_rejects_a_stretched_visit() -> None:

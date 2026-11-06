@@ -35,6 +35,7 @@ def diff_plans(
             and placed.work_center_id == frozen.work_center_id
             and placed.start == frozen.start
             and placed.end == frozen.end
+            and int(placed.setup_minutes or 0) == int(frozen.setup_minutes)
             and (frozen.crew_id is None or placed.crew_id == frozen.crew_id)
         ):
             frozen_ok.append(_row(placed))
