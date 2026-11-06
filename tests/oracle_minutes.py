@@ -6,7 +6,9 @@ refusal is not an acceptance. Eight days covers the committed presets:
 ``tiny`` is two days and ``repair-site-mvp`` is seven. The same minute loop
 is used throughout.
 
-The exchange-pool ledger is not judged. Consumable stock and rotable reuse are.
+A hard exchange-pool stockout is judged with the same cumulative ledger.
+A soft pool stays a kpi and is not a hard code. Consumable stock and rotable
+reuse are judged too.
 """
 
 from __future__ import annotations
@@ -44,6 +46,7 @@ def hard_codes(problem: RepairFlowProblem, assignments: list[PlannedAssignment])
     codes |= _setup(problem, assignments)
     codes |= _frozen(problem, assignments)
     codes |= _spares_and_dates(problem, assignments)
+    codes |= _exchange_pools(problem, assignments)
     return frozenset(codes)
 
 
@@ -621,6 +624,58 @@ def _rotables(
     if any(_minute_exceeds(intervals, caps.get(spare_id, 0)) for spare_id, intervals in busy.items()):
         return {"SPARE_UNAVAILABLE"}
     return set()
+
+
+def _exchange_pools(problem: RepairFlowProblem, assignments: list[PlannedAssignment]) -> set[str]:
+    """Hard stockout only. ``stock(t) = initial + completions at or before t − demand at or before t``."""
+
+    if not problem.exchange_pools:
+        return set()
+    by_job_ops: dict[str, set[str]] = {}
+    for operation in problem.operations:
+        by_job_ops.setdefault(operation.job_id, set()).add(operation.id)
+    successors: dict[str, list[str]] = {}
+    for operation in problem.operations:
+        for pred in operation.predecessor_ids:
+            if pred in by_job_ops.get(operation.job_id, set()):
+                successors.setdefault(pred, []).append(operation.id)
+    by_op = {row.operation_id: row for row in assignments}
+    finished: dict[str, datetime] = {}
+    for job in problem.jobs:
+        job_ops = by_job_ops.get(job.id, set())
+        sinks = sorted(op_id for op_id in job_ops if not successors.get(op_id))
+        ends: list[datetime] = []
+        complete = True
+        for op_id in sinks:
+            placed = by_op.get(op_id)
+            if placed is None:
+                complete = False
+                break
+            ends.append(placed.end)
+        if complete and ends:
+            finished[job.id] = max(ends)
+    codes: set[str] = set()
+    for pool in problem.exchange_pools:
+        if not pool.hard:
+            continue
+        deltas: dict[datetime, int] = {}
+        for job in problem.jobs:
+            if job.unit_type != pool.unit_type:
+                continue
+            moment = finished.get(job.id)
+            if moment is not None:
+                deltas[moment] = deltas.get(moment, 0) + 1
+        for demand in pool.demand:
+            deltas[demand.at] = deltas.get(demand.at, 0) - demand.qty
+        stock = pool.initial_serviceable
+        worst = stock
+        for moment in sorted(deltas):
+            stock += deltas[moment]
+            if stock < worst:
+                worst = stock
+        if worst < 0:
+            codes.add("EXCHANGE_POOL_STOCKOUT")
+    return codes
 
 
 def _rotable(spare: Spare) -> bool:

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- `optimal` requires exactly one compiled pass and an empty cross-segment
+  window map. A closed attended post is refused before the kernel solve, and
+  a skill nobody holds is not staffed by a phantom pool. The minute oracle
+  flags a hard exchange-pool stockout. Duplicate predecessors and auxiliary
+  ids are rejected at load.
 - The list scheduler reads shifts in time order, keeps a preemptive setup
   inside one window, and waits for an attended auxiliary calendar. A plan
   diff treats a changed setup on a freeze as a broken freeze, and a freeze

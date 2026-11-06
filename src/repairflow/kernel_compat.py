@@ -41,6 +41,9 @@ def unsupported_auxiliary_calendars(problem: RepairFlowProblem) -> list[str]:
 
     resources: list[str] = []
     crews_by_id = {crew.id: crew for crew in problem.crews}
+    for center in problem.work_centers:
+        if kernel_calendar_windows(problem, center.calendar_id, center.domain_attributes) is None:
+            resources.append(f"post:{center.id}:{center.calendar_id}")
     for crew in problem.crews:
         if kernel_calendar_windows(problem, crew.calendar_id, crew.domain_attributes) is None:
             resources.append(f"crew:{crew.id}:{crew.calendar_id}")
@@ -101,6 +104,25 @@ def _preemptive_published_calendar(
         if aux is not None and kernel_calendar_windows(problem, aux.calendar_id, aux.domain_attributes):
             return True
     return False
+
+
+def unmatched_skill_operations(problem: RepairFlowProblem) -> list[str]:
+    """Operations whose skills match no crew.
+
+    The kernel pool cannot be empty (``pool_size >= 1``). Compiling a phantom
+    pool of one would let the solver staff a skill nobody holds.
+    """
+
+    from repairflow.adapter import _bound_crew, _crews_for_skills
+
+    unmatched: list[str] = []
+    for operation in problem.operations:
+        if not operation.required_skills or _bound_crew(problem, operation) is not None:
+            continue
+        if _crews_for_skills(problem, operation.required_skills):
+            continue
+        unmatched.append(operation.id)
+    return unmatched
 
 
 def assert_kernel_calendar_compatibility(problem: RepairFlowProblem) -> None:

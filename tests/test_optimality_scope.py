@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+from synaps.model import SolverStatus
+from synaps.solvers.coverage_outcome import CoverageClass
+
 from repairflow.model import RepairFlowProblem
-from repairflow.planner import plan
+from repairflow.planner import classify_result, plan
 from repairflow.synthetic import synthesize
 
 
@@ -55,3 +58,23 @@ def test_linear_chain_keeps_the_exact_optimal_claim() -> None:
     assert outcome.result.status.value == "OPTIMAL"
     assert outcome.result.verified_feasible
     assert outcome.result.exit_code == 0
+
+
+def test_a_missing_pass_or_a_release_window_cannot_mint_optimal() -> None:
+    def claim(**overrides: object) -> str:
+        _status, _verified, _exit_code, claim_status = classify_result(
+            solver_config="CPSAT-10",
+            kernel_status=SolverStatus.OPTIMAL,
+            coverage=CoverageClass.FULL,
+            violations=[],
+            engine_violations=[],
+            usage_error=False,
+            fixpoint_converged=True,
+            **overrides,  # type: ignore[arg-type]
+        )
+        return str(claim_status)
+
+    assert claim(fixpoint_iterations=1) == "optimal"
+    assert claim(fixpoint_iterations=0) == "verified"
+    assert claim(fixpoint_iterations=1, release_windows_applied=True) == "verified"
+    assert claim(fixpoint_iterations=2) == "verified"

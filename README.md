@@ -83,7 +83,7 @@ RepairFlow закрывает этот разрыв:
 | --- | --- |
 | `verified` | Назначены все операции задачи, жёстких нарушений у нотариуса нет, а статус ядра равен `feasible` или `optimal`. |
 | `domain_verified` | Внешний цеховой план из CSV прошёл доменную проверку `repairflow verify-plan` без замечаний. Ядро при этом не вызывалось, поэтому поле `verified_feasible` остаётся ложным. |
-| `optimal` | CP-SAT вернул `OPTIMAL`, нотариус пуст, неподвижная точка сошлась не больше чем за один проход. Если между отрезками есть рёбра, в метаданных `optimality_scope` равен `compiled_windows`: ядро доказало собранные цепочки, исходные рёбра проверил нотариус. Больше одного прохода — максимум `verified`. Эвристики этот статус не получают. |
+| `optimal` | CP-SAT вернул `OPTIMAL`, нотариус пуст, неподвижная точка записала ровно один проход. Нулевой счёт прохода и непустое окно между отрезками этот статус не создают. Если между отрезками есть рёбра, в метаданных `optimality_scope` равен `compiled_windows`: ядро доказало собранные цепочки, исходные рёбра проверил нотариус. Больше одного прохода — максимум `verified`. Эвристики этот статус не получают. |
 | `rejected` | Найдено хотя бы одно жёсткое нарушение, не все операции получили слоты, задача невыполнима или статус ядра не подтверждает допустимость. |
 | `error` | Ядро не решало задачу: экземпляр выше лабораторного предела CP-SAT (`CPSAT_OPS_CAP`), календарь, который ядро не выразит (`KERNEL_CALENDAR_UNSUPPORTED`), или ошибка решателя. Эвристика вместо ядра не подставляется. |
 
@@ -206,7 +206,7 @@ flowchart TB
 false_accept_rate = invalid_plans_accepted_as_verified / invalid_plans_presented
 ```
 
-Правильность самого нотариуса проверяется независимым поминутным оракулом (`tests/oracle_minutes.py`) на матрице намеренно испорченных планов: ни один заведомо недопустимый график не должен получить статус `verified` (доля ложного приёма равна нулю). Книга обменного фонда оценивается отдельными тестами вне поминутного оракула. При любом расхождении между оракулом и нотариусом разбирается конкретный пример — оракул под нотариус не подгоняется.
+Правильность самого нотариуса проверяется независимым поминутным оракулом (`tests/oracle_minutes.py`) на матрице намеренно испорченных планов: ни один заведомо недопустимый график не должен получить статус `verified` (доля ложного приёма равна нулю). Жёсткий уход обменного фонда в минус считает и поминутный оракул. Мягкий фонд остаётся показателем. При любом расхождении между оракулом и нотариусом разбирается конкретный пример — оракул под нотариус не подгоняется.
 
 ## Справочник кодов отказа
 
@@ -371,7 +371,7 @@ The Russian sections above are the primary documentation; all CLI commands and J
 - `domain_verified` is issued by `repairflow verify-plan` for a clean shop CSV checked without invoking the kernel (`verified_feasible` remains `false`).
 - `repairflow report` exits zero for a `verified` plan and for a clean `domain_verified` plan whose stored exit is zero. A file that only claims that status while its stored exit is two is rendered as a refusal, and the command exits two. A pipe or a line break in a Markdown cell does not split the table. Both surfaces show the Russian reason and the hint. HTML escapes plan text.
 - Every refusal code has a Russian `suggested_relaxation`.
-- `optimal` is a clean CP-SAT `OPTIMAL` with an empty notary and at most one compiler pass. Cross-segment edges leave `optimality_scope=compiled_windows`: the kernel proved the compiled chains, and the notary checked the original edges. More than one pass stays `verified`. Heuristics never inherit `optimal`.
+- `optimal` is a clean CP-SAT `OPTIMAL` with an empty notary and exactly one compiler pass. A missing pass count and a cross-segment release window do not mint it. Cross-segment edges leave `optimality_scope=compiled_windows`: the kernel proved the compiled chains, and the notary checked the original edges. More than one pass stays `verified`. Heuristics never inherit `optimal`.
 - The installed CP-SAT package is pinned by `tests/test_kernel_formulation.py`. An operation with no execution modes still gets exactly one assignment. The pin also holds an interval of the operation length, no-overlap and cumulative capacity, a setup circuit, a predecessor without lag, an empty calendar as round-the-clock work, and frozen intervals. Those files do not name spares or preemption. The kernel can also apply separate precedence edges that carry lag. The compiler sends none, and the notary rejects a non-empty list. The compiler sends no execution modes and a zero-lag chain. The notary checks the domain lag. The pin holds those constructs. The notary still decides.
 - `domain_attributes` rejects a personal key and a short name-shaped value. A lowercase name inside a longer shop sentence is still not detected.
 - `error` means the kernel did not solve: the CP-SAT size cap, a calendar the kernel cannot express, or a solver error. No heuristic is put in its place.

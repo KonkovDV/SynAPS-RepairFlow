@@ -10,10 +10,12 @@ from repairflow.adapter import to_schedule_problem
 from repairflow.kernel_compat import (
     KERNEL_CALENDAR_UNSUPPORTED,
     assert_kernel_calendar_compatibility,
+    unmatched_skill_operations,
     unsupported_auxiliary_calendars,
 )
 from repairflow.model import Calendar, CalendarWindow, RepairFlowProblem
 from repairflow.planner import plan, replan_after_disruption
+from repairflow.reasons import ReasonCode
 from repairflow.synthetic import synthesize
 
 
@@ -22,6 +24,71 @@ def _kernel_compatible_problem() -> RepairFlowProblem:
     crews = [row.model_copy(update={"calendar_id": None}) for row in problem.crews]
     aux_resources = [row.model_copy(update={"calendar_id": None}) for row in problem.aux_resources]
     return problem.model_copy(update={"crews": crews, "aux_resources": aux_resources})
+
+
+def test_an_empty_attended_post_is_refused_before_the_kernel() -> None:
+    problem = _kernel_compatible_problem()
+    empty = Calendar(id="CAL-OFF", code="CAL-OFF", windows=[])
+    center = problem.work_centers[0]
+    loaded = RepairFlowProblem.model_validate(
+        problem.model_copy(
+            update={
+                "calendars": [*problem.calendars, empty],
+                "work_centers": [
+                    row.model_copy(update={"calendar_id": empty.id}) if row.id == center.id else row
+                    for row in problem.work_centers
+                ],
+            }
+        ).model_dump(mode="python")
+    )
+    assert unsupported_auxiliary_calendars(loaded) == [f"post:{center.id}:{empty.id}"]
+    outcome = plan(loaded, solver_config="CPSAT-10")
+    assert outcome.result.assignments == []
+    assert any(row.code == ReasonCode.KERNEL_CALENDAR_UNSUPPORTED for row in outcome.result.violations)
+
+
+def test_a_skill_with_no_crew_does_not_reach_the_kernel() -> None:
+    problem = _kernel_compatible_problem()
+    operation = problem.operations[0].model_copy(update={"required_skills": ["no-such-skill"]})
+    loaded = RepairFlowProblem.model_validate(
+        problem.model_copy(
+            update={
+                "operations": [operation if row.id == operation.id else row for row in problem.operations]
+            }
+        ).model_dump(mode="python")
+    )
+    assert unmatched_skill_operations(loaded) == [operation.id]
+    outcome = plan(loaded, solver_config="CPSAT-10")
+    assert outcome.result.assignments == []
+    hit = next(row for row in outcome.result.violations if row.code == ReasonCode.SKILL_MISMATCH)
+    assert hit.details["cpsat_invoked"] is False
+    assert operation.id in hit.details["operations"]
+
+
+def test_duplicate_predecessor_and_auxiliary_are_rejected_at_load() -> None:
+    problem = synthesize("tiny", seed=1)
+    operation = next(row for row in problem.operations if row.predecessor_ids)
+    predecessor = operation.predecessor_ids[0]
+    duplicated = operation.model_copy(update={"predecessor_ids": [predecessor, predecessor]})
+    with pytest.raises(ValueError, match="duplicate predecessor"):
+        RepairFlowProblem.model_validate(
+            problem.model_copy(
+                update={
+                    "operations": [
+                        duplicated if row.id == operation.id else row for row in problem.operations
+                    ]
+                }
+            ).model_dump(mode="python")
+        )
+    crane = operation.model_copy(update={"required_aux_ids": ["AUX-CRANE", "AUX-CRANE"]})
+    with pytest.raises(ValueError, match="duplicate auxiliary"):
+        RepairFlowProblem.model_validate(
+            problem.model_copy(
+                update={
+                    "operations": [crane if row.id == operation.id else row for row in problem.operations]
+                }
+            ).model_dump(mode="python")
+        )
 
 
 def test_plain_synthetic_problem_is_kernel_calendar_compatible() -> None:
