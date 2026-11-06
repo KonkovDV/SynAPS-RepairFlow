@@ -60,7 +60,7 @@ def test_required_decision_context_is_fail_closed() -> None:
 
 
 def test_operator_code_rejects_direct_identity_shapes() -> None:
-    for value in ("Dmitrij Konkov", "konkov.dmitrij@yandex.ru", "123456"):
+    for value in ("Alexei Petrov", "person@example.com", "123456"):
         with pytest.raises(ValueError, match="pseudonym"):
             _event(operator_code=value)
 

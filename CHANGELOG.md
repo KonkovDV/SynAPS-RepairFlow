@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- A personal name and mailbox no longer sit in the decision-log test.
+  Draft application files stay outside the tree.
 - A fixpoint that stops on the iteration cap keeps the windows of the
   problem that was solved. The next lift is not shown to the notary as if
   it had already been compiled in.
