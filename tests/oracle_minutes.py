@@ -607,14 +607,17 @@ def _rotables(
         operation = operations.get(assignment.operation_id)
         if operation is None or assignment.end <= assignment.start:
             continue
-        for spare_id in operation.spare_demand():
+        for spare_id, qty in operation.spare_demand().items():
             spare = spares.get(spare_id)
-            if spare is None or not _rotable(spare):
+            if spare is None or not _rotable(spare) or qty < 1:
                 continue
             lag = spare.domain_attributes.get("return_lag_min", 0)
             if not isinstance(lag, int) or isinstance(lag, bool) or lag < 0:
                 return {"SPARE_UNAVAILABLE"}
-            busy.setdefault(spare_id, []).append((assignment.start, assignment.end + timedelta(minutes=lag)))
+            if spare.available_from is not None and assignment.start < spare.available_from:
+                return {"SPARE_UNAVAILABLE"}
+            held = (assignment.start, assignment.end + timedelta(minutes=lag))
+            busy.setdefault(spare_id, []).extend([held] * qty)
     if any(_minute_exceeds(intervals, caps.get(spare_id, 0)) for spare_id, intervals in busy.items()):
         return {"SPARE_UNAVAILABLE"}
     return set()

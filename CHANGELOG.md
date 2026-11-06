@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Overlapping windows of one calendar count as one open stretch, so a
+  preemptive visit cannot collect the same minute twice. A rotable draw
+  follows `spare_demand`, including an explicit need and a quantity above
+  one. The list scheduler keeps setup inside release and `earliest_start`,
+  and keeps processing inside min and max lag.
 - A personal name and mailbox no longer sit in the decision-log test.
   Draft application files stay outside the tree.
 - A fixpoint that stops on the iteration cap keeps the windows of the

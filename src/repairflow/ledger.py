@@ -115,7 +115,8 @@ def _rotable_spare_violations(
             continue
         uses: list[Occupancy] = []
         for operation in ops.values():
-            if spare.id not in operation.required_spare_ids:
+            qty = operation.spare_demand().get(spare.id, 0)
+            if qty < 1:
                 continue
             placed = by_op.get(operation.id)
             if placed is None:
@@ -140,6 +141,7 @@ def _rotable_spare_violations(
                     placed.start,
                     placed.end + timedelta(minutes=raw_lag),
                     operation.id,
+                    weight=qty,
                 )
             )
         for excess in excess_arrivals(uses, spare.quantity):

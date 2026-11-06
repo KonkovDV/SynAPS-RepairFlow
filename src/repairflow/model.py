@@ -623,13 +623,17 @@ def _frozen_batch_issues(problem: RepairFlowProblem) -> list[str]:
         operation = ops.get(row.operation_id)
         if operation is None:
             continue
-        for pred_id, min_lag, _max_lag in operation.predecessor_links():
+        for pred_id, min_lag, max_lag in operation.predecessor_links():
             earlier = by_op.get(pred_id)
             if earlier is None:
                 continue
             ready = earlier.end + timedelta(minutes=min_lag)
             if row.start < ready:
                 issues.append(f"frozen {row.operation_id} starts before frozen predecessor {pred_id} ends")
+            if max_lag is not None and row.start > earlier.end + timedelta(minutes=max_lag):
+                issues.append(
+                    f"frozen {row.operation_id} starts after max lag from frozen predecessor {pred_id}"
+                )
         _frozen_calendar(problem, row, centers, crews, calendars, issues)
         _frozen_duration(problem, row, operation, centers, crews, calendars, issues)
     issues.extend(_frozen_lane_issues(rows, centers, crews))

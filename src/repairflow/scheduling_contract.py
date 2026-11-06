@@ -57,13 +57,15 @@ def open_minutes(start: datetime, end: datetime, masks: list[list[Window]]) -> i
     """Minutes of ``[start, end)`` that sit in every attended window mask.
 
     An empty mask list means the interval is open for its whole length.
+    Overlapping windows of one mask are one open stretch: a minute that
+    sits in two windows is counted once.
     """
 
     if end <= start:
         return 0
     pieces: list[Window] = [(start, end)]
     for windows in masks:
-        pieces = _intersect(pieces, windows)
+        pieces = _intersect(pieces, _merge_spans(windows))
         if not pieces:
             return 0
     return sum(held_minutes(left, right) for left, right in pieces)
@@ -82,9 +84,9 @@ def end_covering_open_minutes(
     if not masks:
         end = start + timedelta(minutes=minutes)
         return end if end <= horizon_end else None
-    pieces = _intersect([(start, horizon_end)], masks[0])
+    pieces = _intersect([(start, horizon_end)], _merge_spans(masks[0]))
     for windows in masks[1:]:
-        pieces = _intersect(pieces, windows)
+        pieces = _intersect(pieces, _merge_spans(windows))
     remaining = minutes
     for left, right in pieces:
         span = held_minutes(left, right)
@@ -92,6 +94,20 @@ def end_covering_open_minutes(
             return left + timedelta(minutes=remaining)
         remaining -= span
     return None
+
+
+def _merge_spans(windows: list[Window]) -> list[Window]:
+    """Coalesce touching or overlapping half-open spans. A point in two spans counts once."""
+
+    merged: list[Window] = []
+    for start, end in sorted(windows):
+        if end <= start:
+            continue
+        if merged and start <= merged[-1][1]:
+            merged[-1] = (merged[-1][0], max(merged[-1][1], end))
+        else:
+            merged.append((start, end))
+    return merged
 
 
 def _intersect(pieces: list[Window], windows: list[Window]) -> list[Window]:
